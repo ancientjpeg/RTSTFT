@@ -73,13 +73,12 @@ void hamming(rt_real *data, size_t len)
 
 void rt_lerp(rt_real *in, size_t in_size, rt_real *out, size_t out_size)
 {
-  // this NEEDS optimization.
   rt_real interp_incr = (rt_real)in_size / (out_size - 1);
   rt_real j           = interp_incr;
   out[0]              = in[0];
   for (size_t i = 1; i < out_size - 1; i++) {
-    size_t  curr = (int)j;
-    rt_real mod  = j - curr;
+    size_t  curr = (size_t)j;
+    rt_real mod  = j - floor(j);
     out[i]       = (in[curr + 1] - in[curr]) * mod + in[curr];
     j += interp_incr;
   }

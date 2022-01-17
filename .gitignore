@@ -1,5 +1,6 @@
 build
-**/*.wav
 **/*.o
 
+# files used for testing
+**/*.wav
 out.json

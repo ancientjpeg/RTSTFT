@@ -1,6 +1,11 @@
 #include "rtstft.h"
 #include "wavfile.h"
 #include <time.h>
+#include <unistd.h>
+#define start_timer(t) t = clock()
+#define stop_timer(t)                                                          \
+  printf("\ntime taken: %.5fms\n",                                             \
+         ((double)(clock() - t) / CLOCKS_PER_SEC) * 1000.)
 
 void printReals(FILE *stream, rt_real *arr, size_t len)
 {
@@ -27,18 +32,14 @@ FILE *closeJSON(FILE *json)
 
 int main()
 {
+  time_t    t;
   rt_params p = rt_init(1 << 20, 1024, 4.f);
-  int       a = 20, b = 12;
-  rt_real  *x = fftw_alloc_real(a);
-  rt_real  *y = fftw_alloc_real(b);
   for (int i = 0; i < a; i++) {
     x[i] = sin((float)i / 3);
   }
   FILE *json = toJSON();
-  printReals(json, x, a);
-  rt_lerp(x, a, y, b);
-  printReals(json, y, b);
-  json = closeJSON(json);
+  start_timer(t);
+  stop_timer(t);
   rt_clean(p);
   return 0;
 }
