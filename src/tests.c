@@ -39,26 +39,40 @@ FILE *closeJSON(FILE *json)
 int main()
 {
   time_t    t;
-  size_t    block_size  = 1024;
-  int       buffer_size = 128;
-  rt_params p           = rt_init(block_size, 256, 4.f, 44100, buffer_size);
+  size_t    block_size  = 1 << 18;
+  int       buffer_size = 1024;
+  rt_params p           = rt_init(block_size, 1024, 4.f, 44100, buffer_size);
   WAV       wav         = read_from_wav("in.wav", p->block_size);
   start_timer(t);
-  for (int f = 0; f < block_size / buffer_size; f++) {
-    rt_fifo_enqueue(p->in, wav.data[0], buffer_size);
-    // printReals(stdout, rt_fifo_get_head_ptr(p->in), p->in->size);
+  rt_real temp_null;
+  // for (size_t i = 0; i < p->block_size; i++) {
+  //   wav.data[0][i] = sin((float)i / 44100. * 2400) * 1.;
+  //   wav.data[1][i] = 0.;
+  // }
+  printReals(stdout, wav.data[0], 64);
+  printReals(stdout, wav.data[1], 64);
+  int out_buffer_pos = 0;
+  for (size_t f = 0; f < block_size; f += buffer_size) {
+    rt_fifo_enqueue(p->in, wav.data[0] + f, buffer_size);
     rt_cycle(p);
-    // printReals(stdout, rt_fifo_get_head_ptr(p->in), p->in->size);
-    // TODO assemble frame through out fifo back to wav
-    // latency ??
-    // manage control rates between the buffers
+    size_t payload = rt_fifo_get_payload(p->out);
+    while (payload >= buffer_size) {
+      rt_fifo_dequeue_staggered(p->out, wav.data[1] + out_buffer_pos,
+                                buffer_size, buffer_size);
+      out_buffer_pos += buffer_size;
+      payload = rt_fifo_get_payload(p->out);
+    }
   }
+  printReals(stdout, wav.data[0], 128);
+  printReals(stdout, wav.data[1], 128);
   for (size_t i = 0; i < p->block_size; i++) {
-    wav.data[0][i] = p->block->frames[0][i];
-    wav.data[1][i] = p->block->frames[0][i];
+    wav.data[0][i] = 0.;
+    wav.data[0][i] = wav.data[1][i];
+    // wav.data[0][i] *= 1 << 14;
+    // wav.data[1][i] *= 1 << 14;
   }
   stop_timer(t);
   write_to_wav("out.wav", &wav);
-  rt_clean(p);
+  // rt_clean(p);
   return 0;
 }

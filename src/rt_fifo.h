@@ -9,25 +9,22 @@
 
 typedef struct RT_FIFO {
   rt_real *queue;
-  size_t   size, payload, head, tail;
+  size_t   size, head, tail;
+  char     empty;
 } rt_fifo_t;
 
 typedef rt_fifo_t *rt_fifo;
 
 rt_fifo            rt_fifo_init(size_t size);
 void               rt_fifo_enqueue(rt_fifo fifo, rt_real *data, int n);
-void               rt_fifo_read(rt_fifo fifo, rt_real *dest, int n);
-void               rt_fifo_dequeue(rt_fifo fifo, int n);
-void     rt_fifo_read_and_dequeue(rt_fifo fifo, rt_real *dest, int frame_size,
-                                  float overlap_factor);
+void rt_fifo_enqueue_staggered(rt_fifo fifo, rt_real *data, int n, int advance);
+void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n);
+void rt_fifo_dequeue(rt_fifo fifo, int n);
+void rt_fifo_dequeue_staggered(rt_fifo fifo, rt_real *dest, int n, int advance);
+size_t   rt_fifo_get_payload(rt_fifo fifo);
+
 rt_fifo  rt_fifo_destroy(rt_fifo fifo);
 rt_real *rt_fifo_get_head_ptr(rt_fifo fifo);
 rt_real *rt_fifo_get_tail_ptr(rt_fifo fifo);
 
-// ======== MATH UTILS ======== //
-void  hanning(rt_real *data, size_t len);
-void  hamming(rt_real *data, size_t len);
-float get_fbin(int bin, rt_params p);
-void  rt_lerp(rt_params p, rt_real *in, size_t in_size, rt_real *out,
-              size_t out_size);
 #endif

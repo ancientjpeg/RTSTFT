@@ -6,7 +6,6 @@ WAV read_from_wav(const char *filename, const size_t size)
   wav.data_len = size;
   char dir[100];
   getcwd(dir, 100);
-  printf("dir: %s\n", dir);
   FILE *file        = fopen(filename, "rb");
   wav.data[0]       = (rt_real *)malloc(sizeof(rt_real) * wav.data_len);
   wav.data[1]       = (rt_real *)malloc(sizeof(rt_real) * wav.data_len);
@@ -32,12 +31,16 @@ WAV read_from_wav(const char *filename, const size_t size)
 
 void write_to_wav(const char *filename, WAV *wav)
 {
-  FILE    *file      = fopen(filename, "wb");
   int16_t *datawrite = (int16_t *)malloc(sizeof(int16_t) * wav->data_len);
 
   int      writesize = 4096;
   for (size_t i = 0; i < wav->data_len; i++) {
     datawrite[i] = (int16_t)wav->data[i % 2][i / 2];
+  }
+  FILE *file = fopen(filename, "wb");
+  printf("%p\n", file);
+  if (!file) {
+    return;
   }
   fwrite(wav->headers, 1, 44, file);
   for (size_t i = 0; i < wav->data_len; i += writesize) {
