@@ -9,7 +9,8 @@
   -
 */
 
-rt_params rt_init(size_t block_size, int frame_size, float overlap_factor)
+rt_params rt_init(size_t block_size, int frame_size, float overlap_factor,
+                  float sample_rate, int buffer_size)
 {
   if (frame_size * sizeof(float) % 16 != 0 ||
       block_size * sizeof(float) % 16 != 0) {
@@ -24,18 +25,23 @@ rt_params rt_init(size_t block_size, int frame_size, float overlap_factor)
   p->block_size     = block_size;
   p->frame_size     = frame_size;
   p->overlap_factor = overlap_factor;
-  rt_calculate_parameters(p);
-  p->block    = rt_block_init(p->frame_size, p->num_frames);
-  p->plan     = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
-                                 p->block->frames[0], FFTW_R2HC, FFTW_ESTIMATE);
-  p->plan_inv = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
-                                 p->block->frames[0], FFTW_HC2R, FFTW_ESTIMATE);
+  p->sample_rate    = sample_rate;
+  p->overlap_size   = p->frame_size / p->overlap_factor;
+  p->num_frames     = (p->block_size - p->frame_size) * p->overlap_size + 1;
+  p->block          = rt_block_init(p->frame_size, p->num_frames);
+  p->plan           = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
+                                       p->block->frames[0], FFTW_R2HC, FFTW_ESTIMATE);
+  p->plan_inv       = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
+                                       p->block->frames[0], FFTW_HC2R, FFTW_ESTIMATE);
+  p->in =
+      rt_fifo_init(2 * (frame_size > buffer_size ? frame_size : buffer_size));
+  p->out            = rt_fifo_init(p->in->size);
+  p->pre_lerp_size  = p->scale_factor * p->block_size;
+  p->pre_lerp_block = rt_fifo_init(p->pre_lerp_size);
+  p->lerp_incr =
+      (rt_real)p->pre_lerp_size / p->block_size; // incr = insize / outsize - 1
+  p->first_frame = 1;
   return p;
-}
-void rt_calculate_parameters(rt_params p)
-{
-  p->overlap_size = p->frame_size / p->overlap_factor;
-  p->num_frames   = (p->block_size - p->frame_size) * p->overlap_size + 1;
 }
 
 rt_params rt_clean(rt_params p)
@@ -47,12 +53,48 @@ rt_params rt_clean(rt_params p)
   return (rt_params)NULL;
 }
 
-int rt_insert_into_block(rt_params p, rt_real *data, int size)
+int rt_insert_into_block(rt_params p, rt_real *data)
 {
-  int this_frame = p->block->first_available;
-  memcpy(p->block->frames[this_frame], data, size * sizeof(rt_real));
-  p->block->first_available = (this_frame + 1) % p->num_frames;
-  return p->block->first_available;
+  int this_frame = p->block->next;
+  memcpy(p->block->frames[this_frame], data, p->frame_size * sizeof(rt_real));
+  fftw_execute_r2r(p->plan, p->block->frames[this_frame],
+                   p->block->frames[this_frame]);
+  // process, if last frame exists && firstFrame = 0
+  fftw_execute_r2r(p->plan_inv, p->block->frames[this_frame],
+                   p->block->frames[this_frame]);
+  for (int i = 0; i < p->frame_size; i++) {
+    p->block->frames[this_frame][i] /= p->frame_size;
+  }
+  p->block->next = (this_frame + 1) % p->num_frames;
+  return p->block->next;
+}
+
+void rt_digest_frame(rt_params p)
+{
+  rt_insert_into_block(p, rt_fifo_get_head_ptr(p->in));
+  rt_fifo_dequeue(p->in, p->overlap_size);
+  // printf("\npayload: %zu blockfill: %zu\n", p->in->payload, p->in->payload);
+}
+void rt_assemble_frame(rt_params p)
+{
+  // ADD, by TIERING, onto the p->out FIFO
+}
+
+void rt_transform_test(rt_params p)
+{
+  for (int i = 0; i < p->num_frames; i++) {
+    fftw_execute_r2r(p->plan, p->block->frames[i], p->block->frames[i]);
+  }
+}
+
+void rt_cycle(rt_params p)
+{
+
+  while (p->in->payload >= p->frame_size) {
+    // needs to be adjusted for STFT needing currentframe - 1
+    rt_digest_frame(p);
+    rt_assemble_frame(p);
+  }
 }
 
 void hanning(rt_real *data, size_t len)
@@ -71,7 +113,13 @@ void hamming(rt_real *data, size_t len)
   }
 }
 
-void rt_lerp(rt_real *in, size_t in_size, rt_real *out, size_t out_size)
+float get_fbin(int bin, rt_params p)
+{
+  return p->sample_rate / p->frame_size * bin;
+}
+
+void rt_lerp(rt_params p, rt_real *in, size_t in_size, rt_real *out,
+             size_t out_size)
 {
   rt_real interp_incr = (rt_real)in_size / (out_size - 1);
   rt_real j           = interp_incr;
@@ -80,7 +128,7 @@ void rt_lerp(rt_real *in, size_t in_size, rt_real *out, size_t out_size)
     size_t  curr = (size_t)j;
     rt_real mod  = j - floor(j);
     out[i]       = (in[curr + 1] - in[curr]) * mod + in[curr];
-    j += interp_incr;
+    j += p->lerp_incr;
   }
   out[out_size - 1] = in[in_size - 1];
 }

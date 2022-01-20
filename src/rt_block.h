@@ -5,7 +5,7 @@
 
 typedef struct RT_BLOCK {
   rt_real **frames;
-  int       num_frames, first_available;
+  int       next;
   size_t    size;
 } rt_block_t;
 

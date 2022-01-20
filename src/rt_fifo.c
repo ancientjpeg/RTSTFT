@@ -11,37 +11,42 @@ rt_fifo rt_fifo_init(size_t size)
   return fifo;
 }
 
-void rt_fifo_enqueue(rt_fifo fifo, rt_real *data, int frame_size)
+void rt_fifo_enqueue(rt_fifo fifo, rt_real *data, int n)
 {
-  for (int i = 0; i < frame_size; i++) {
+  if (fifo->payload + n >= fifo->size) {
+    n = fifo->size - fifo->payload;
+    printf("fifo full.\n");
+  }
+
+  // this could be changed to a memcpy but i dont know if that's worth it
+  for (int i = 0; i < n; i++) {
+    fifo->tail              = ++fifo->tail % fifo->size;
     fifo->queue[fifo->tail] = data[i];
-    fifo->tail              = (++fifo->tail) % fifo->size;
-    if (fifo->tail == fifo->head) {
-      printf("fifo empty. exiting.\n");
-      break;
-    }
-    else if (++fifo->payload > fifo->size) {
-      printf("fifo full. exiting.\n");
-      break;
+    ++fifo->payload;
+    if (fifo->tail == fifo->head + 1 && fifo->payload != 1) {
+      printf("unexpected error.\n");
+      exit(1);
     }
   }
 }
-void rt_fifo_read(rt_fifo fifo, rt_real *dest, int frame_size)
+void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n)
 {
-  for (int i = 0; i < frame_size; i++) {
+  for (int i = 0; i < n; i++) {
     int index = (fifo->head + i) % fifo->size;
     dest[i]   = fifo->queue[index];
   }
 }
 void rt_fifo_dequeue(rt_fifo fifo, int n)
 {
-  for (int i = 0; i < n; i++) {
-    fifo->head = (++fifo->head) % fifo->size;
-    if (fifo->tail == fifo->head) {
-      printf("fifo empty. exiting.\n");
-      break;
-    }
+  if (n >= fifo->payload) {
+    fifo->head    = 0;
+    fifo->tail    = 0;
+    fifo->payload = 0;
+    printf("fifo empty. exiting.\n");
+    return;
   }
+  fifo->head = (fifo->head + n) % fifo->size;
+  fifo->payload -= n;
 }
 void rt_fifo_read_and_dequeue(rt_fifo fifo, rt_real *dest, int frame_size,
                               float overlap_factor)
@@ -56,3 +61,6 @@ rt_fifo rt_fifo_destroy(rt_fifo fifo)
   free(fifo);
   return (rt_fifo)NULL;
 }
+
+rt_real *rt_fifo_get_head_ptr(rt_fifo fifo) { return fifo->queue + fifo->head; }
+rt_real *rt_fifo_get_tail_ptr(rt_fifo fifo) { return fifo->queue + fifo->head; }
