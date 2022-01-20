@@ -23,4 +23,11 @@ void     rt_fifo_read_and_dequeue(rt_fifo fifo, rt_real *dest, int frame_size,
 rt_fifo  rt_fifo_destroy(rt_fifo fifo);
 rt_real *rt_fifo_get_head_ptr(rt_fifo fifo);
 rt_real *rt_fifo_get_tail_ptr(rt_fifo fifo);
+
+// ======== MATH UTILS ======== //
+void  hanning(rt_real *data, size_t len);
+void  hamming(rt_real *data, size_t len);
+float get_fbin(int bin, rt_params p);
+void  rt_lerp(rt_params p, rt_real *in, size_t in_size, rt_real *out,
+              size_t out_size);
 #endif

@@ -87,6 +87,8 @@ void rt_transform_test(rt_params p)
   }
 }
 
+void rt_fifo_lerp_read() {}
+
 void rt_cycle(rt_params p)
 {
 
@@ -131,4 +133,14 @@ void rt_lerp(rt_params p, rt_real *in, size_t in_size, rt_real *out,
     j += p->lerp_incr;
   }
   out[out_size - 1] = in[in_size - 1];
+}
+
+void rt_cycle(rt_params p)
+{
+
+  while (p->in->payload >= p->frame_size) {
+    // needs to be adjusted for STFT needing currentframe - 1
+    rt_digest_frame(p);
+    rt_assemble_frame(p);
+  }
 }
