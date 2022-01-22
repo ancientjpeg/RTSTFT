@@ -10,7 +10,7 @@
     - i.e. 2. for and octave up shift, 1.0595 for 1 st etc.
 */
 typedef struct RTSTFT_Params {
-  size_t block_size;
+  size_t block_size, pre_lerp_size, block_pos, lerp_samples_read;
   int    frame_size, num_overlaps, hop_size, resynth_hop_size, num_frames,
       buffer_size;
   char      first_frame;

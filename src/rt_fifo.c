@@ -1,4 +1,4 @@
-#include "rt_fifo.h"
+#include "rtstft.h"
 
 rt_fifo rt_fifo_init(size_t size)
 {
@@ -49,6 +49,25 @@ void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n)
   for (int i = 0; i < n; i++) {
     int index = (fifo->head + i) % fifo->size;
     dest[i]   = fifo->queue[index];
+  }
+}
+
+void rt_fifo_out_read_lerp(rt_params p, rt_real *dest, int n)
+{
+  if (p->out->empty) {
+    printf("Nothing to read.");
+    return;
+  }
+
+  size_t offset = (size_t)p->lerp_pos;
+  for (size_t i = 0; i < n; i++) {
+    size_t  curr  = (p->out->head + i) % p->out->size;
+    size_t  index = (curr + i) % p->out->size;
+    rt_real mod   = p->lerp_pos - floor(p->lerp_pos);
+    dest[i]       = (p->out->queue[index + 1] - p->out->queue[index]) * mod +
+              p->out->queue[index];
+    p->lerp_pos += p->lerp_incr;
+    ++p->block_pos;
   }
 }
 

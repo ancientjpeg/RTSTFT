@@ -26,6 +26,7 @@ rt_params rt_init(size_t block_size, int frame_size, int num_overlaps,
   }
   rt_params p         = malloc(sizeof(rt_params_t));
   p->scale_factor     = 1.0;
+  p->block_pos        = 0;
   p->block_size       = block_size;
   p->frame_size       = frame_size;
   p->num_overlaps     = num_overlaps;
@@ -40,14 +41,12 @@ rt_params rt_init(size_t block_size, int frame_size, int num_overlaps,
                                          p->block->frames[0], FFTW_HC2R, FFTW_ESTIMATE);
   p->in =
       rt_fifo_init(2 * (frame_size > buffer_size ? frame_size : buffer_size));
-  p->out = rt_fifo_init(p->in->size);
-  // - lerp blocksize = frame_size + (num_frames - 1) * resynth_hop_size
-  // - incr = insize / outsize - 1
-  p->lerp_incr =
-      (rt_real)(p->frame_size + (p->num_frames - 1) * p->resynth_hop_size) /
-      p->block_size;
-  p->lerp_pos    = 0.;
-  p->first_frame = 1;
+  p->out           = rt_fifo_init(p->in->size);
+  p->pre_lerp_size = p->frame_size + p->resynth_hop_size * (p->num_frames - 1);
+  p->lerp_incr     = (rt_real)(p->pre_lerp_size - 1) / (p->block_size - 1);
+  p->lerp_pos      = 0.;
+  p->lerp_samples_read = 0.;
+  p->first_frame       = 1;
   return p;
 }
 

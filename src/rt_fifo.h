@@ -19,6 +19,7 @@ rt_fifo            rt_fifo_init(size_t size);
 void               rt_fifo_enqueue(rt_fifo fifo, rt_real *data, int n);
 void rt_fifo_enqueue_staggered(rt_fifo fifo, rt_real *data, int n, int advance);
 void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n);
+void rt_fifo_out_read_lerp(rt_params p, rt_real *dest, int n);
 void rt_fifo_dequeue(rt_fifo fifo, int n);
 void rt_fifo_dequeue_staggered(rt_fifo fifo, rt_real *dest, int n, int advance);
 size_t   rt_fifo_get_payload(rt_fifo fifo);

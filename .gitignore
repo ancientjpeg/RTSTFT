@@ -4,3 +4,4 @@ build
 # files used for testing
 **/*.wav
 out.json
+lerp.py
