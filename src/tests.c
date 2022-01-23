@@ -38,14 +38,15 @@ FILE *closeJSON(FILE *json)
 
 int main()
 {
+
   time_t    t;
-  size_t    block_size  = 1 << 18;
-  int       buffer_size = 1024;
-  rt_params p           = rt_init(block_size, 1024, 4.f, 44100, buffer_size);
-  WAV       wav         = read_from_wav("in.wav", p->block_size);
+  size_t    block_size  = 1 << 20;
+  int       buffer_size = 256;
+  rt_params p           = rt_init(32, 4, buffer_size, 44100.f);
+  WAV       wav         = read_from_wav("in.wav", block_size);
   start_timer(t);
   rt_real temp_null;
-  // for (size_t i = 0; i < p->block_size; i++) {
+  // for (size_t i = 0; i < block_size; i++) {
   //   wav.data[0][i] = sin((float)i / 44100. * 2400) * 1.;
   //   wav.data[1][i] = 0.;
   // }
@@ -55,17 +56,22 @@ int main()
   for (size_t f = 0; f < block_size; f += buffer_size) {
     rt_fifo_enqueue(p->in, wav.data[0] + f, buffer_size);
     rt_cycle(p);
-    size_t payload = rt_fifo_get_payload(p->out);
+    size_t payload = rt_fifo_readable_payload(p->out);
     while (payload >= buffer_size) {
       rt_fifo_dequeue_staggered(p->out, wav.data[1] + out_buffer_pos,
                                 buffer_size, buffer_size);
       out_buffer_pos += buffer_size;
-      payload = rt_fifo_get_payload(p->out);
+      payload  = rt_fifo_readable_payload(p->out);
+      size_t x = 0;
     }
   }
-  printReals(stdout, wav.data[0], 128);
-  printReals(stdout, wav.data[1], 128);
-  for (size_t i = 0; i < p->block_size; i++) {
+  printReals(stdout, wav.data[0], 64);
+  printReals(stdout, wav.data[1], 64);
+  for (size_t i = 0; i < block_size; i++) {
+    // if (wav.data[0][i] != wav.data[1][i]) {
+    //   fprintf(stderr, "Copy error.\n");
+    //   exit(1);
+    // }
     wav.data[0][i] = 0.;
     wav.data[0][i] = wav.data[1][i];
     // wav.data[0][i] *= 1 << 14;

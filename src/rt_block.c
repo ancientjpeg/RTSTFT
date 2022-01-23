@@ -1,19 +1,20 @@
 #include "rtstft.h"
 
-rt_block rt_block_init(rt_params p)
+rt_block rt_block_init(rt_params p, int num_frames)
 {
   rt_block block              = (rt_block)malloc(sizeof(rt_block_t));
   block->next_unread          = 0;
   block->next_unprocessed     = 0;
   block->next_write           = 0;
   block->ready_for_processing = 0;
-  block->frames = (rt_real **)malloc(sizeof(rt_real *) * p->num_frames);
+  block->num_frames           = num_frames;
+  block->frames = (rt_real **)malloc(sizeof(rt_real *) * block->num_frames);
   block->frames[0] =
-      (rt_real *)fftw_alloc_real((size_t)p->frame_size * p->num_frames);
-  for (int i = 1; i < p->num_frames; i++) {
+      (rt_real *)fftw_alloc_real((size_t)p->frame_size * block->num_frames);
+  for (int i = 1; i < block->num_frames; i++) {
     block->frames[i] = block->frames[0] + (p->frame_size * i);
   }
-  block->frame_data = calloc(p->num_frames, sizeof(char));
+  block->frame_data = calloc(block->num_frames, sizeof(char));
 
   return block;
 }

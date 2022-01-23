@@ -6,20 +6,24 @@ WAV read_from_wav(const char *filename, const size_t size)
   wav.data_len = size;
   char dir[100];
   getcwd(dir, 100);
-  FILE *file        = fopen(filename, "rb");
-  wav.data[0]       = (rt_real *)malloc(sizeof(rt_real) * wav.data_len);
-  wav.data[1]       = (rt_real *)malloc(sizeof(rt_real) * wav.data_len);
-  int16_t *dataread = (int16_t *)malloc(sizeof(int16_t) * wav.data_len);
+  size_t raw_data_len = sizeof(int16_t) * wav.data_len * 2;
+  FILE  *file         = fopen(filename, "rb");
+  wav.data[0]         = (rt_real *)malloc(sizeof(rt_real) * wav.data_len);
+  wav.data[1]         = (rt_real *)malloc(sizeof(rt_real) * wav.data_len);
+  int16_t *dataread   = (int16_t *)malloc(raw_data_len * 2);
 
   fread(wav.headers, 1, 44, file);
   int readsize = 4096;
   for (size_t i = 0; i < wav.data_len; i += readsize) {
+    if (i + readsize > raw_data_len) {
+      readsize = (raw_data_len) % i;
+    }
     fread(dataread + i, sizeof(int16_t), readsize, file);
   }
   for (size_t i = 0; i < wav.data_len; i++) {
     wav.data[i % 2][i / 2] = (rt_real)dataread[i];
   }
-  int32_t filesize                 = 44 + wav.data_len;
+  int32_t filesize                 = 44 + (wav.data_len * sizeof(rt_real));
   *((int32_t *)(wav.headers + 4))  = filesize;
   *((int32_t *)(wav.headers + 40)) = wav.data_len;
 
@@ -38,7 +42,6 @@ void write_to_wav(const char *filename, WAV *wav)
     datawrite[i] = (int16_t)wav->data[i % 2][i / 2];
   }
   FILE *file = fopen(filename, "wb");
-  printf("%p\n", file);
   if (!file) {
     return;
   }
