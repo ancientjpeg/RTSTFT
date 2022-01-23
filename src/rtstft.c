@@ -45,7 +45,7 @@ rt_params rt_init(size_t block_size, int frame_size, int num_overlaps,
   p->pre_lerp_size = p->frame_size + p->resynth_hop_size * (p->num_frames - 1);
   p->lerp_incr     = (rt_real)(p->pre_lerp_size - 1) / (p->block_size - 1);
   p->lerp_pos      = 0.;
-  p->lerp_samples_read = 0.;
+  p->lerp_samples_read = 0;
   p->first_frame       = 1;
   return p;
 }

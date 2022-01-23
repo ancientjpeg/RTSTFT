@@ -11,9 +11,8 @@
 typedef struct RT_BLOCK {
   rt_real **frames;
   char     *frame_data;
-  int       next_unread, next_unprocessed, next_write, ready_for_processing,
-      processed;
-  size_t size;
+  int       next_unread, next_unprocessed, next_write, ready_for_processing;
+  size_t    size;
 } rt_block_t;
 
 typedef rt_block_t *rt_block;

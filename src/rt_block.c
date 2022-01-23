@@ -7,7 +7,6 @@ rt_block rt_block_init(rt_params p)
   block->next_unprocessed     = 0;
   block->next_write           = 0;
   block->ready_for_processing = 0;
-  block->processed            = 0;
   block->frames = (rt_real **)malloc(sizeof(rt_real *) * p->num_frames);
   block->frames[0] =
       (rt_real *)fftw_alloc_real((size_t)p->frame_size * p->num_frames);

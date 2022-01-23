@@ -52,23 +52,33 @@ void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n)
   }
 }
 
-void rt_fifo_out_read_lerp(rt_params p, rt_real *dest, int n)
+void rt_fifo_out_read_lerp(rt_params p, rt_real *dest)
 {
   if (p->out->empty) {
     printf("Nothing to read.");
     return;
   }
-
-  size_t offset = (size_t)p->lerp_pos;
-  for (size_t i = 0; i < n; i++) {
-    size_t  curr  = (p->out->head + i) % p->out->size;
-    size_t  index = (curr + i) % p->out->size;
-    rt_real mod   = p->lerp_pos - floor(p->lerp_pos);
-    dest[i]       = (p->out->queue[index + 1] - p->out->queue[index]) * mod +
-              p->out->queue[index];
+  size_t i = 0;
+  if (p->block_pos == 0) {
+    dest[0] = p->out->queue[p->out->head];
+    i       = 1;
+  }
+  else if (p->lerp_pos - 1. > p->lerp_samples_read) {
+  }
+  while (i < p->frame_size) {
+    size_t  block_index   = i + p->block_pos;
+    rt_real this_lerp_pos = p->lerp_pos + p->lerp_incr * i;
+    size_t  lerp_index    = (size_t)(this_lerp_pos);
+    size_t  mod           = this_lerp_pos - floor(this_lerp_pos);
+    dest[block_index] =
+        (p->out->queue[lerp_index + 1] - p->out->queue[lerp_index]) * mod +
+        p->out->queue[lerp_index];
     p->lerp_pos += p->lerp_incr;
     ++p->block_pos;
+    i++;
   }
+  p->lerp_pos += p->frame_size * p->lerp_incr;
+  p->block_pos += p->frame_size;
 }
 
 void rt_fifo_dequeue(rt_fifo fifo, int n)
