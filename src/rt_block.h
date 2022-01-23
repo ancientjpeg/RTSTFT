@@ -5,8 +5,16 @@
 
 #define RT_FRAME_IS_FILLED (1 << 0)
 #define RT_FRAME_IS_TRANSFORMED (1 << 1)
-#define RT_FRAME_IS_PROCESSED (1 << 2)
-#define RT_FRAME_IS_INVERTED (1 << 3)
+#define RT_FRAME_IS_CONVERTED (1 << 2)
+#define RT_FRAME_IS_PROCESSED (1 << 3)
+#define RT_FRAME_IS_INVERTED (1 << 4)
+
+// typedef enum RT_FRAME_STATE {
+//   RT_FRAME_IS_FILLED      = (1 << 0),
+//   RT_FRAME_IS_TRANSFORMED = (1 << 1),
+//   RT_FRAME_IS_PROCESSED   = (1 << 2),
+//   RT_FRAME_IS_INVERTED    = (1 << 3),
+// } rt_frame_state_t;
 
 typedef struct RT_BLOCK {
   rt_real **frames;

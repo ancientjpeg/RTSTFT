@@ -30,6 +30,9 @@ rt_block rt_block_init(rt_params p, int num_frames);
 void     rt_block_insert(rt_params p);
 rt_block rt_block_destroy(rt_block block);
 int      rt_block_relative_frame(int num_frames, int frame, int offset);
+void     rt_block_convert_frame(rt_params p, int frame);
+void     rt_block_process_frame(rt_params p, int frame);
+void     rt_block_revert_frame(rt_params p, int frame);
 
 // ======== MATH UTILS ======== //
 void  rt_hanning(rt_real *data, size_t len);

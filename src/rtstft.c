@@ -5,8 +5,6 @@
     - user init
       - user creates an rt_params_t struct, passes it to be initialized
       - user is responsible for defining frame_size, block_size, num_overlaps
-    -
-  -
 */
 
 rt_params rt_init(int frame_size, int num_overlaps, int buffer_size,
@@ -67,16 +65,16 @@ void rt_digest_frame(rt_params p)
   fftw_execute_r2r(p->plan, p->block->frames[this_frame],
                    p->block->frames[this_frame]);
   p->block->frame_data[this_frame] |= RT_FRAME_IS_TRANSFORMED;
+  rt_block_convert_frame(p, this_frame);
+  p->block->frame_data[this_frame] |= RT_FRAME_IS_CONVERTED;
   p->block->next_write =
       rt_block_relative_frame(p->block->num_frames, this_frame, 1);
 }
-void rt_process_frame(int frame) { return; }
 void rt_process_frames(rt_params p)
 {
   int this_frame = p->block->next_unprocessed;
   if (p->first_frame &&
-      p->block->frame_data[this_frame] & RT_FRAME_IS_TRANSFORMED) {
-    rt_process_frame(this_frame);
+      p->block->frame_data[this_frame] & RT_FRAME_IS_CONVERTED) {
     p->block->frame_data[this_frame] |= RT_FRAME_IS_PROCESSED;
     p->first_frame = 0;
     this_frame = rt_block_relative_frame(p->block->num_frames, this_frame, 1);
@@ -84,12 +82,12 @@ void rt_process_frames(rt_params p)
   }
   int last_frame =
       rt_block_relative_frame(p->block->num_frames, this_frame, -1);
-
   while (p->block->frame_data[last_frame] & RT_FRAME_IS_PROCESSED &&
          p->block->frame_data[this_frame] & RT_FRAME_IS_TRANSFORMED) {
-    rt_process_frame(this_frame);
+    rt_block_process_frame(p, this_frame);
     p->block->frame_data[this_frame] |= RT_FRAME_IS_PROCESSED;
 
+    rt_block_revert_frame(p, last_frame);
     fftw_execute_r2r(p->plan_inv, p->block->frames[last_frame],
                      p->block->frames[last_frame]);
     rt_hanning(p->block->frames[last_frame], p->frame_size);
@@ -109,7 +107,7 @@ void rt_assemble_frame(rt_params p)
   int this_frame = p->block->next_unread;
   while (p->block->frame_data[this_frame] & RT_FRAME_IS_INVERTED) {
     rt_fifo_enqueue_staggered(p->out, p->block->frames[this_frame],
-                              p->frame_size, p->hop_size);
+                              p->frame_size, p->resynth_hop_size);
     p->block->frame_data[this_frame] = 0;
     this_frame = rt_block_relative_frame(p->block->num_frames, this_frame, 1);
   }
