@@ -2,14 +2,16 @@
 #define RT_GLOBALS_H
 
 #include <fftw3.h>
+#include <limits.h>
 #include <math.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 
 #ifdef RT_USING_DOUBLE
 typedef double rt_real;
 #else
-typedef float rt_real;
+typedef float        rt_real;
 #define fftw_plan_r2r_1d fftwf_plan_r2r_1d
 #define fftw_plan fftwf_plan
 #define fftw_execute_r2r fftwf_execute_r2r
@@ -22,5 +24,9 @@ typedef float rt_real;
       - change all fftw_* to fftwf_*
       - at least I hope that's how it works
 */
-
+#if INT_MAX < 2147483647
+typedef unsigned long rt_uint;
+#else
+typedef unsigned int rt_uint;
+#endif
 #endif

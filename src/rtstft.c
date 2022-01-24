@@ -4,40 +4,41 @@
   - General plan
     - user init
       - user creates an rt_params_t struct, passes it to be initialized
-      - user is responsible for defining frame_size, block_size, num_overlaps
+      - user is responsible for defining frame_size, block_size, overlap_factor
 */
 
-rt_params rt_init(int frame_size, int num_overlaps, int buffer_size,
+rt_params rt_init(rt_uint frame_size, int overlap_factor, int buffer_size,
                   float sample_rate)
 {
   if (frame_size * sizeof(float) % 16 != 0) {
     fprintf(stderr, "Frames  must be able to by byte-aligned to 16 bytes.");
     exit(1);
   }
-  else if (!frame_size || num_overlaps <= 0.f) {
+  else if (!frame_size || overlap_factor <= 0.f) {
     fprintf(stderr, "Cannot have frame size or overlap factor be <= zero.");
     exit(1);
   }
-  rt_params p         = malloc(sizeof(rt_params_t));
-  p->scale_factor     = 1.0;
-  p->frame_size       = frame_size;
-  p->num_overlaps     = num_overlaps;
-  p->buffer_size      = buffer_size;
-  p->sample_rate      = sample_rate;
-  p->hop_size         = p->frame_size / p->num_overlaps;
-  p->resynth_hop_size = lround(p->hop_size * p->scale_factor);
-  int num_frames      = buffer_size > frame_size
-                            ? (buffer_size - frame_size) / p->hop_size
-                            : frame_size;
-  p->block            = rt_block_init(
-                 p, 2 * (num_frames > num_overlaps ? num_frames : num_overlaps));
-  p->plan     = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
-                                 p->block->frames[0], FFTW_R2HC, FFTW_ESTIMATE);
-  p->plan_inv = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
-                                 p->block->frames[0], FFTW_HC2R, FFTW_ESTIMATE);
-  p->in =
-      rt_fifo_init(2 * (frame_size > buffer_size ? frame_size : buffer_size));
-  p->out         = rt_fifo_init(p->in->size);
+  rt_params p           = malloc(sizeof(rt_params_t));
+  p->scale_factor       = 1.9;
+  p->frame_size         = frame_size;
+  p->overlap_factor     = overlap_factor;
+  p->buffer_size        = buffer_size;
+  p->sample_rate        = sample_rate;
+  rt_uint max_framesize = 1 << 14;
+  p->latency_block = buffer_size > max_framesize ? buffer_size : max_framesize;
+  p->hop_a         = p->frame_size / p->overlap_factor;
+  p->hop_s         = lround(p->hop_a * p->scale_factor);
+  p->scale_factor_actual = (rt_real)p->hop_s / p->hop_a;
+  rt_uint num_frames =
+      p->overlap_factor +
+      ceil((float)p->buffer_size / p->hop_a); /* THIS COULD BE WRONG */
+  p->block       = rt_block_init(p, num_frames);
+  p->plan        = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
+                                    p->block->frames[0], FFTW_R2HC, FFTW_ESTIMATE);
+  p->plan_inv    = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
+                                    p->block->frames[0], FFTW_HC2R, FFTW_ESTIMATE);
+  p->in          = rt_fifo_init(2 * (num_frames + 1) * p->hop_a);
+  p->out         = rt_fifo_init(2 * (num_frames + 3) * p->hop_s);
   p->first_frame = 1;
   return p;
 }
@@ -58,8 +59,12 @@ void rt_digest_frame(rt_params p)
   int this_frame = p->block->next_write;
   int last_frame =
       rt_block_relative_frame(p->block->num_frames, this_frame, -1);
+  if (p->block->frame_data[this_frame] & RT_FRAME_IS_FILLED) {
+    fprintf(stderr, "tried to write an occupied frame.\n");
+    exit(1);
+  }
   rt_fifo_dequeue_staggered(p->in, p->block->frames[this_frame], p->frame_size,
-                            p->hop_size);
+                            p->hop_a);
   p->block->frame_data[this_frame] |= RT_FRAME_IS_FILLED;
   rt_hanning(p->block->frames[this_frame], p->frame_size);
   fftw_execute_r2r(p->plan, p->block->frames[this_frame],
@@ -91,8 +96,9 @@ void rt_process_frames(rt_params p)
     fftw_execute_r2r(p->plan_inv, p->block->frames[last_frame],
                      p->block->frames[last_frame]);
     rt_hanning(p->block->frames[last_frame], p->frame_size);
-    for (int i = 0; i < p->frame_size; i++) {
-      p->block->frames[last_frame][i] /= p->frame_size; // normalization
+    rt_uint i;
+    for (i = 0; i < p->frame_size; i++) {
+      p->block->frames[last_frame][i] /= p->frame_size; /* normalization */
     }
     p->block->frame_data[last_frame] |= RT_FRAME_IS_INVERTED;
 
@@ -107,36 +113,66 @@ void rt_assemble_frame(rt_params p)
   int this_frame = p->block->next_unread;
   while (p->block->frame_data[this_frame] & RT_FRAME_IS_INVERTED) {
     rt_fifo_enqueue_staggered(p->out, p->block->frames[this_frame],
-                              p->frame_size, p->resynth_hop_size);
+                              p->frame_size, p->hop_s);
     p->block->frame_data[this_frame] = 0;
     this_frame = rt_block_relative_frame(p->block->num_frames, this_frame, 1);
   }
   p->block->next_unread = this_frame;
 }
 
-void pr(FILE *stream, rt_real *arr, size_t len)
+void rt_lerp_read_out(rt_params p, rt_real *buffer, rt_uint buffer_len,
+                      rt_uint ret_size_int)
 {
-  fprintf(stream, "[ \n");
-  for (size_t i = 0; i < len; i++) {
-    if (i % 16 == 15) {
-      fprintf(stream, "    ");
-    }
-    fprintf(stream, "%.1f, ", arr[i]);
-    if (i % 16 == 15 && i != len - 1) {
-      fprintf(stream, "\n");
-    }
+  /*  p->hop_pos % hop_s will ALWAYS equal
+      floor(hop_s / hop_a) * (lifetime buffer sample count)) % hop_s
+      with the help of p->mod_track   */
+  rt_real local_incr = (rt_real)(ret_size_int - 1) / (buffer_len - 1);
+  rt_uint i, index, pos;
+  for (i = 0; i < buffer_len - 1; i++) {
+    pos       = (rt_uint)i * local_incr;
+    index     = rt_fifo_new_pos(p->out, p->out->head, pos);
+    buffer[i] = p->out->queue[index];
   }
-  fprintf(stream, "\n],\n");
+  buffer[buffer_len - 1] = p->out->queue[ret_size_int - 1];
+  rt_fifo_dequeue(p->out, ret_size_int);
+  p->hop_pos = (p->hop_pos + ret_size_int) % p->hop_s;
 }
-void rt_cycle(rt_params p)
+
+void rt_cycle(rt_params p, rt_real *buffer, rt_uint buffer_len)
 {
-  // TODO assemble frame through out fifo back to wav
-  // latency ??
-  // manage control rates between the buffers
+  rt_fifo_enqueue(p->in, buffer, buffer_len);
+
+  rt_real retrieval_size = (p->hop_s / p->hop_a) * buffer_len;
   while (rt_fifo_readable_payload(p->in) >= p->frame_size) {
-    // needs to be adjusted for STFT needing currentframe - 1
     rt_digest_frame(p);
+    if (p->first_frame && rt_fifo_readable_payload(p->in) >= p->frame_size) {
+      rt_digest_frame(p);
+    }
     rt_process_frames(p);
     rt_assemble_frame(p);
+
+    if (p->latency_block > 0) {
+      if (p->latency_block > buffer_len) {
+        memset(buffer, 0, buffer_len * sizeof(rt_real));
+      }
+      else {
+        memset(buffer, 0, p->latency_block * sizeof(rt_real));
+        buffer += p->latency_block;
+        buffer_len -= p->latency_block;
+        p->latency_block = 0;
+      }
+    }
+    else if (rt_fifo_readable_payload(p->out) > retrieval_size) {
+      rt_uint ret_size_int = (rt_uint)retrieval_size;
+      p->mod_track += retrieval_size - ret_size_int;
+      if (p->mod_track >= 1.) {
+        ++ret_size_int;
+        p->mod_track -= 1.;
+      }
+      rt_lerp_read_out(p, buffer, buffer_len, ret_size_int);
+    }
   }
+
+  /*  out FIFO's readable payload must be at least 1 greater than buffer_len,
+      in case mod_track increments during the read. */
 }

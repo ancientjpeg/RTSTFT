@@ -7,10 +7,11 @@
   printf("\ntime taken: %.5fms\n",                                             \
          ((double)(clock() - t) / CLOCKS_PER_SEC) * 1000.)
 
-void printReals(FILE *stream, rt_real *arr, size_t len)
+void printReals(FILE *stream, rt_real *arr, rt_uint len)
 {
   fprintf(stream, "[ \n");
-  for (size_t i = 0; i < len; i++) {
+  rt_uint i;
+  for (i = 0; i < len; i++) {
     if (i % 16 == 15) {
       fprintf(stream, "    ");
     }
@@ -38,52 +39,43 @@ FILE *closeJSON(FILE *json)
 
 int main()
 {
-
   time_t    t;
-  size_t    block_size  = 1 << 20;
-  int       buffer_size = 1 << 8;
-  int       frame_size  = 64;
+  rt_uint   block_size  = 1 << 22;
+  int       buffer_size = 1 << 14;
+  int       frame_size  = 256;
   rt_params p[2];
-  p[0]    = rt_init(frame_size, 4, buffer_size, 44100.f);
-  p[1]    = rt_init(frame_size, 4, buffer_size, 44100.f);
-  WAV wav = read_from_wav("in.wav", block_size);
-  start_timer(t);
+  p[0]        = rt_init(frame_size, 4, buffer_size, 44100.f);
+  p[1]        = rt_init(frame_size, 4, buffer_size, 44100.f);
+  WAV     wav = read_from_wav("in.wav", block_size);
   rt_real temp_null;
-  // for (size_t i = 0; i < block_size; i++) {
+  rt_uint i, f;
+  // for ( i = 0; i < block_size; i++) {
   //   wav.data[0][i] = sin((float)i / 44100. * 1000) * 5000.;
-  //   // wav.data[1][i] = -1.;
+  //   wav.data[1][i] = -1.;
   //   wav.data[1][i] = sin((float)i / 44100. * 1000) * 5000.;
   // }
   printReals(stdout, wav.data[0], 64);
   printReals(stdout, wav.data[1], 64);
-  for (int i = 0; i < 2; i++) {
-    int out_buffer_pos = 0;
-    for (size_t f = 0; f < block_size; f += buffer_size) {
-      rt_fifo_enqueue((p[i])->in, wav.data[i] + f, buffer_size);
-      rt_cycle(p[i]);
-      size_t payload = rt_fifo_readable_payload((p[i])->out);
-      while (payload >= buffer_size) {
-        rt_fifo_dequeue_staggered((p[i])->out, wav.data[i] + out_buffer_pos,
-                                  buffer_size, buffer_size);
-        out_buffer_pos += buffer_size;
-        payload  = rt_fifo_readable_payload((p[i])->out);
-        size_t x = 0;
-      }
+  start_timer(t);
+  for (i = 0; i < 2; i++) {
+    for (f = 0; f < block_size; f += buffer_size) {
+      rt_cycle(p[i], wav.data[i] + f, buffer_size);
     }
   }
-  printReals(stdout, wav.data[0], 64);
-  printReals(stdout, wav.data[1], 64);
-  // for (size_t i = 0; i < block_size; i++) {
-  //   // if (wav.data[0][i] != wav.data[1][i]) {
-  //   //   fprintf(stderr, "Copy error.\n");
-  //   //   exit(1);
-  //   // }
-  //   wav.data[0][i] = 0.;
-  //   // wav.data[0][i] = wav.data[1][i];
-  //   // wav.data[0][i] *= 1 << 14;
-  //   // wav.data[1][i] *= 1 << 14;
-  // }
   stop_timer(t);
+  printReals(stdout, wav.data[0] + frame_size * 4, 64 * 2);
+  printReals(stdout, wav.data[1] + frame_size * 4, 64 * 2);
+
+  for (i = 0; i < block_size; i++) {
+    // if (wav.data[0][i] != wav.data[1][i]) {
+    //   fprintf(stderr, "Copy error.\n");
+    //   exit(1);
+    // }
+    // wav.data[0][i] = 0.;
+    // wav.data[0][i] = wav.data[1][i];
+    // wav.data[0][i] *= 1 << 14;
+    // wav.data[1][i] *= 1 << 14;
+  }
   write_to_wav("out.wav", &wav);
   // rt_clean(p);
   return 0;

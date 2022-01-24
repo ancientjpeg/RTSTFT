@@ -22,7 +22,7 @@ release: $(OBJ) | $(BUILD)
 $(BUILD):
 	-@mkdir -p $(BUILD)
 %.o: %.c
-	$(CC) $(CFLAGS) $(OFLAGS) -c -g -o $@ $<
+	$(CC) -ansi $(CFLAGS) $(OFLAGS) -c -g -o $@ $<
 clean:
 	-@rm $(OBJ) 2>/dev/null || true
 deepclean: clean
