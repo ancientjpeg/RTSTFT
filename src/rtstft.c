@@ -7,6 +7,9 @@
       - user is responsible for defining frame_size, block_size, overlap_factor
 */
 
+#define rt_max(a, b) ((a) > (b) ? (a) : (b))
+#define rt_min(a, b) ((a) < (b) ? (a) : (b))
+
 rt_params rt_init(rt_uint frame_size, int overlap_factor, int buffer_size,
                   float sample_rate)
 {
@@ -18,20 +21,20 @@ rt_params rt_init(rt_uint frame_size, int overlap_factor, int buffer_size,
     fprintf(stderr, "Cannot have frame size or overlap factor be <= zero.");
     exit(1);
   }
-  rt_params p           = malloc(sizeof(rt_params_t));
-  p->scale_factor       = 1.9;
-  p->frame_size         = frame_size;
-  p->overlap_factor     = overlap_factor;
-  p->buffer_size        = buffer_size;
-  p->sample_rate        = sample_rate;
-  rt_uint max_framesize = 1 << 14;
-  p->latency_block = buffer_size > max_framesize ? buffer_size : max_framesize;
-  p->hop_a         = p->frame_size / p->overlap_factor;
-  p->hop_s         = lround(p->hop_a * p->scale_factor);
+  rt_params p            = malloc(sizeof(rt_params_t));
+  p->scale_factor        = 1.9;
+  p->frame_size          = frame_size;
+  p->overlap_factor      = overlap_factor;
+  p->buffer_size         = buffer_size;
+  p->sample_rate         = sample_rate;
+  rt_uint max_framesize  = 1 << 14;
+  p->latency_block       = rt_max(2 * buffer_size, max_framesize);
+  p->hop_a               = p->frame_size / p->overlap_factor;
+  p->hop_s               = lround(p->hop_a * p->scale_factor);
   p->scale_factor_actual = (rt_real)p->hop_s / p->hop_a;
-  rt_uint num_frames =
-      p->overlap_factor +
-      ceil((float)p->buffer_size / p->hop_a); /* THIS COULD BE WRONG */
+  rt_uint num_frames     = p->overlap_factor +
+                       ceil((float)(rt_max(p->buffer_size, p->latency_block) /
+                                    p->hop_a)); /* THIS COULD BE WRONG */
   p->block       = rt_block_init(p, num_frames);
   p->plan        = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
                                     p->block->frames[0], FFTW_R2HC, FFTW_ESTIMATE);
@@ -141,8 +144,6 @@ void rt_lerp_read_out(rt_params p, rt_real *buffer, rt_uint buffer_len,
 void rt_cycle(rt_params p, rt_real *buffer, rt_uint buffer_len)
 {
   rt_fifo_enqueue(p->in, buffer, buffer_len);
-
-  rt_real retrieval_size = (p->hop_s / p->hop_a) * buffer_len;
   while (rt_fifo_readable_payload(p->in) >= p->frame_size) {
     rt_digest_frame(p);
     if (p->first_frame && rt_fifo_readable_payload(p->in) >= p->frame_size) {
@@ -151,7 +152,7 @@ void rt_cycle(rt_params p, rt_real *buffer, rt_uint buffer_len)
     rt_process_frames(p);
     rt_assemble_frame(p);
 
-    if (p->latency_block > 0) {
+    while (p->latency_block > 0 && buffer_len > 0) {
       if (p->latency_block > buffer_len) {
         memset(buffer, 0, buffer_len * sizeof(rt_real));
       }
@@ -159,17 +160,31 @@ void rt_cycle(rt_params p, rt_real *buffer, rt_uint buffer_len)
         memset(buffer, 0, p->latency_block * sizeof(rt_real));
         buffer += p->latency_block;
         buffer_len -= p->latency_block;
-        p->latency_block = 0;
       }
+      p->latency_block = 0;
     }
-    else if (rt_fifo_readable_payload(p->out) > retrieval_size) {
+    rt_uint current_payload;
+    while ((current_payload = rt_fifo_readable_payload(p->out)) > p->hop_s &&
+           buffer_len > 0) {
+      rt_real retrieval_size = p->scale_factor_actual * buffer_len;
+      rt_uint temp           = buffer_len;
+      if (retrieval_size >= current_payload) {
+        retrieval_size = current_payload - 1;
+        temp           = floor(retrieval_size / p->scale_factor_actual);
+      }
       rt_uint ret_size_int = (rt_uint)retrieval_size;
       p->mod_track += retrieval_size - ret_size_int;
       if (p->mod_track >= 1.) {
         ++ret_size_int;
         p->mod_track -= 1.;
       }
-      rt_lerp_read_out(p, buffer, buffer_len, ret_size_int);
+      rt_lerp_read_out(p, buffer, temp, ret_size_int);
+      buffer += temp;
+      buffer_len -= temp;
+    }
+    if (buffer_len > 0) {
+      fprintf(stderr, "Critical error: buffer was not filled after cycle.\n");
+      exit(1);
     }
   }
 
