@@ -13,6 +13,7 @@ endif
 
 .PHONY: all release debug clean deepclean run test
 all: release clean
+release: OFLAGS = -Odebug
 debug: $(OBJ) | $(BUILD)
 	$(LD) $(LDLIBS) $(OBJ) -o $(EXE)
 	dsymutil $(EXE)

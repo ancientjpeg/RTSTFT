@@ -10,8 +10,8 @@
     - i.e. 2. for and octave up shift, 1.0595 for 1 st etc.
 */
 typedef struct RTSTFT_Params {
-  rt_uint frame_size, overlap_factor, hop_a, hop_s, num_frames, buffer_size,
-      hop_pos, latency_block;
+  rt_uint frame_size, overlap_factor, hop_a, hop_s, buffer_size, hop_pos,
+      latency_block;
   char      first_frame;
   rt_real   scale_factor, scale_factor_actual, sample_rate, mod_track;
   fftw_plan plan, plan_inv;
@@ -20,10 +20,10 @@ typedef struct RTSTFT_Params {
 } rt_params_t;
 typedef rt_params_t *rt_params;
 
-rt_params rt_init(rt_uint frame_size, int overlap_factor, int buffer_size,
-                  float sample_rate);
-void      rt_cycle(rt_params p, rt_real *buffer, rt_uint buffer_len);
-rt_params rt_clean(rt_params p);
+rt_params            rt_init(rt_uint frame_size, rt_uint overlap_factor,
+                             rt_uint buffer_size, float sample_rate);
+void                 rt_cycle(rt_params p, rt_real *buffer, rt_uint buffer_len);
+rt_params            rt_clean(rt_params p);
 
 /* ========  RT_BLOCK  ======== */
 rt_block rt_block_init(rt_params p, rt_uint num_frames);

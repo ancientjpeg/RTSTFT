@@ -10,7 +10,7 @@
 #define RT_FRAME_IS_INVERTED (1 << 4)
 
 typedef struct RT_BLOCK {
-  rt_real **frames;
+  rt_real **frames, *orig_freqs;
   char     *frame_data;
   rt_uint   next_unread, next_unprocessed, next_write, ready_for_processing,
       num_frames, size;

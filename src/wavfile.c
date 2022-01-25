@@ -3,15 +3,13 @@
 WAV read_from_wav(const char *filename, const rt_uint size)
 {
   WAV wav;
-  wav.data_len = size;
-  char dir[100];
-  getcwd(dir, 100);
+  wav.data_len         = size;
   rt_uint raw_data_len = sizeof(int16_t) * wav.data_len * 2;
-  FILE   *file         = fopen(filename, "rb");
   wav.data[0]          = (rt_real *)malloc(sizeof(rt_real) * wav.data_len);
   wav.data[1]          = (rt_real *)malloc(sizeof(rt_real) * wav.data_len);
   int16_t *dataread    = (int16_t *)malloc(raw_data_len * 2);
 
+  FILE    *file        = fopen(filename, "rb");
   fread(wav.headers, 1, 44, file);
   int     readsize = 4096;
   rt_uint i;
