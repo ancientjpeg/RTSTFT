@@ -40,12 +40,13 @@ FILE *closeJSON(FILE *json)
 int main()
 {
   time_t    t;
-  rt_uint   block_size  = 1 << 18;
-  rt_uint   buffer_size = 1 << 13;
-  rt_uint   frame_size  = 1 << 10;
+  rt_uint   block_size   = 1 << 22;
+  rt_uint   buffer_size  = 1 << 10;
+  rt_uint   frame_size   = 1 << 16;
+  float     scale_factor = .759;
   rt_params p[2];
-  p[0]        = rt_init(frame_size, 4, buffer_size, 44100.f);
-  p[1]        = rt_init(frame_size, 4, buffer_size, 44100.f);
+  p[0]        = rt_init(frame_size, 4, buffer_size, 44100.f, scale_factor);
+  p[1]        = rt_init(frame_size, 4, buffer_size, 44100.f, scale_factor);
   WAV     wav = read_from_wav("in.wav", block_size);
   rt_real temp_null;
   rt_uint i, f;

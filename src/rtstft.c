@@ -11,7 +11,7 @@
 #define rt_min(a, b) ((a) < (b) ? (a) : (b))
 
 rt_params rt_init(rt_uint frame_size, rt_uint overlap_factor,
-                  rt_uint buffer_size, float sample_rate)
+                  rt_uint buffer_size, float sample_rate, float scale_factor)
 {
   if (frame_size * sizeof(float) % 16 != 0) {
     fprintf(stderr, "Frames  must be able to by byte-aligned to 16 bytes.");
@@ -22,7 +22,7 @@ rt_params rt_init(rt_uint frame_size, rt_uint overlap_factor,
     exit(1);
   }
   rt_params p        = malloc(sizeof(rt_params_t));
-  p->scale_factor    = 1.3;
+  p->scale_factor    = scale_factor;
   p->frame_size      = frame_size;
   p->overlap_factor  = overlap_factor;
   p->buffer_size     = buffer_size;
@@ -39,10 +39,11 @@ rt_params rt_init(rt_uint frame_size, rt_uint overlap_factor,
                        p->framebuf->frames[0], FFTW_HC2R, FFTW_ESTIMATE);
   rt_uint lerp_frame = p->overlap_factor * p->hop_s * 2;
   p->in              = rt_fifo_init(rt_max(p->buffer_size, p->frame_size * 2));
-  p->pre_lerp        = rt_fifo_init(rt_max(
-             ceil(p->buffer_size * p->scale_factor) + lerp_frame, lerp_frame * 2));
-  p->out             = rt_fifo_init(rt_max(p->buffer_size, p->frame_size * 2));
-  p->first_frame     = 1;
+  p->pre_lerp    = rt_fifo_init(rt_max(ceil(p->buffer_size * p->scale_factor) +
+                                           lerp_frame * p->overlap_factor,
+                                       lerp_frame * 2));
+  p->out         = rt_fifo_init(rt_max(p->buffer_size, p->frame_size * 2));
+  p->first_frame = 1;
   return p;
 }
 

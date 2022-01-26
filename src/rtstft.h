@@ -20,7 +20,7 @@ typedef struct RTSTFT_Params {
 typedef rt_params_t *rt_params;
 
 rt_params            rt_init(rt_uint frame_size, rt_uint overlap_factor,
-                             rt_uint buffer_size, float sample_rate);
+                             rt_uint buffer_size, float sample_rate, float scale_factor);
 void                 rt_cycle(rt_params p, rt_real *buffer, rt_uint buffer_len);
 rt_params            rt_clean(rt_params p);
 

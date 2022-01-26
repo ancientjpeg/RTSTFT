@@ -27,7 +27,7 @@ void rt_fifo_enqueue_staggered(rt_fifo fifo, rt_real *data, int n, int advance)
     advance = advance > n ? n : advance;
     if (new_payload > fifo->len) {
       fprintf(stderr, "attempted to overfill FIFO. %i\n", n);
-      // exit(1);
+      exit(1);
     }
   }
   fifo->empty         = 0;
@@ -41,10 +41,6 @@ void rt_fifo_enqueue_staggered(rt_fifo fifo, rt_real *data, int n, int advance)
       passed_tail = 1;
     }
     fifo->write_pos = rt_fifo_new_pos(fifo, fifo->write_pos, 1);
-    if (rt_fifo_payload(fifo) == 0) { /* MARK FOR DELETION */
-      fprintf(stderr, "unexpected error.\n");
-      exit(1);
-    }
   }
   fifo->tail = passed_tail ? fifo->write_pos : fifo->tail;
   if (n != advance) {
