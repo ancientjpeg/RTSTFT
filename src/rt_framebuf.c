@@ -1,8 +1,8 @@
 #include "rtstft.h"
 
-rt_block rt_block_init(rt_params p, rt_uint num_frames)
+rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
 {
-  rt_block block              = (rt_block)malloc(sizeof(rt_block_t));
+  rt_framebuf block           = (rt_framebuf)malloc(sizeof(rt_framebuf_t));
   block->next_unread          = 0;
   block->next_unprocessed     = 0;
   block->next_write           = 0;
@@ -17,8 +17,8 @@ rt_block rt_block_init(rt_params p, rt_uint num_frames)
     when it's placed in between the other mallocs and callocs. This error
     doesn't appear when only using one rt_params instance, and doesn't appear
     when fftw_alloc_real is placed at the end of this chain of allocs inside
-    rt_block_init. My suspicion is that the compiler decided to run two
-    instances of rt_init somewhat "simultaneously", so that the rt_block_init
+    rt_framebuf_init. My suspicion is that the compiler decided to run two
+    instances of rt_init somewhat "simultaneously", so that the rt_framebuf_init
     for channels 1 and 2 are run VERY close to each other. this may mess up
     something about how malloc keep track of memory, because the fftw malloc
     enforces alignment so strictly and possibly leaves extra memory at the edges
@@ -35,15 +35,15 @@ rt_block rt_block_init(rt_params p, rt_uint num_frames)
   }
   return block;
 }
-rt_block rt_block_destroy(rt_block block)
+rt_framebuf rt_framebuf_destroy(rt_framebuf block)
 {
   fftw_free(block->frames[0]);
   free(block->frames);
   free(block);
-  return (rt_block)NULL;
+  return (rt_framebuf)NULL;
 }
 
-void rt_block_convert_frame(rt_params p, rt_uint frame)
+void rt_framebuf_convert_frame(rt_params p, rt_uint frame)
 {
   if (!(p->block->frame_data[frame] & RT_FRAME_IS_TRANSFORMED)) {
     fprintf(stderr, "Can't get amps and phases for a non-transformed frame!\n");
@@ -60,12 +60,13 @@ void rt_block_convert_frame(rt_params p, rt_uint frame)
 }
 
 #define wrap(a) (fmod(((a) + M_PI), M_PI * 2.) - M_PI)
-void rt_block_process_frame(rt_params p, rt_uint frame)
+void rt_framebuf_process_frame(rt_params p, rt_uint frame)
 {
   rt_real t_delta_samp = 1. / p->sample_rate;
   rt_real hop_delta    = p->hop_a * t_delta_samp;
   rt_real hop_s_delta  = p->hop_s * t_delta_samp;
-  rt_uint last_frame = rt_block_relative_frame(p->block->num_frames, frame, -1);
+  rt_uint last_frame =
+      rt_framebuf_relative_frame(p->block->num_frames, frame, -1);
   rt_uint i;
   for (i = 1; i < p->frame_size / 2 - 1; i++) {
     rt_uint  phase_pos       = p->frame_size - i;
@@ -77,9 +78,10 @@ void rt_block_process_frame(rt_params p, rt_uint frame)
   }
 }
 
-void rt_block_revert_frame(rt_params p, rt_uint frame)
+void rt_framebuf_revert_frame(rt_params p, rt_uint frame)
 {
-  rt_uint next_frame = rt_block_relative_frame(p->block->num_frames, frame, 1);
+  rt_uint next_frame =
+      rt_framebuf_relative_frame(p->block->num_frames, frame, 1);
   if (!(p->block->frame_data[next_frame] & RT_FRAME_IS_PROCESSED)) {
     fprintf(stderr,
             "Can't revert frame before the next frame has been processed!\n");
@@ -96,7 +98,8 @@ void rt_block_revert_frame(rt_params p, rt_uint frame)
   }
 }
 
-rt_uint rt_block_relative_frame(rt_uint num_frames, rt_uint frame, int offset)
+rt_uint rt_framebuf_relative_frame(rt_uint num_frames, rt_uint frame,
+                                   int offset)
 {
   rt_uint offset_abs = abs(offset);
   if (offset_abs > num_frames - 1) {

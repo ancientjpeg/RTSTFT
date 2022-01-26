@@ -1,5 +1,5 @@
-#ifndef RT_BLOCK_H
-#define RT_BLOCK_H
+#ifndef rt_framebuf_H
+#define rt_framebuf_H
 
 #include "rt_globals.h"
 
@@ -9,13 +9,13 @@
 #define RT_FRAME_IS_PROCESSED (1 << 3)
 #define RT_FRAME_IS_INVERTED (1 << 4)
 
-typedef struct RT_BLOCK {
+typedef struct rt_framebuf {
   rt_real **frames, *orig_freqs;
   char     *frame_data;
   rt_uint   next_unread, next_unprocessed, next_write, ready_for_processing,
       num_frames, size;
-} rt_block_t;
+} rt_framebuf_t;
 
-typedef rt_block_t *rt_block;
+typedef rt_framebuf_t *rt_framebuf;
 
 #endif

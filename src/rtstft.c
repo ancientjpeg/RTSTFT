@@ -35,7 +35,7 @@ rt_params rt_init(rt_uint frame_size, rt_uint overlap_factor,
   p->mod_track           = 0;
   p->scale_factor_actual = (rt_real)p->hop_s / p->hop_a;
   rt_uint num_frames     = p->overlap_factor + 2; /* THIS COULD BE WRONG */
-  p->block               = rt_block_init(p, num_frames);
+  p->block               = rt_framebuf_init(p, num_frames);
   p->plan                = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
                                             p->block->frames[0], FFTW_R2HC, FFTW_ESTIMATE);
   p->plan_inv            = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
@@ -48,7 +48,7 @@ rt_params rt_init(rt_uint frame_size, rt_uint overlap_factor,
 
 rt_params rt_clean(rt_params p)
 {
-  p->block = rt_block_destroy(p->block);
+  p->block = rt_framebuf_destroy(p->block);
   p->in    = rt_fifo_destroy(p->in);
   p->out   = rt_fifo_destroy(p->out);
   fftw_destroy_plan(p->plan);
@@ -61,7 +61,7 @@ void rt_digest_frame(rt_params p)
 {
   int this_frame = p->block->next_write;
   int last_frame =
-      rt_block_relative_frame(p->block->num_frames, this_frame, -1);
+      rt_framebuf_relative_frame(p->block->num_frames, this_frame, -1);
   if (p->block->frame_data[this_frame] & RT_FRAME_IS_FILLED) {
     fprintf(stderr, "tried to write an occupied frame.\n");
     exit(1);
@@ -73,10 +73,10 @@ void rt_digest_frame(rt_params p)
   fftw_execute_r2r(p->plan, p->block->frames[this_frame],
                    p->block->frames[this_frame]);
   p->block->frame_data[this_frame] |= RT_FRAME_IS_TRANSFORMED;
-  rt_block_convert_frame(p, this_frame);
+  rt_framebuf_convert_frame(p, this_frame);
   p->block->frame_data[this_frame] |= RT_FRAME_IS_CONVERTED;
   p->block->next_write =
-      rt_block_relative_frame(p->block->num_frames, this_frame, 1);
+      rt_framebuf_relative_frame(p->block->num_frames, this_frame, 1);
 }
 void rt_process_frames(rt_params p)
 {
@@ -85,17 +85,18 @@ void rt_process_frames(rt_params p)
       p->block->frame_data[this_frame] & RT_FRAME_IS_CONVERTED) {
     p->block->frame_data[this_frame] |= RT_FRAME_IS_PROCESSED;
     p->first_frame = 0;
-    this_frame = rt_block_relative_frame(p->block->num_frames, this_frame, 1);
+    this_frame =
+        rt_framebuf_relative_frame(p->block->num_frames, this_frame, 1);
     p->block->next_unprocessed = this_frame;
   }
   int last_frame =
-      rt_block_relative_frame(p->block->num_frames, this_frame, -1);
+      rt_framebuf_relative_frame(p->block->num_frames, this_frame, -1);
   while (p->block->frame_data[last_frame] & RT_FRAME_IS_PROCESSED &&
          p->block->frame_data[this_frame] & RT_FRAME_IS_TRANSFORMED) {
-    rt_block_process_frame(p, this_frame);
+    rt_framebuf_process_frame(p, this_frame);
     p->block->frame_data[this_frame] |= RT_FRAME_IS_PROCESSED;
 
-    rt_block_revert_frame(p, last_frame);
+    rt_framebuf_revert_frame(p, last_frame);
     fftw_execute_r2r(p->plan_inv, p->block->frames[last_frame],
                      p->block->frames[last_frame]);
     rt_hanning(p->block->frames[last_frame], p->frame_size);
@@ -106,7 +107,8 @@ void rt_process_frames(rt_params p)
     p->block->frame_data[last_frame] |= RT_FRAME_IS_INVERTED;
 
     last_frame = this_frame;
-    this_frame = rt_block_relative_frame(p->block->num_frames, this_frame, 1);
+    this_frame =
+        rt_framebuf_relative_frame(p->block->num_frames, this_frame, 1);
   }
   p->block->next_unprocessed = this_frame;
 }
@@ -118,7 +120,8 @@ void rt_assemble_frame(rt_params p)
     rt_fifo_enqueue_staggered(p->out, p->block->frames[this_frame],
                               p->frame_size, p->hop_s);
     p->block->frame_data[this_frame] = 0;
-    this_frame = rt_block_relative_frame(p->block->num_frames, this_frame, 1);
+    this_frame =
+        rt_framebuf_relative_frame(p->block->num_frames, this_frame, 1);
   }
   p->block->next_unread = this_frame;
 }
