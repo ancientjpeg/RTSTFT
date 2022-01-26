@@ -12,7 +12,7 @@ LDLIBS += -lfftw3f
 endif
 
 .PHONY: all release debug clean deepclean run test
-all: release clean
+all: release
 release: OFLAGS = -Odebug
 debug: $(OBJ) | $(BUILD)
 	$(LD) $(LDLIBS) $(OBJ) -o $(EXE)
@@ -23,7 +23,7 @@ release: $(OBJ) | $(BUILD)
 $(BUILD):
 	-@mkdir -p $(BUILD)
 %.o: %.c
-	$(CC) -ansi $(CFLAGS) $(OFLAGS) -c -g -o $@ $<
+	$(CC) -ansi $(CFLAGS)$(OFLAGS) -c -g -o $@ $<
 clean:
 	-@rm $(OBJ) 2>/dev/null || true
 deepclean: clean

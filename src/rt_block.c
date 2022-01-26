@@ -8,10 +8,24 @@ rt_block rt_block_init(rt_params p, rt_uint num_frames)
   block->next_write           = 0;
   block->ready_for_processing = 0;
   block->num_frames           = num_frames;
+  block->frame_data           = calloc(block->num_frames, sizeof(char));
+  block->orig_freqs =
+      (rt_real *)malloc(sizeof(rt_real) * (p->frame_size / 2 + 1));
   block->frames = (rt_real **)malloc(sizeof(rt_real *) * block->num_frames);
+  /*
+    Please note here: for some reason, fftw_alloc real seems to be a little iffy
+    when it's placed in between the other mallocs and callocs. This error
+    doesn't appear when only using one rt_params instance, and doesn't appear
+    when fftw_alloc_real is placed at the end of this chain of allocs inside
+    rt_block_init. My suspicion is that the compiler decided to run two
+    instances of rt_init somewhat "simultaneously", so that the rt_block_init
+    for channels 1 and 2 are run VERY close to each other. this may mess up
+    something about how malloc keep track of memory, because the fftw malloc
+    enforces alignment so strictly and possibly leaves extra memory at the edges
+    of its allocation? Or I just don't understand at all how malloc works.
+  */
   block->frames[0] =
       (rt_real *)fftw_alloc_real(p->frame_size * block->num_frames);
-  block->orig_freqs = (rt_real *)malloc(sizeof(rt_real) * (p->frame_size / 2));
   rt_uint i;
   for (i = 1; i < block->num_frames; i++) {
     block->frames[i] = block->frames[0] + (p->frame_size * i);
@@ -19,7 +33,6 @@ rt_block rt_block_init(rt_params p, rt_uint num_frames)
   for (i = 1; i <= p->frame_size / 2; i++) {
     block->orig_freqs[i] = (rt_real)i * p->sample_rate / p->frame_size;
   }
-  block->frame_data = calloc(block->num_frames, sizeof(char));
   return block;
 }
 rt_block rt_block_destroy(rt_block block)

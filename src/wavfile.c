@@ -10,6 +10,9 @@ WAV read_from_wav(const char *filename, const rt_uint size)
   int16_t *dataread    = (int16_t *)malloc(raw_data_len * 2);
 
   FILE    *file        = fopen(filename, "rb");
+  if (file == NULL) {
+    exit(15);
+  }
   fread(wav.headers, 1, 44, file);
   int     readsize = 4096;
   rt_uint i;

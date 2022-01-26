@@ -31,18 +31,18 @@ rt_params rt_init(rt_uint frame_size, rt_uint overlap_factor,
   p->latency_block       = rt_max(2 * buffer_size, max_framesize);
   p->hop_a               = p->frame_size / p->overlap_factor;
   p->hop_s               = lround(p->hop_a * p->scale_factor);
+  p->hop_pos             = 0;
+  p->mod_track           = 0;
   p->scale_factor_actual = (rt_real)p->hop_s / p->hop_a;
-  rt_uint num_frames     = p->overlap_factor +
-                       ceil((float)(rt_max(p->buffer_size, p->latency_block) /
-                                    p->hop_a)); /* THIS COULD BE WRONG */
-  p->block       = rt_block_init(p, num_frames);
-  p->plan        = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
-                                    p->block->frames[0], FFTW_R2HC, FFTW_ESTIMATE);
-  p->plan_inv    = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
-                                    p->block->frames[0], FFTW_HC2R, FFTW_ESTIMATE);
-  p->in          = rt_fifo_init(2 * (num_frames + 1) * p->hop_a);
-  p->out         = rt_fifo_init(2 * (num_frames + 3) * p->hop_s);
-  p->first_frame = 1;
+  rt_uint num_frames     = p->overlap_factor + 2; /* THIS COULD BE WRONG */
+  p->block               = rt_block_init(p, num_frames);
+  p->plan                = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
+                                            p->block->frames[0], FFTW_R2HC, FFTW_ESTIMATE);
+  p->plan_inv            = fftw_plan_r2r_1d(p->frame_size, p->block->frames[0],
+                                            p->block->frames[0], FFTW_HC2R, FFTW_ESTIMATE);
+  p->in                  = rt_fifo_init(2 * (num_frames + 1) * p->hop_a);
+  p->out                 = rt_fifo_init(2 * (num_frames + 3) * p->hop_s);
+  p->first_frame         = 1;
   return p;
 }
 

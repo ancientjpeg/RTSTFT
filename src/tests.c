@@ -40,27 +40,26 @@ FILE *closeJSON(FILE *json)
 int main()
 {
   time_t    t;
-  rt_uint   block_size  = 1 << 14;
-  rt_uint   buffer_size = 1 << 10;
-  rt_uint   frame_size  = 1 << 10;
+  rt_uint   block_size  = 1 << 20;
+  rt_uint   buffer_size = 1 << 14;
+  rt_uint   frame_size  = 1 << 12;
   rt_params p[2];
   p[0]        = rt_init(frame_size, 4, buffer_size, 44100.f);
   p[1]        = rt_init(frame_size, 4, buffer_size, 44100.f);
   WAV     wav = read_from_wav("in.wav", block_size);
   rt_real temp_null;
   rt_uint i, f;
-
-  printReals(stdout, wav.data[0], 64);
-  printReals(stdout, wav.data[1], 64);
+  printReals(stdout, wav.data[0] + frame_size, 64);
+  printReals(stdout, wav.data[1] + frame_size, 64);
   start_timer(t);
   for (i = 0; i < 1; i++) {
     for (f = 0; f < block_size; f += buffer_size) {
-      rt_cycle(p[i], wav.data[i] + f, buffer_size);
+      // rt_cycle(p[i], wav.data[i] + f, buffer_size);
     }
   }
   stop_timer(t);
-  printReals(stdout, wav.data[0] + frame_size * 4, 64 * 2);
-  printReals(stdout, wav.data[1] + frame_size * 4, 64 * 2);
+  printReals(stdout, wav.data[0] + frame_size, 64);
+  printReals(stdout, wav.data[1] + frame_size, 64);
 
   write_to_wav("out.wav", &wav);
   rt_clean(p[0]);
