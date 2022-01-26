@@ -40,10 +40,10 @@ FILE *closeJSON(FILE *json)
 int main()
 {
   time_t    t;
-  rt_uint   block_size   = 1 << 22;
+  rt_uint   block_size   = 1 << 20;
   rt_uint   buffer_size  = 1 << 10;
-  rt_uint   frame_size   = 1 << 16;
-  float     scale_factor = .759;
+  rt_uint   frame_size   = 1 << 10;
+  float     scale_factor = 1.;
   rt_params p[2];
   p[0]        = rt_init(frame_size, 4, buffer_size, 44100.f, scale_factor);
   p[1]        = rt_init(frame_size, 4, buffer_size, 44100.f, scale_factor);
