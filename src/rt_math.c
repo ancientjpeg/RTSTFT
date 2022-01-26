@@ -23,6 +23,7 @@ float get_fbin(int bin, rt_params p)
   return p->sample_rate / p->frame_size * bin;
 }
 
+/* unused — for ref */
 void rt_lerp(rt_params p, rt_real *out, rt_uint out_size, rt_real *in,
              rt_uint in_size)
 {

@@ -25,7 +25,7 @@ void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n);
 void rt_fifo_dequeue(rt_fifo fifo, int n);
 void rt_fifo_dequeue_staggered(rt_fifo fifo, rt_real *dest, int n, int advance);
 rt_uint rt_fifo_payload(rt_fifo fifo);
-rt_uint rt_fifo_readable_payload(rt_fifo fifo);
+rt_uint rt_fifo_readable(rt_fifo fifo);
 
 rt_fifo rt_fifo_destroy(rt_fifo fifo);
 

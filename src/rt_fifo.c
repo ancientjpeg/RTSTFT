@@ -58,7 +58,7 @@ void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n)
     printf("Nothing to read.");
     return;
   }
-  else if (n > rt_fifo_readable_payload(fifo)) {
+  else if (n > rt_fifo_readable(fifo)) {
     fprintf(stderr, "Error: cannot read beyond the current write pointer.\n");
     exit(1);
   }
@@ -76,7 +76,7 @@ void rt_fifo_dequeue(rt_fifo fifo, int n)
     return;
   }
   int target = rt_fifo_new_pos(fifo, fifo->head, n);
-  if (n >= rt_fifo_readable_payload(fifo)) {
+  if (n >= rt_fifo_readable(fifo)) {
     fifo->read_empty = 1;
     if (fifo->write_pos == fifo->tail) {
       fifo->empty = 1;
@@ -106,7 +106,7 @@ rt_uint rt_fifo_payload(rt_fifo fifo)
   return payload;
 }
 
-rt_uint rt_fifo_readable_payload(rt_fifo fifo)
+rt_uint rt_fifo_readable(rt_fifo fifo)
 {
   rt_uint wpayload = rt_fifo_get_diff(fifo, fifo->head, fifo->write_pos);
   if (wpayload == 0 && !(fifo->read_empty)) {

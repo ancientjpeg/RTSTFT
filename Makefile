@@ -4,8 +4,8 @@ BUILD = build
 EXE = $(BUILD)/main
 CC  = clang
 LD = clang
-ifdef RT_USING_DOUBLE
-CFLAGS += -D RT_USING_DOUBLE
+ifdef RT_DOUBLE
+CFLAGS += -D RT_DOUBLE
 LDLIBS += -lfftw3
 else
 LDLIBS += -lfftw3f
