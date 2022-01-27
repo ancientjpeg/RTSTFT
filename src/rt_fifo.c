@@ -17,6 +17,14 @@ void rt_fifo_enqueue(rt_fifo fifo, rt_real *data, int n)
   rt_fifo_enqueue_staggered(fifo, data, n, n);
 }
 
+void rt_fifo_enqueue_one(rt_fifo fifo, rt_real sample)
+{
+  if (rt_fifo_payload(fifo) == fifo->len) {
+    fprintf(stderr, "Cannot enqueue sample. FIFO is full.");
+    exit(1);
+  }
+}
+
 void rt_fifo_enqueue_staggered(rt_fifo fifo, rt_real *data, int n, int advance)
 {
 
