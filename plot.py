@@ -1,9 +1,10 @@
 # for testing purposes
 # not at all needed for build
+from operator import mod
 import matplotlib.pyplot as plt
 import json
 from math import floor, sin
-
+import math
 from numpy import random
 
 
@@ -35,21 +36,21 @@ def math_help(Ma=1024, N=256, F=4, S=2 ** (1 / 12)):
         buf_pos += bufSize
 
     print(
-        f'{real_pos=}    {int_pos=}    {mod_track=}    {hop_pos=}    {int_pos%HopSR=}    {buf_pos=}    {buf_pos % HopA=}'
+        f"{real_pos=}    {int_pos=}    {mod_track=}    {hop_pos=}    {int_pos%HopSR=}    {buf_pos=}    {buf_pos % HopA=}"
     )
 
 
 def plot_json():
     with open("out.json") as f:
-        dat = json.load(f)['data']
+        dat = json.load(f)["data"]
 
-    plt.subplot(2, 1, 1, title='in')
+    plt.subplot(2, 1, 1, title="in")
     plt.scatter(y=dat[0], x=range(len(dat[0])))
     plt.plot(
         dat[0],
     )
 
-    plt.subplot(2, 1, 2, title='out')
+    plt.subplot(2, 1, 2, title="out")
     plt.scatter(y=dat[1], x=range(len(dat[1])))
     plt.plot(
         dat[1],
@@ -57,4 +58,14 @@ def plot_json():
     plt.show()
 
 
-math_help()
+def math_2():
+    for i in range(3, 10):
+        k = 2 ** i
+        z = 3.3
+        k_amod = mod(z + math.pi, 2 * math.pi) - math.pi
+        ka_mod = mod(z * k + math.pi, 2 * math.pi) - math.pi
+        print(f"{k_amod=}, {ka_mod=}")
+
+
+# math_help()
+math_2()

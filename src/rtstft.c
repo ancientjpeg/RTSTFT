@@ -112,10 +112,10 @@ void rt_lerp_read_out(rt_params p, rt_uint num_hops)
         p->pre_lerp->queue[i_input];
 
     rt_fifo_enqueue(p->out, &result, 1);
-    if (p->pre_lerp->queue[i_input] == 0 &&
-        p->pre_lerp->queue[i_input_1] != 0) {
-      printf("%f %u %u\n", result, p->pre_lerp->head, p->out->head);
-    }
+    // if (p->pre_lerp->queue[i_input] == 0 &&
+    //     p->pre_lerp->queue[i_input_1] != 0) {
+    //   printf("%f %u %u\n", result, p->pre_lerp->head, p->out->head);
+    // }
   }
   rt_fifo_enqueue(p->out,
                   p->pre_lerp->queue + rt_fifo_new_pos(p->pre_lerp,

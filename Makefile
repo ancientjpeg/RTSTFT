@@ -33,3 +33,7 @@ ech:
 run: debug
 	$(EXE)
 test: debug run clean
+
+
+# fftw other arch commands: ./configure --build=x86_64-apple-darwin 
+# --enable-float --prefix "/Users/officialnsa/Desktop/installs"

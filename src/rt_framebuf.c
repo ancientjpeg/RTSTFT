@@ -7,9 +7,11 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
   framebuf->next_unprocessed = 0;
   framebuf->next_write       = 0;
   framebuf->num_frames       = num_frames;
-  framebuf->last_phases      = calloc(p->frame_size / 2, sizeof(rt_real));
-  framebuf->frame_data       = calloc(framebuf->num_frames, sizeof(char));
-  framebuf->orig_freqs =
+  framebuf->last_phases = (rt_real *)calloc(p->frame_size / 2, sizeof(rt_real));
+  framebuf->phases_running =
+      (rt_real *)calloc(p->frame_size / 2, sizeof(rt_real));
+  framebuf->frame_data = (char *)calloc(framebuf->num_frames, sizeof(char));
+  framebuf->freq_calc =
       (rt_real *)malloc(sizeof(rt_real) * (p->frame_size / 2 + 1));
   framebuf->frames =
       (rt_real **)malloc(sizeof(rt_real *) * framebuf->num_frames);
@@ -32,7 +34,8 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
     framebuf->frames[i] = framebuf->frames[0] + (p->frame_size * i);
   }
   for (i = 0; i <= p->frame_size / 2; i++) {
-    framebuf->orig_freqs[i] = (rt_real)(i * p->sample_rate / p->frame_size);
+    framebuf->freq_calc[i] = /* freqs are in rads/sec */
+        ((rt_real)i / p->frame_size) * 2 * M_PI;
   }
 
   return framebuf;
@@ -43,6 +46,8 @@ rt_framebuf rt_framebuf_destroy(rt_framebuf framebuf)
   free(framebuf->frames);
   free(framebuf->frame_data);
   free(framebuf->last_phases);
+  free(framebuf->freq_calc);
+  free(framebuf->phases_running);
   free(framebuf);
   return NULL;
 }
@@ -68,8 +73,7 @@ void rt_framebuf_convert_frame(rt_params p, rt_uint frame)
 }
 
 #define wrap(a) (fmod(((a) + M_PI), 2. * M_PI) - M_PI)
-double wrap2(a) { return (fmod(((a) + M_PI), 2. * M_PI) - M_PI); }
-void   rt_framebuf_process_frame(rt_params p, rt_uint frame)
+void rt_framebuf_process_frame(rt_params p, rt_uint frame)
 {
 
   rt_uint i, last_frame = rt_framebuf_relative_frame(p->framebuf, frame, -1);
@@ -83,19 +87,18 @@ void   rt_framebuf_process_frame(rt_params p, rt_uint frame)
       exit(1);
     }
   }
-  rt_real hop_delta   = (p->hop_a * (M_PI * 2.)) / p->sample_rate;
-  rt_real hop_s_delta = (p->hop_s * (M_PI * 2.)) / p->sample_rate;
-  rt_real fs_tau      = p->frame_size * 2. * M_PI;
   for (i = 1; i < p->frame_size / 2 - 1; i++) {
     rt_uint  phase_index      = p->frame_size - i;
     rt_real  prev_phase       = p->framebuf->last_phases[i];
-    rt_real  prev_phase_adj   = p->framebuf->frames[last_frame][phase_index];
+    rt_real  prev_phase_adj   = p->framebuf->phases_running[i];
     rt_real *curr_phase_ptr   = p->framebuf->frames[frame] + phase_index;
-    rt_real  freq_dev_wrapped = wrap2(*curr_phase_ptr - prev_phase) / hop_delta;
-    rt_real  freq_true        = freq_dev_wrapped + p->framebuf->orig_freqs[i];
-    p->framebuf->last_phases[i] = *curr_phase_ptr;
-    *curr_phase_ptr             = prev_phase_adj + (freq_true * hop_s_delta);
-    int temp                    = 0;
+
+    rt_real  freq_dev_wrapped = wrap((*curr_phase_ptr - prev_phase) -
+                                     (p->hop_a * p->framebuf->freq_calc[i]));
+    rt_real freq_true = freq_dev_wrapped / p->hop_a + p->framebuf->freq_calc[i];
+    p->framebuf->last_phases[i]    = *curr_phase_ptr;
+    *curr_phase_ptr                = prev_phase_adj + (freq_true * p->hop_s);
+    p->framebuf->phases_running[i] = *curr_phase_ptr;
   }
   p->framebuf->frame_data[frame] |= RT_FRAME_IS_PROCESSED;
   p->framebuf->next_unprocessed =
