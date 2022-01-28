@@ -10,30 +10,30 @@ LDLIBS += -lfftw3
 else
 LDLIBS += -lfftw3f
 endif
+FFTW_ARGS = --build=x86_64-apple-darwin 
+--enable-float --prefix "../fftw"
 
 .PHONY: all release debug clean deepclean run test
 all: release
 release: OFLAGS = -Odebug
 debug: $(OBJ) | $(BUILD)
-	$(LD) $(LDLIBS) $(OBJ) -o $(EXE)
+	$(LD) --target=x86_64-apple-darwin -L./fftw $(LDLIBS) $(OBJ) -o $(EXE)
 	dsymutil $(EXE)
 release: OFLAGS = -Ofast
 release: $(OBJ) | $(BUILD)
-	$(LD) $(LDLIBS) -lm $(OBJ) -o $(EXE)
+	$(LD)  $(LDLIBS) -lm $(OBJ) -o $(EXE)
 $(BUILD):
 	-@mkdir -p $(BUILD)
 %.o: %.c
-	$(CC) -ansi $(CFLAGS)$(OFLAGS) -c -g -o $@ $<
+	$(CC) --target=x86_64-apple-darwin -ansi $(CFLAGS)$(OFLAGS) -c -g -o $@ $<
 clean:
 	-@rm $(OBJ) 2>/dev/null || true
 deepclean: clean
 	-@rm -rf build 2>/dev/null || true
 ech:
 	@echo $(SRC)
+setup:
+	./fftw_src/configure --enable
 run: debug
 	$(EXE)
 test: debug run clean
-
-
-# fftw other arch commands: ./configure --build=x86_64-apple-darwin 
-# --enable-float --prefix "/Users/officialnsa/Desktop/installs"

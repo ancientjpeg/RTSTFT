@@ -41,22 +41,30 @@ FILE *closeJSON(FILE *json)
 int main()
 {
   time_t    t;
-  rt_uint   block_size   = 1 << 22;
-  rt_uint   buffer_size  = 1 << 22;
-  rt_uint   frame_size   = 1 << 12;
-  float     scale_factor = 1.14;
+  rt_uint   block_size   = 1 << 14;
+  rt_uint   buffer_size  = 1 << 12;
+  rt_uint   frame_size   = 1 << 10;
+  float     scale_factor = 2.0;
   rt_params p[2];
-  p[0]        = rt_init(frame_size, 4, buffer_size, 44100.f, scale_factor);
-  p[1]        = rt_init(frame_size, 4, buffer_size, 44100.f, scale_factor);
+  p[0]        = rt_init(frame_size, 8, buffer_size, 44100.f, scale_factor);
+  p[1]        = rt_init(frame_size, 8, buffer_size, 44100.f, scale_factor);
   WAV     wav = read_from_wav("in.wav", block_size);
   rt_real temp_null;
   rt_uint i, f;
-  // for (i = 0; i < block_size; i++) {
-  //   wav.data[0][i] = wav.data[1][i];
-  // }
+  rt_uint latency_size = frame_size;
+  for (i = 0; i < block_size; i++) {
+    if (i >= latency_size && i < block_size - latency_size) {
+      wav.data[1][i] = wav.data[0][i - latency_size];
+    }
+    else {
+      wav.data[1][i] = 0.;
+    }
+    wav.data[0][i] *= 1.5;
+    wav.data[1][i] *= 0.6;
+  }
 
   start_timer(t);
-  for (i = 0; i < 2; i++) {
+  for (i = 0; i < 1; i++) {
     for (f = 0; f < block_size; f += buffer_size) {
       rt_cycle(p[i], wav.data[i] + f, buffer_size);
     }

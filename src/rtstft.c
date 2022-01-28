@@ -141,9 +141,9 @@ void rt_cycle(rt_params p, rt_real *buffer, rt_uint buffer_len)
       if (!was_first) {
         rt_assemble_frame(p);
       }
-      rt_uint num_hops = 1;
-      if (rt_fifo_readable(p->pre_lerp) >= p->hop_s * num_hops) {
-        rt_lerp_read_out(p, num_hops);
+
+      if (rt_fifo_readable(p->pre_lerp) >= p->hop_s * p->overlap_factor) {
+        rt_lerp_read_out(p, p->overlap_factor);
       }
       if (++check > 1) {
         fprintf(stderr, "Extracted more than one frame.\n");
