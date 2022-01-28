@@ -32,7 +32,8 @@ deepclean: clean
 ech:
 	@echo $(SRC)
 setup-lib:
-	./fftw_src/configure $(FFTW_CONF_ARGS)
+	cd fftw_src && ls
+	cd fftw_src && ./configure $(FFTW_CONF_ARGS)
 	make -C fftw_src
 	make install -C fftw_src
 	make distclean -C fftw_src
