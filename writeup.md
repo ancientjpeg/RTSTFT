@@ -1,3 +1,5 @@
+# THIS IS A MESS RIGHT NOW PLEASE IGNORE
+
 ## DEFINITIONS
 ---
 We start with a chosen FFT frame size $N$ 
