@@ -6,7 +6,6 @@ CC  = clang
 LD = clang
 LDLIBS = -L./fftw
 FFTW_CONF_ARGS = --prefix $(shell pwd)/fftw
-# FFTW_CONF_ARGS = --build=x86_64-apple-darwin --prefix $(shell pwd)/fftw
 ifdef RT_DOUBLE
 CFLAGS += -D RT_DOUBLE
 LDLIBS += -lfftw3
