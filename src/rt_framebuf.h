@@ -9,7 +9,7 @@
 #define RT_FRAME_IS_INVERTED (1 << 3)
 
 typedef struct rt_framebuf {
-  rt_real **frames, *freq_calc, *last_phases;
+  rt_real **frames, *freq_calc, *last_phases, *phases_adj;
   char     *frame_data;
   rt_uint   next_unread, next_unprocessed, next_write, num_frames, size;
 } rt_framebuf_t;

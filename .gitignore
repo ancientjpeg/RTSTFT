@@ -4,5 +4,6 @@ fftw*
 
 # files used for testing
 **/*.wav
+**/*.asd
 out.json
 lerp.py

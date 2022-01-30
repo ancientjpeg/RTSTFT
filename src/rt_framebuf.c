@@ -8,6 +8,7 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
   framebuf->next_write       = 0;
   framebuf->num_frames       = num_frames;
   framebuf->last_phases = (rt_real *)calloc(p->fft_size / 2, sizeof(rt_real));
+  framebuf->phases_adj  = (rt_real *)calloc(p->fft_size / 2, sizeof(rt_real));
   framebuf->frame_data  = (char *)calloc(framebuf->num_frames, sizeof(char));
   framebuf->freq_calc =
       (rt_real *)malloc(sizeof(rt_real) * (p->fft_size / 2 + 1));
@@ -48,6 +49,7 @@ rt_framebuf rt_framebuf_destroy(rt_framebuf framebuf)
   free(framebuf->frames);
   free(framebuf->frame_data);
   free(framebuf->last_phases);
+  free(framebuf->phases_adj);
   free(framebuf->freq_calc);
   free(framebuf);
   return NULL;
@@ -58,8 +60,7 @@ void rt_framebuf_convert_frame(rt_params p, rt_uint frame)
   if (!(p->framebuf->frame_data[frame] & RT_FRAME_IS_FILLED)) {
     fprintf(stderr, "Can't convert a frame that isn't filled!\n");
   }
-  /*   rt_window(p->framebuf->frames[frame] + p->pad_offset, p->frame_size); */
-  rt_window(p->framebuf->frames[frame], p->fft_size);
+  rt_window(p->framebuf->frames[frame] + p->pad_offset, p->frame_size);
   fftw_execute_r2r(p->plan, p->framebuf->frames[frame],
                    p->framebuf->frames[frame]);
   rt_real real, imag;
@@ -92,7 +93,7 @@ void rt_framebuf_process_frame(rt_params p, rt_uint frame)
   for (i = 1; i < p->fft_size / 2 - 1; i++) {
     rt_uint  phase_index      = p->fft_size - i;
     rt_real  prev_phase       = p->framebuf->last_phases[i];
-    rt_real *prev_phase_adj   = p->framebuf->frames[last_frame] + phase_index;
+    rt_real *prev_phase_adj   = p->framebuf->phases_adj + i;
     rt_real *curr_phase_ptr   = p->framebuf->frames[frame] + phase_index;
 
     rt_real  freq_dev_wrapped = wrap((*curr_phase_ptr - prev_phase) -
