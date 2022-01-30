@@ -17,12 +17,18 @@ void rt_fifo_enqueue(rt_fifo fifo, rt_real *data, int n)
   rt_fifo_enqueue_staggered(fifo, data, n, n);
 }
 
-void rt_fifo_enqueue_one(rt_fifo fifo, rt_real sample)
+void rt_fifo_enqueue_one(rt_fifo fifo, rt_real *data)
 {
   if (rt_fifo_payload(fifo) == fifo->len) {
     fprintf(stderr, "Cannot enqueue sample. FIFO is full.");
     exit(1);
   }
+  fifo->empty      = 0;
+  fifo->read_empty = 0;
+  fifo->queue[fifo->write_pos] += *data;
+  char wasTail    = fifo->write_pos == fifo->tail ? 1 : 0;
+  fifo->write_pos = rt_fifo_new_pos(fifo, fifo->write_pos, 1);
+  fifo->tail      = wasTail ? fifo->write_pos : fifo->tail;
 }
 
 void rt_fifo_enqueue_staggered(rt_fifo fifo, rt_real *data, int n, int advance)
@@ -59,8 +65,8 @@ void rt_fifo_enqueue_staggered(rt_fifo fifo, rt_real *data, int n, int advance)
 void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n)
 {
   if (fifo->read_empty) {
-    printf("Nothing to read.");
-    return;
+    fprintf(stderr, "Error: Nothing to read.");
+    exit(1);
   }
   else if (n > rt_fifo_readable(fifo)) {
     fprintf(stderr, "Error: cannot read beyond the current write pointer.\n");
@@ -68,7 +74,7 @@ void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n)
   }
   rt_uint i;
   for (i = 0; i < n; i++) {
-    rt_uint index = rt_fifo_new_pos(fifo, fifo->head, i);
+    rt_uint index = i != 0 ? rt_fifo_new_pos(fifo, fifo->head, i) : fifo->head;
     dest[i]       = fifo->queue[index];
   }
 }
@@ -76,8 +82,8 @@ void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n)
 void rt_fifo_dequeue(rt_fifo fifo, int n)
 {
   if (fifo->empty) {
-    printf("Nothing to dequeue.");
-    return;
+    fprintf(stderr, "Error: Nothing to dequeue.");
+    exit(1);
   }
   int target = rt_fifo_new_pos(fifo, fifo->head, n);
   if (n >= rt_fifo_readable(fifo)) {
@@ -92,6 +98,27 @@ void rt_fifo_dequeue(rt_fifo fifo, int n)
   while (fifo->head != target) {
     fifo->queue[fifo->head] = 0.;
     fifo->head              = rt_fifo_new_pos(fifo, fifo->head, 1);
+  }
+}
+
+void rt_fifo_dequeue_one(rt_fifo fifo, rt_real *dest)
+{
+  if (fifo->empty) {
+    fprintf(stderr, "Error: Nothing to dequeue.");
+    exit(1);
+  }
+  if (dest != NULL) {
+    if (fifo->read_empty) {
+      fprintf(stderr, "Error: Nothing to read. ");
+      exit(1);
+    }
+    *dest = fifo->queue[fifo->head];
+  }
+  fifo->queue[fifo->head] = 0.;
+  fifo->head              = rt_fifo_new_pos(fifo, fifo->head, 1);
+  if (fifo->head == fifo->write_pos) {
+    fifo->read_empty = 1;
+    fifo->empty      = fifo->head == fifo->tail ? 1 : 0;
   }
 }
 

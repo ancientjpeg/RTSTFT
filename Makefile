@@ -4,7 +4,7 @@ BUILD = build
 EXE = $(BUILD)/main
 CC  = clang
 LD = clang
-LDLIBS = -L./fftw
+LDLIBS = -L./fftw/lib
 FFTW_CONF_ARGS = --prefix $(shell pwd)/fftw
 ifdef RT_DOUBLE
 CFLAGS += -D RT_DOUBLE

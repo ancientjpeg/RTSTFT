@@ -111,17 +111,12 @@ void rt_lerp_read_out(rt_params p, rt_uint num_hops)
         (p->pre_lerp->queue[i_input_1] - p->pre_lerp->queue[i_input]) * mod +
         p->pre_lerp->queue[i_input];
 
-    rt_fifo_enqueue(p->out, &result, 1);
-    // if (p->pre_lerp->queue[i_input] == 0 &&
-    //     p->pre_lerp->queue[i_input_1] != 0) {
-    //   printf("%f %u %u\n", result, p->pre_lerp->head, p->out->head);
-    // }
+    rt_fifo_enqueue_one(p->out, &result);
   }
-  rt_fifo_enqueue(p->out,
-                  p->pre_lerp->queue + rt_fifo_new_pos(p->pre_lerp,
-                                                       p->pre_lerp->head,
-                                                       input_size - 1),
-                  1);
+  rt_fifo_enqueue_one(p->out,
+                      p->pre_lerp->queue + rt_fifo_new_pos(p->pre_lerp,
+                                                           p->pre_lerp->head,
+                                                           input_size - 1));
 
   rt_fifo_dequeue(p->pre_lerp, input_size);
 }
@@ -131,7 +126,7 @@ void rt_cycle(rt_params p, rt_real *buffer, rt_uint buffer_len)
   rt_real *buffer_orig     = buffer;
   rt_uint  buffer_len_save = buffer_len;
   while (buffer_len > 0) {
-    rt_fifo_enqueue(p->in, buffer, 1);
+    rt_fifo_enqueue_one(p->in, buffer);
     char check = 0;
 
     while (rt_fifo_payload(p->in) >= p->frame_size) {
@@ -151,8 +146,7 @@ void rt_cycle(rt_params p, rt_real *buffer, rt_uint buffer_len)
       }
     }
     if (rt_fifo_readable(p->out)) {
-      rt_uint temp = rt_fifo_readable(p->out);
-      rt_fifo_dequeue_staggered(p->out, buffer, 1, 1);
+      rt_fifo_dequeue_one(p->out, buffer);
     }
     else {
       *buffer = 0.;

@@ -20,9 +20,11 @@ typedef rt_fifo_t *rt_fifo;
 
 rt_fifo            rt_fifo_init(rt_uint len);
 void               rt_fifo_enqueue(rt_fifo fifo, rt_real *data, int n);
+void               rt_fifo_enqueue_one(rt_fifo fifo, rt_real *data);
 void rt_fifo_enqueue_staggered(rt_fifo fifo, rt_real *data, int n, int advance);
 void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n);
 void rt_fifo_dequeue(rt_fifo fifo, int n);
+void rt_fifo_dequeue_one(rt_fifo fifo, rt_real *dest);
 void rt_fifo_dequeue_staggered(rt_fifo fifo, rt_real *dest, int n, int advance);
 rt_uint rt_fifo_payload(rt_fifo fifo);
 rt_uint rt_fifo_readable(rt_fifo fifo);
