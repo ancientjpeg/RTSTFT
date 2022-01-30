@@ -41,7 +41,7 @@ FILE *closeJSON(FILE *json)
 int main()
 {
   time_t    t;
-  rt_uint   block_size   = 1 << 18;
+  rt_uint   block_size   = 1 << 19;
   rt_uint   buffer_size  = 1 << 12;
   rt_uint   frame_size   = 1 << 12;
   float     scale_factor = 1.1;

@@ -8,9 +8,7 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
   framebuf->next_write       = 0;
   framebuf->num_frames       = num_frames;
   framebuf->last_phases = (rt_real *)calloc(p->frame_size / 2, sizeof(rt_real));
-  framebuf->phases_running =
-      (rt_real *)calloc(p->frame_size / 2, sizeof(rt_real));
-  framebuf->frame_data = (char *)calloc(framebuf->num_frames, sizeof(char));
+  framebuf->frame_data  = (char *)calloc(framebuf->num_frames, sizeof(char));
   framebuf->freq_calc =
       (rt_real *)malloc(sizeof(rt_real) * (p->frame_size / 2 + 1));
   framebuf->frames =
@@ -26,6 +24,10 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
     something about how malloc keep track of memory, because the fftw malloc
     enforces alignment so strictly and possibly leaves extra memory at the edges
     of its allocation? Or I just don't understand at all how malloc works.
+
+
+    tl;dr: fftw_alloc and fftw_plan do some weird shit so never rely on fftw
+    buffers to behave like normal ones.
   */
   framebuf->frames[0] =
       (rt_real *)fftw_alloc_real(p->frame_size * framebuf->num_frames);
@@ -47,7 +49,6 @@ rt_framebuf rt_framebuf_destroy(rt_framebuf framebuf)
   free(framebuf->frame_data);
   free(framebuf->last_phases);
   free(framebuf->freq_calc);
-  free(framebuf->phases_running);
   free(framebuf);
   return NULL;
 }
@@ -90,15 +91,15 @@ void rt_framebuf_process_frame(rt_params p, rt_uint frame)
   for (i = 1; i < p->frame_size / 2 - 1; i++) {
     rt_uint  phase_index      = p->frame_size - i;
     rt_real  prev_phase       = p->framebuf->last_phases[i];
-    rt_real  prev_phase_adj   = p->framebuf->phases_running[i];
+    rt_real *prev_phase_adj   = p->framebuf->frames[last_frame] + phase_index;
     rt_real *curr_phase_ptr   = p->framebuf->frames[frame] + phase_index;
 
     rt_real  freq_dev_wrapped = wrap((*curr_phase_ptr - prev_phase) -
                                      (p->hop_a * p->framebuf->freq_calc[i]));
     rt_real freq_true = freq_dev_wrapped / p->hop_a + p->framebuf->freq_calc[i];
-    p->framebuf->last_phases[i]    = *curr_phase_ptr;
-    *curr_phase_ptr                = prev_phase_adj + (freq_true * p->hop_s);
-    p->framebuf->phases_running[i] = *curr_phase_ptr;
+    p->framebuf->last_phases[i] = *curr_phase_ptr;
+    *curr_phase_ptr             = *prev_phase_adj + (freq_true * p->hop_s);
+    *prev_phase_adj             = *curr_phase_ptr;
   }
   p->framebuf->frame_data[frame] |= RT_FRAME_IS_PROCESSED;
   p->framebuf->next_unprocessed =

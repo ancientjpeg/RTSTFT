@@ -21,19 +21,24 @@ rt_params rt_init(rt_uint frame_size, rt_uint overlap_factor,
     fprintf(stderr, "Cannot have frame size or overlap factor be <= zero.");
     exit(1);
   }
-  rt_params p        = malloc(sizeof(rt_params_t));
-  p->scale_factor    = scale_factor;
-  p->frame_size      = frame_size;
-  p->overlap_factor  = overlap_factor;
-  p->buffer_size     = buffer_size;
-  p->sample_rate     = sample_rate;
-  p->latency_block   = p->frame_size * p->overlap_factor;
-  p->hop_a           = p->frame_size / p->overlap_factor;
-  p->hop_s           = lround(p->hop_a * p->scale_factor);
-  rt_uint num_frames = 2; /* THIS COULD BE WRONG */
-  p->framebuf        = rt_framebuf_init(p, num_frames);
-  p->plan            = fftw_plan_r2r_1d(p->frame_size, p->framebuf->frames[0],
-                                        p->framebuf->frames[0], FFTW_R2HC, FFTW_ESTIMATE);
+  rt_params p            = malloc(sizeof(rt_params_t));
+  p->scale_factor        = scale_factor;
+  p->pad_factor          = 1;
+  p->frame_size_unpadded = frame_size;
+  p->frame_size          = frame_size * (1 << p->pad_factor);
+  p->frame_max           = 1 << 15;
+  if (p->frame_size > p->frame_max) {
+    fprintf(stderr, "Exceeded maximum frame size.\n");
+    exit(1);
+  }
+  p->overlap_factor = overlap_factor;
+  p->buffer_size    = buffer_size;
+  p->sample_rate    = sample_rate;
+  p->hop_a          = p->frame_size / p->overlap_factor;
+  p->hop_s          = lround(p->hop_a * p->scale_factor);
+  p->framebuf       = rt_framebuf_init(p, 2);
+  p->plan           = fftw_plan_r2r_1d(p->frame_size, p->framebuf->frames[0],
+                                       p->framebuf->frames[0], FFTW_R2HC, FFTW_ESTIMATE);
   p->plan_inv =
       fftw_plan_r2r_1d(p->frame_size, p->framebuf->frames[0],
                        p->framebuf->frames[0], FFTW_HC2R, FFTW_ESTIMATE);
@@ -92,9 +97,6 @@ void rt_assemble_frame(rt_params p)
 
 void rt_lerp_read_out(rt_params p, rt_uint num_hops)
 {
-  /*  p->hop_pos % hop_s will ALWAYS equal
-      floor(hop_s / hop_a) * (lifetime buffer sample count)) % hop_s
-      with the help of p->mod_track   */
   rt_uint          input_size  = p->hop_s * num_hops;
   rt_uint          output_size = p->hop_a * num_hops;
   register rt_real local_incr  = (rt_real)(input_size - 1) / (output_size - 1);
@@ -136,7 +138,6 @@ void rt_cycle(rt_params p, rt_real *buffer, rt_uint buffer_len)
       if (!was_first) {
         rt_assemble_frame(p);
       }
-
       if (rt_fifo_readable(p->pre_lerp) >= p->hop_s * p->overlap_factor) {
         rt_lerp_read_out(p, p->overlap_factor);
       }
