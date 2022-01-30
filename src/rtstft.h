@@ -10,8 +10,8 @@
     - i.e. 2. for and octave up shift, 1.0595 for 1 st etc.
 */
 typedef struct RTSTFT_Params {
-  rt_uint frame_size, frame_size_unpadded, frame_max, overlap_factor,
-      pad_factor, pad_count, hop_a, hop_s, buffer_size;
+  rt_uint fft_size, frame_size, frame_max, overlap_factor, pad_factor,
+      pad_offset, hop_a, hop_s, buffer_size;
   char        first_frame;
   rt_real     scale_factor, sample_rate;
   rt_framebuf framebuf;
@@ -36,9 +36,8 @@ void        rt_framebuf_process_frame(rt_params p, rt_uint frame);
 void        rt_framebuf_revert_frame(rt_params p, rt_uint frame);
 
 /* ======== MATH UTILS ======== */
-void  rt_hanning(rt_real *data, rt_uint len);
-void  rt_hamming(rt_real *data, rt_uint len);
-float get_fbin(int bin, rt_params p);
-void  rt_lerp(rt_params p, rt_real *out, rt_uint out_size, rt_real *in,
-              rt_uint in_size);
+void rt_hanning(rt_real *data, rt_uint len);
+void rt_hamming(rt_real *data, rt_uint len);
+#define rt_window rt_hanning
+
 #endif

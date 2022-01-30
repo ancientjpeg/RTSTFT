@@ -7,10 +7,10 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
   framebuf->next_unprocessed = 0;
   framebuf->next_write       = 0;
   framebuf->num_frames       = num_frames;
-  framebuf->last_phases = (rt_real *)calloc(p->frame_size / 2, sizeof(rt_real));
+  framebuf->last_phases = (rt_real *)calloc(p->fft_size / 2, sizeof(rt_real));
   framebuf->frame_data  = (char *)calloc(framebuf->num_frames, sizeof(char));
   framebuf->freq_calc =
-      (rt_real *)malloc(sizeof(rt_real) * (p->frame_size / 2 + 1));
+      (rt_real *)malloc(sizeof(rt_real) * (p->fft_size / 2 + 1));
   framebuf->frames =
       (rt_real **)malloc(sizeof(rt_real *) * framebuf->num_frames);
   /*
@@ -30,14 +30,14 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
     buffers to behave like normal ones.
   */
   framebuf->frames[0] =
-      (rt_real *)fftw_alloc_real(p->frame_size * framebuf->num_frames);
+      (rt_real *)fftw_alloc_real(p->fft_size * framebuf->num_frames);
   rt_uint i;
   for (i = 1; i < framebuf->num_frames; i++) {
-    framebuf->frames[i] = framebuf->frames[0] + (p->frame_size * i);
+    framebuf->frames[i] = framebuf->frames[0] + (p->fft_size * i);
   }
-  for (i = 0; i <= p->frame_size / 2; i++) {
+  for (i = 0; i <= p->fft_size / 2; i++) {
     framebuf->freq_calc[i] = /* freqs are in rads/sec */
-        ((rt_real)i / p->frame_size) * 2 * M_PI;
+        ((rt_real)i / p->fft_size) * 2 * M_PI;
   }
 
   return framebuf;
@@ -58,17 +58,17 @@ void rt_framebuf_convert_frame(rt_params p, rt_uint frame)
   if (!(p->framebuf->frame_data[frame] & RT_FRAME_IS_FILLED)) {
     fprintf(stderr, "Can't convert a frame that isn't filled!\n");
   }
-  rt_hanning(p->framebuf->frames[frame], p->frame_size);
+  rt_window(p->framebuf->frames[frame] + p->pad_offset, p->frame_size);
   fftw_execute_r2r(p->plan, p->framebuf->frames[frame],
                    p->framebuf->frames[frame]);
   rt_real real, imag;
   rt_uint i;
-  for (i = 1; i < p->frame_size / 2 - 1; i++) {
-    real = p->framebuf->frames[frame][i];
-    imag = p->framebuf->frames[frame][p->frame_size - i];
+  for (i = 1; i < p->fft_size / 2 - 1; i++) {
+    real                          = p->framebuf->frames[frame][i];
+    imag                          = p->framebuf->frames[frame][p->fft_size - i];
 
     p->framebuf->frames[frame][i] = sqrt(real * real + imag * imag);
-    p->framebuf->frames[frame][p->frame_size - i] = atan2(imag, real);
+    p->framebuf->frames[frame][p->fft_size - i] = atan2(imag, real);
   }
   p->framebuf->frame_data[frame] |= RT_FRAME_IS_CONVERTED;
 }
@@ -88,8 +88,8 @@ void rt_framebuf_process_frame(rt_params p, rt_uint frame)
       exit(1);
     }
   }
-  for (i = 1; i < p->frame_size / 2 - 1; i++) {
-    rt_uint  phase_index      = p->frame_size - i;
+  for (i = 1; i < p->fft_size / 2 - 1; i++) {
+    rt_uint  phase_index      = p->fft_size - i;
     rt_real  prev_phase       = p->framebuf->last_phases[i];
     rt_real *prev_phase_adj   = p->framebuf->frames[last_frame] + phase_index;
     rt_real *curr_phase_ptr   = p->framebuf->frames[frame] + phase_index;
@@ -115,21 +115,21 @@ void rt_framebuf_revert_frame(rt_params p, rt_uint frame)
     exit(1);
   }
   rt_real amp, phase;
-  p->framebuf->frames[frame][p->frame_size / 2] = 0.;
+  p->framebuf->frames[frame][p->fft_size / 2] = 0.;
   rt_uint i;
-  for (i = 1; i < p->frame_size / 2 - 1; i++) {
-    amp   = p->framebuf->frames[frame][i];
-    phase = p->framebuf->frames[frame][p->frame_size - i];
+  for (i = 1; i < p->fft_size / 2 - 1; i++) {
+    amp                           = p->framebuf->frames[frame][i];
+    phase                         = p->framebuf->frames[frame][p->fft_size - i];
 
-    p->framebuf->frames[frame][i]                 = amp * cos(phase);
-    p->framebuf->frames[frame][p->frame_size - i] = amp * sin(phase);
+    p->framebuf->frames[frame][i] = amp * cos(phase);
+    p->framebuf->frames[frame][p->fft_size - i] = amp * sin(phase);
   }
   fftw_execute_r2r(p->plan_inv, p->framebuf->frames[frame],
                    p->framebuf->frames[frame]);
-  for (i = 0; i < p->frame_size; i++) {
-    p->framebuf->frames[frame][i] /= (rt_real)p->frame_size;
+  for (i = 0; i < p->fft_size; i++) {
+    p->framebuf->frames[frame][i] /= (rt_real)p->fft_size;
   }
-  rt_hanning(p->framebuf->frames[frame], p->frame_size);
+  rt_window(p->framebuf->frames[frame] + p->pad_offset, p->frame_size);
   p->framebuf->frame_data[frame] |= RT_FRAME_IS_INVERTED;
 }
 

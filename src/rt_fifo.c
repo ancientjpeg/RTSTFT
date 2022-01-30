@@ -19,7 +19,7 @@ void rt_fifo_enqueue(rt_fifo fifo, rt_real *data, int n)
 
 void rt_fifo_enqueue_one(rt_fifo fifo, rt_real *data)
 {
-  if (rt_fifo_payload(fifo) == fifo->len) {
+  if (fifo->head == fifo->tail && !fifo->empty) {
     fprintf(stderr, "Cannot enqueue sample. FIFO is full.");
     exit(1);
   }

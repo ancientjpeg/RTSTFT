@@ -4,7 +4,7 @@
   - General plan
     - user init
       - user creates an rt_params_t struct, passes it to be initialized
-      - user is responsible for defining frame_size, block_size, overlap_factor
+      - user is responsible for defining fft_size, block_size, overlap_factor
 */
 
 #define rt_max(a, b) ((a) > (b) ? (a) : (b))
@@ -21,14 +21,19 @@ rt_params rt_init(rt_uint frame_size, rt_uint overlap_factor,
     fprintf(stderr, "Cannot have frame size or overlap factor be <= zero.");
     exit(1);
   }
-  rt_params p            = malloc(sizeof(rt_params_t));
-  p->scale_factor        = scale_factor;
-  p->pad_factor          = 1;
-  p->frame_size_unpadded = frame_size;
-  p->frame_size          = frame_size * (1 << p->pad_factor);
-  p->frame_max           = 1 << 15;
-  if (p->frame_size > p->frame_max) {
+  rt_params p     = malloc(sizeof(rt_params_t));
+  p->scale_factor = scale_factor;
+  p->pad_factor   = 0;
+  p->frame_size   = frame_size;
+  p->fft_size     = frame_size * (1 << p->pad_factor);
+  p->pad_offset   = (p->fft_size - p->frame_size) / 2;
+  p->frame_max    = 1 << 15;
+  if (p->fft_size > p->frame_max) {
     fprintf(stderr, "Exceeded maximum frame size.\n");
+    exit(1);
+  }
+  else if (p->fft_size < 32) {
+    fprintf(stderr, "Below minimum frame size.\n");
     exit(1);
   }
   p->overlap_factor = overlap_factor;
@@ -37,16 +42,15 @@ rt_params rt_init(rt_uint frame_size, rt_uint overlap_factor,
   p->hop_a          = p->frame_size / p->overlap_factor;
   p->hop_s          = lround(p->hop_a * p->scale_factor);
   p->framebuf       = rt_framebuf_init(p, 2);
-  p->plan           = fftw_plan_r2r_1d(p->frame_size, p->framebuf->frames[0],
+  p->plan           = fftw_plan_r2r_1d(p->fft_size, p->framebuf->frames[0],
                                        p->framebuf->frames[0], FFTW_R2HC, FFTW_ESTIMATE);
   p->plan_inv =
-      fftw_plan_r2r_1d(p->frame_size, p->framebuf->frames[0],
+      fftw_plan_r2r_1d(p->fft_size, p->framebuf->frames[0],
                        p->framebuf->frames[0], FFTW_HC2R, FFTW_ESTIMATE);
-  rt_uint lerp_frame = p->overlap_factor * p->hop_s * 2;
   p->in              = rt_fifo_init(rt_max(p->buffer_size, p->frame_size * 2));
-  p->pre_lerp    = rt_fifo_init(rt_max(ceil(p->buffer_size * p->scale_factor) +
-                                           lerp_frame * p->overlap_factor,
-                                       lerp_frame * 2));
+  rt_uint lerp_frame = p->overlap_factor * p->hop_s;
+  p->pre_lerp        = rt_fifo_init(
+             2 * rt_max(ceil(p->buffer_size * p->scale_factor * 2), lerp_frame * 2));
   p->out         = rt_fifo_init(rt_max(p->buffer_size, p->frame_size * 2));
   p->first_frame = 1;
   return p;
@@ -66,7 +70,15 @@ rt_params rt_clean(rt_params p)
 void rt_digest_frame(rt_params p)
 {
   rt_uint this_frame = p->framebuf->next_write;
-  rt_fifo_dequeue_staggered(p->in, p->framebuf->frames[this_frame],
+  if (p->pad_factor) {
+    rt_uint i;
+    for (i = 0; i < p->pad_offset; i++) {
+      p->framebuf->frames[this_frame][i]                   = 0.;
+      p->framebuf->frames[this_frame][p->fft_size - 1 - i] = 0.;
+    }
+  }
+  rt_fifo_dequeue_staggered(p->in,
+                            p->framebuf->frames[this_frame] + p->pad_offset,
                             p->frame_size, p->hop_a);
   p->framebuf->frame_data[this_frame] |= RT_FRAME_IS_FILLED;
   p->framebuf->next_write =
@@ -82,10 +94,10 @@ void rt_process_frame(rt_params p)
 void rt_assemble_frame(rt_params p)
 {
   rt_uint this_frame = p->framebuf->next_unread;
-  rt_uint last_frame = rt_framebuf_relative_frame(p->framebuf, this_frame, -1);
   rt_framebuf_revert_frame(p, this_frame);
   if (p->framebuf->frame_data[this_frame] & RT_FRAME_IS_INVERTED) {
-    rt_fifo_enqueue_staggered(p->pre_lerp, p->framebuf->frames[this_frame],
+    rt_fifo_enqueue_staggered(p->pre_lerp,
+                              p->framebuf->frames[this_frame] + p->pad_offset,
                               p->frame_size, p->hop_s);
     p->framebuf->next_unread =
         rt_framebuf_relative_frame(p->framebuf, this_frame, 1);
