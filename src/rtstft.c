@@ -48,9 +48,10 @@ rt_params rt_init(rt_uint frame_size, rt_uint overlap_factor,
       fftw_plan_r2r_1d(p->fft_size, p->framebuf->frames[0],
                        p->framebuf->frames[0], FFTW_HC2R, FFTW_ESTIMATE);
   p->in              = rt_fifo_init(rt_max(p->buffer_size, p->frame_size * 2));
-  rt_uint lerp_frame = p->overlap_factor * p->hop_s;
+  rt_uint lerp_frame = p->overlap_factor * p->hop_s + p->frame_size;
   p->pre_lerp        = rt_fifo_init(
-             2 * rt_max(ceil(p->buffer_size * p->scale_factor * 2), lerp_frame * 2));
+             rt_max((rt_uint)ceil((rt_real)p->buffer_size * 2 * scale_factor),
+                    lerp_frame * 2));
   p->out         = rt_fifo_init(rt_max(p->buffer_size, p->frame_size * 2));
   p->first_frame = 1;
   return p;

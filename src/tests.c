@@ -43,26 +43,28 @@ int main()
   time_t    t;
   rt_uint   block_size   = 1 << 21;
   rt_uint   buffer_size  = 1 << 12;
-  rt_uint   frame_size   = 1 << 12;
-  float     scale_factor = 2.;
+  rt_uint   frame_size   = 1 << 10;
+  float     scale_factor = pow(2, (float)6 / 12.);
   rt_params p[2];
   rt_uint   i, f;
   for (i = 0; i < 2; i++) {
-    p[i] = rt_init(frame_size, 8, buffer_size, 44100.f, scale_factor);
+    p[i] = rt_init(frame_size, 4, buffer_size, 44100.f, scale_factor);
   }
   WAV     wav = read_from_wav("in.wav", block_size);
   rt_real temp_null;
   rt_uint latency_size = frame_size;
-  /*   for (i = 0; i < block_size; i++) {
-      if (i >= latency_size && i < block_size - latency_size) {
-        wav.data[1][i] = wav.data[0][i - latency_size];
-      }
-      else {
-        wav.data[1][i] = 0.;
-      }
-      wav.data[0][i] *= 1.5;
-      wav.data[1][i] *= 0.6;
+  for (i = 0; i < block_size; i++) {
+    /* if (i >= latency_size && i < block_size - latency_size) {
+      wav.data[1][i] = wav.data[0][i - latency_size];
+    }
+    else {
+      wav.data[1][i] = 0.;
     } */
+    /*     wav.data[0][i] *= 1.5;
+        wav.data[1][i] *= 0.6; */
+    wav.data[0][i] = sin((rt_real)i / 44100 * 1000.) * 4000.;
+    wav.data[1][i] = sin((rt_real)i / 44100 * 1000.) * 4000.;
+  }
 
   start_timer(t);
   for (i = 0; i < 2; i++) {

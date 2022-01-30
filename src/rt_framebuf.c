@@ -58,7 +58,8 @@ void rt_framebuf_convert_frame(rt_params p, rt_uint frame)
   if (!(p->framebuf->frame_data[frame] & RT_FRAME_IS_FILLED)) {
     fprintf(stderr, "Can't convert a frame that isn't filled!\n");
   }
-  rt_window(p->framebuf->frames[frame] + p->pad_offset, p->frame_size);
+  /*   rt_window(p->framebuf->frames[frame] + p->pad_offset, p->frame_size); */
+  rt_window(p->framebuf->frames[frame], p->fft_size);
   fftw_execute_r2r(p->plan, p->framebuf->frames[frame],
                    p->framebuf->frames[frame]);
   rt_real real, imag;
