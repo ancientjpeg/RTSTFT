@@ -23,7 +23,7 @@ rt_params rt_init(rt_uint frame_size, rt_uint overlap_factor,
   }
   rt_params p     = malloc(sizeof(rt_params_t));
   p->scale_factor = scale_factor;
-  p->pad_factor   = 1;
+  p->pad_factor   = 2;
   p->frame_size   = frame_size;
   p->fft_size     = frame_size * (1 << p->pad_factor);
   p->pad_offset   = (p->fft_size - p->frame_size) / 2;
