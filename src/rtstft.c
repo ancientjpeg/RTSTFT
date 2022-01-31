@@ -4,7 +4,15 @@
   - General plan
     - user init
       - user creates an rt_params_t struct, passes it to be initialized
-      - user is responsible for defining fft_size, block_size, overlap_factor
+      - user is responsible for defining frame_size, block_size, overlap_factor,
+        - (eventually) pad_factor
+  - current issues
+    - STFT aliasing
+      - even at 1024 fft-size, severe aliasing w/ sine waves
+        - 1024 fft gives 512 real bands
+        - 1kHz -> 1.26 kHz (major third)
+          - 1kHz aliased between 990 and 1033 Hz
+          - 1.26kHz aliased between 1248 and 1290
 */
 
 #define rt_max(a, b) ((a) > (b) ? (a) : (b))
@@ -23,7 +31,7 @@ rt_params rt_init(rt_uint frame_size, rt_uint overlap_factor,
   }
   rt_params p     = malloc(sizeof(rt_params_t));
   p->scale_factor = scale_factor;
-  p->pad_factor   = 2;
+  p->pad_factor   = 0;
   p->frame_size   = frame_size;
   p->fft_size     = frame_size * (1 << p->pad_factor);
   p->pad_offset   = (p->fft_size - p->frame_size) / 2;

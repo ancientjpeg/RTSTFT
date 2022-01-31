@@ -6,6 +6,7 @@ import json
 from math import floor, sin
 import math
 from numpy import random
+from cmath import phase
 
 
 def math_help(Ma=1024, N=256, F=4, S=2 ** (1 / 12)):
@@ -44,17 +45,23 @@ def plot_json():
     with open("out.json") as f:
         dat = json.load(f)["data"]
 
-    plt.subplot(2, 1, 1, title="in")
+    print(len(dat[0]) // 2)
+    dat[0] = [
+        phase(complex(dat[0][i + 1], dat[0][len(dat[0]) - (i + 1)]))
+        for i in range(len(dat[0]) // 4)
+    ]
+    print(len(dat[0]))
+    # plt.subplot(2, 1, 1, title="in")
     plt.scatter(y=dat[0], x=range(len(dat[0])))
     plt.plot(
         dat[0],
     )
 
-    plt.subplot(2, 1, 2, title="out")
-    plt.scatter(y=dat[1], x=range(len(dat[1])))
-    plt.plot(
-        dat[1],
-    )
+    # plt.subplot(2, 1, 2, title="out")
+    # plt.scatter(y=dat[1], x=range(len(dat[1])))
+    # plt.plot(
+    #     dat[1],
+    # )
     plt.show()
 
 
@@ -68,4 +75,5 @@ def math_2():
 
 
 # math_help()
-math_2()
+# math_2()
+plot_json()

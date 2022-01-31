@@ -41,10 +41,10 @@ FILE *closeJSON(FILE *json)
 int main()
 {
   time_t    t;
-  rt_uint   block_size   = 1 << 16;
+  rt_uint   block_size   = 1 << 14;
   rt_uint   buffer_size  = 1 << 10;
   rt_uint   frame_size   = 1 << 10;
-  float     scale_factor = pow(2, (float)0 / 12.);
+  float     scale_factor = pow(2, (float)4. / 12.);
   rt_params p[2];
   rt_uint   i, f;
   for (i = 0; i < 2; i++) {
@@ -62,15 +62,15 @@ int main()
     } */
     /*     wav.data[0][i] *= 1.5;
         wav.data[1][i] *= 0.6; */
-    double val     = sin((double)i / 44100. * sizeof(rt_real) * 500.);
+    double val     = sin((double)i / 44100. * 1000. * 2 * M_PI);
     wav.data[0][i] = val * 4000.;
     wav.data[1][i] = val * 4000.;
   }
 
   start_timer(t);
-  for (i = 0; i < 2; i++) {
+  for (i = 0; i < 1; i++) {
     for (f = 0; f < block_size; f += buffer_size) {
-      // rt_cycle(p[i], wav.data[i] + f, buffer_size);
+      rt_cycle(p[i], wav.data[i] + f, buffer_size);
     }
   }
   stop_timer(t);
