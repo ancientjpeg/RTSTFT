@@ -7,6 +7,9 @@ from math import floor, sin
 import math
 from numpy import random
 from cmath import phase
+from scipy.fft import fft, ifft, fftshift, ifftshift, fftfreq
+import numpy as np
+import scipy
 
 
 def math_help(Ma=1024, N=256, F=4, S=2 ** (1 / 12)):
@@ -74,6 +77,39 @@ def math_2():
         print(f"{k_amod=}, {ka_mod=}")
 
 
+def zero_windows():
+    size = 64
+    window_factor = size * (2 ** 2 - 1)
+    signal = [
+        (
+            math.sin(8 * math.tau * i / size)
+            # + 0.2 * math.sin(math.tau * 15 * i / size)
+            # + 0.4 * math.sin(math.tau * 12 * i / size)
+        )
+        / 2
+        for i in range(2, size + 2)
+    ]
+    signal *= np.hanning(len(signal))
+    t1 = fft(signal)
+    t2 = fft(fftshift(np.pad(signal, window_factor)))
+    g1 = scipy.absolute(t1)
+    g2 = scipy.absolute(t2)
+    plt.subplot(3, 1, 1, title="g1")
+    # plt.scatter(y=g1, x=range(len(g1)))
+    plt.bar(range(len(g1)), height=g1)
+    # plt.plot(g1)
+
+    plt.subplot(3, 1, 2, title="g2")
+    # plt.scatter(y=g2, x=range(len(g2)))
+    plt.bar(range(len(g2)), height=g2)
+    # plt.plot(g2)
+
+    plt.subplot(3, 1, 3, title="signal")
+    # plt.scatter(y=signal, x=range(size))
+    plt.plot(signal)
+    plt.show()
+
+
 # math_help()
 # math_2()
-plot_json()
+zero_windows()

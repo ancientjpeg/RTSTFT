@@ -13,6 +13,8 @@
         - 1kHz -> 1.26 kHz (major third)
           - 1kHz aliased between 990 and 1033 Hz
           - 1.26kHz aliased between 1248 and 1290
+    - pitch issues
+      - even without clear aliasing, serious pitch drift sometimes
 */
 
 #define rt_max(a, b) ((a) > (b) ? (a) : (b))

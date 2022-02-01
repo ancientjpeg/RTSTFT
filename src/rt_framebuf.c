@@ -7,8 +7,8 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
   framebuf->next_unprocessed = 0;
   framebuf->next_write       = 0;
   framebuf->num_frames       = num_frames;
-  framebuf->last_phases = (rt_real *)calloc(p->fft_size / 2, sizeof(rt_real));
-  framebuf->phases_adj  = (rt_real *)calloc(p->fft_size / 2, sizeof(rt_real));
+  framebuf->phases_prev = (rt_real *)calloc(p->fft_size / 2, sizeof(rt_real));
+  framebuf->phases_cuml = (rt_real *)calloc(p->fft_size / 2, sizeof(rt_real));
   framebuf->frame_data  = (char *)calloc(framebuf->num_frames, sizeof(char));
   framebuf->freq_calc =
       (rt_real *)malloc(sizeof(rt_real) * (p->fft_size / 2 + 1));
@@ -48,8 +48,8 @@ rt_framebuf rt_framebuf_destroy(rt_framebuf framebuf)
   fftw_free(framebuf->frames[0]);
   free(framebuf->frames);
   free(framebuf->frame_data);
-  free(framebuf->last_phases);
-  free(framebuf->phases_adj);
+  free(framebuf->phases_prev);
+  free(framebuf->phases_cuml);
   free(framebuf->freq_calc);
   free(framebuf);
   return NULL;
@@ -92,14 +92,14 @@ void rt_framebuf_process_frame(rt_params p, rt_uint frame)
   }
   for (i = 1; i < p->fft_size / 2 - 1; i++) {
     rt_uint  phase_index      = p->fft_size - i;
-    rt_real  prev_phase       = p->framebuf->last_phases[i];
-    rt_real *prev_phase_adj   = p->framebuf->phases_adj + i;
+    rt_real  prev_phase       = p->framebuf->phases_prev[i];
+    rt_real *prev_phase_adj   = p->framebuf->phases_cuml + i;
     rt_real *curr_phase_ptr   = p->framebuf->frames[frame] + phase_index;
 
     rt_real  freq_dev_wrapped = wrap((*curr_phase_ptr - prev_phase) -
                                      (p->hop_a * p->framebuf->freq_calc[i]));
     rt_real freq_true = freq_dev_wrapped / p->hop_a + p->framebuf->freq_calc[i];
-    p->framebuf->last_phases[i] = *curr_phase_ptr;
+    p->framebuf->phases_prev[i] = *curr_phase_ptr;
     *curr_phase_ptr             = *prev_phase_adj + (freq_true * p->hop_s);
     *prev_phase_adj             = *curr_phase_ptr;
   }
@@ -129,7 +129,7 @@ void rt_framebuf_revert_frame(rt_params p, rt_uint frame)
   fftw_execute_r2r(p->plan_inv, p->framebuf->frames[frame],
                    p->framebuf->frames[frame]);
   for (i = 0; i < p->fft_size; i++) {
-    p->framebuf->frames[frame][i] /= (rt_real)p->fft_size;
+    p->framebuf->frames[frame][i] /= (rt_real)p->frame_size;
   }
   rt_window(p->framebuf->frames[frame] + p->pad_offset, p->frame_size);
   p->framebuf->frame_data[frame] |= RT_FRAME_IS_INVERTED;
