@@ -78,22 +78,28 @@ def math_2():
 
 
 def zero_windows():
-    size = 64
+    size = 128
     window_factor = size * (2 ** 2 - 1)
     signal = [
         (
-            math.sin(8 * math.tau * i / size)
+            math.sin(5.47 * math.tau * i / size)
             # + 0.2 * math.sin(math.tau * 15 * i / size)
             # + 0.4 * math.sin(math.tau * 12 * i / size)
         )
         / 2
-        for i in range(2, size + 2)
+        for i in range(0, size)
     ]
     signal *= np.hanning(len(signal))
+    pure = np.zeros(size, dtype="complex")
+    mag = 1.0
+    phase = math.pi / 2
+    real = mag * math.cos(phase)
+    imag = mag * math.sin(phase)
+    pure[1] = complex(real, -imag)
     t1 = fft(signal)
     t2 = fft(fftshift(np.pad(signal, window_factor)))
     g1 = scipy.absolute(t1)
-    g2 = scipy.absolute(t2)
+    g2 = scipy.angle(pure)
     plt.subplot(3, 1, 1, title="g1")
     # plt.scatter(y=g1, x=range(len(g1)))
     plt.bar(range(len(g1)), height=g1)
@@ -101,8 +107,8 @@ def zero_windows():
 
     plt.subplot(3, 1, 2, title="g2")
     # plt.scatter(y=g2, x=range(len(g2)))
-    plt.bar(range(len(g2)), height=g2)
-    # plt.plot(g2)
+    # plt.bar(range(len(g2)), height=g2)
+    plt.plot(g2)
 
     plt.subplot(3, 1, 3, title="signal")
     # plt.scatter(y=signal, x=range(size))
