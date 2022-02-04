@@ -37,8 +37,8 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
     framebuf->frames[i] = framebuf->frames[0] + (p->fft_size * i);
   }
   for (i = 0; i <= p->fft_size / 2; i++) {
-    framebuf->freq_calc[i] = /* freqs are in rads/sec */
-        ((rt_real)i / p->fft_size) * 2 * M_PI;
+    framebuf->freq_calc[i] = /* freqs are in rads/hop */
+        ((rt_real)i / p->fft_size) * 2 * M_PI * p->hop_a;
   }
 
   return framebuf;
@@ -55,34 +55,35 @@ rt_framebuf rt_framebuf_destroy(rt_framebuf framebuf)
   return NULL;
 }
 
-void rt_framebuf_convert_frame(rt_params p, rt_uint frame)
+void rt_framebuf_convert_frame(rt_params p, rt_chan c, rt_uint frame)
 {
-  if (!(p->framebuf->frame_data[frame] & RT_FRAME_IS_FILLED)) {
+  if (!(c->framebuf->frame_data[frame] & RT_FRAME_IS_FILLED)) {
     fprintf(stderr, "Can't convert a frame that isn't filled!\n");
   }
-  rt_window(p->framebuf->frames[frame] + p->pad_offset, p->frame_size);
-  fftw_execute_r2r(p->plan, p->framebuf->frames[frame],
-                   p->framebuf->frames[frame]);
+  rt_window(c->framebuf->frames[frame] + p->pad_offset, p->frame_size);
+  fftw_execute_r2r(c->plan, c->framebuf->frames[frame],
+                   c->framebuf->frames[frame]);
   rt_real real, imag;
   rt_uint i;
   for (i = 1; i < p->fft_size / 2 - 1; i++) {
-    real                          = p->framebuf->frames[frame][i];
-    imag                          = p->framebuf->frames[frame][p->fft_size - i];
+    real                          = c->framebuf->frames[frame][i];
+    imag                          = c->framebuf->frames[frame][p->fft_size - i];
 
-    p->framebuf->frames[frame][i] = sqrt(real * real + imag * imag);
-    p->framebuf->frames[frame][p->fft_size - i] = atan2(imag, real);
+    c->framebuf->frames[frame][i] = sqrt(real * real + imag * imag);
+    c->framebuf->frames[frame][p->fft_size - i] = atan2(imag, real);
   }
-  p->framebuf->frame_data[frame] |= RT_FRAME_IS_CONVERTED;
+  c->framebuf->frame_data[frame] |= RT_FRAME_IS_CONVERTED;
 }
 
 #define wrap(a) (fmod(((a) + M_PI), 2. * M_PI) - M_PI)
-void rt_framebuf_process_frame(rt_params p, rt_uint frame)
+void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
 {
 
-  rt_uint i, last_frame = rt_framebuf_relative_frame(p->framebuf, frame, -1);
-  if (!(p->framebuf->frame_data[last_frame] & RT_FRAME_IS_PROCESSED)) {
-    if (p->first_frame) {
-      p->first_frame = 0;
+  rt_uint i, last_frame = rt_framebuf_relative_frame(c->framebuf, frame, -1);
+  if (!(c->framebuf->frame_data[last_frame] & RT_FRAME_IS_PROCESSED) &&
+      !c->first_frame) {
+    if (c->first_frame) {
+      c->first_frame = 0;
     }
     else {
       fprintf(stderr, "Can't process frame before the previous frame has been "
@@ -91,48 +92,52 @@ void rt_framebuf_process_frame(rt_params p, rt_uint frame)
     }
   }
   for (i = 1; i < p->fft_size / 2 - 1; i++) {
-    rt_uint  phase_index      = p->fft_size - i;
-    rt_real  prev_phase       = p->framebuf->phases_prev[i];
-    rt_real *prev_phase_adj   = p->framebuf->phases_cuml + i;
-    rt_real *curr_phase_ptr   = p->framebuf->frames[frame] + phase_index;
+    rt_uint  phase_index    = p->fft_size - i;
+    rt_real *prev_phase     = c->framebuf->phases_prev + i;
+    rt_real *prev_phase_adj = c->framebuf->phases_cuml + i;
+    rt_real *curr_phase_ptr = c->framebuf->frames[frame] + phase_index;
 
-    rt_real  freq_dev_wrapped = wrap((*curr_phase_ptr - prev_phase) -
-                                     (p->hop_a * p->framebuf->freq_calc[i]));
-    rt_real freq_true = freq_dev_wrapped / p->hop_a + p->framebuf->freq_calc[i];
-    p->framebuf->phases_prev[i] = *curr_phase_ptr;
-    *curr_phase_ptr             = *prev_phase_adj + (freq_true * p->hop_s);
-    *prev_phase_adj             = *curr_phase_ptr;
+    rt_real  freq_dev_wrapped =
+        wrap((*curr_phase_ptr - *prev_phase) - (c->framebuf->freq_calc[i]));
+    rt_real freq_true = freq_dev_wrapped + c->framebuf->freq_calc[i];
+    *prev_phase       = *curr_phase_ptr;
+    if (c->first_frame) {
+      c->first_frame = 0;
+    }
+    else {
+      *curr_phase_ptr = wrap(*prev_phase_adj + (freq_true * p->scale_factor));
+    }
+    *prev_phase_adj = *curr_phase_ptr;
   }
-  p->framebuf->frame_data[frame] |= RT_FRAME_IS_PROCESSED;
-  p->framebuf->next_unprocessed =
-      rt_framebuf_relative_frame(p->framebuf, frame, 1);
+  c->framebuf->frame_data[frame] |= RT_FRAME_IS_PROCESSED;
+  c->framebuf->next_unprocessed =
+      rt_framebuf_relative_frame(c->framebuf, frame, 1);
 }
 
-void rt_framebuf_revert_frame(rt_params p, rt_uint frame)
+void rt_framebuf_revert_frame(rt_params p, rt_chan c, rt_uint frame)
 {
-  rt_uint next_frame = rt_framebuf_relative_frame(p->framebuf, frame, 1);
-  if (!(p->framebuf->frame_data[next_frame] & RT_FRAME_IS_PROCESSED)) {
+  rt_uint next_frame = rt_framebuf_relative_frame(c->framebuf, frame, 1);
+  if (!(c->framebuf->frame_data[next_frame] & RT_FRAME_IS_PROCESSED)) {
     fprintf(stderr,
             "Can't revert frame before the next frame has been processed!\n");
     exit(1);
   }
   rt_real amp, phase;
-  p->framebuf->frames[frame][p->fft_size / 2] = 0.;
   rt_uint i;
   for (i = 1; i < p->fft_size / 2 - 1; i++) {
-    amp                           = p->framebuf->frames[frame][i];
-    phase                         = p->framebuf->frames[frame][p->fft_size - i];
+    amp                           = c->framebuf->frames[frame][i];
+    phase                         = c->framebuf->frames[frame][p->fft_size - i];
 
-    p->framebuf->frames[frame][i] = amp * cos(phase);
-    p->framebuf->frames[frame][p->fft_size - i] = amp * sin(phase);
+    c->framebuf->frames[frame][i] = amp * cos(phase);
+    c->framebuf->frames[frame][p->fft_size - i] = amp * sin(phase);
   }
-  fftw_execute_r2r(p->plan_inv, p->framebuf->frames[frame],
-                   p->framebuf->frames[frame]);
+  fftw_execute_r2r(c->plan_inv, c->framebuf->frames[frame],
+                   c->framebuf->frames[frame]);
   for (i = 0; i < p->fft_size; i++) {
-    p->framebuf->frames[frame][i] /= (rt_real)p->frame_size;
+    c->framebuf->frames[frame][i] /= (rt_real)p->frame_size;
   }
-  rt_window(p->framebuf->frames[frame] + p->pad_offset, p->frame_size);
-  p->framebuf->frame_data[frame] |= RT_FRAME_IS_INVERTED;
+  rt_window(c->framebuf->frames[frame] + p->pad_offset, p->frame_size);
+  c->framebuf->frame_data[frame] |= RT_FRAME_IS_INVERTED;
 }
 
 rt_uint rt_framebuf_relative_frame(rt_framebuf framebuf, rt_uint frame,
