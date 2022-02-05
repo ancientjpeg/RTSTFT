@@ -91,7 +91,7 @@ void rt_lerp_read_out(rt_params p, rt_chan c, rt_uint num_hops)
 void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
                    rt_uint buffer_len)
 {
-  rt_chan  c               = channel_index;
+  rt_chan  c               = p->chans[channel_index];
   rt_real *buffer_orig     = buffer;
   rt_uint  buffer_len_save = buffer_len;
   while (buffer_len > 0) {
@@ -121,14 +121,5 @@ void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
     }
     ++buffer;
     --buffer_len;
-  }
-}
-
-void rt_cycle(rt_params p, rt_real **buffers, rt_uint num_buffers,
-              rt_uint buffer_len)
-{
-  rt_uint i;
-  for (i = 0; i < num_buffers; i++) {
-    rt_cycle_chan(p, p->chans[i], buffers[i], buffer_len);
   }
 }

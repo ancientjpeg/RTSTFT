@@ -44,15 +44,12 @@ int main()
   rt_uint   block_size   = 1 << 15;
   rt_uint   buffer_size  = 1 << 8;
   rt_uint   frame_size   = 1 << 8;
-  float     scale_factor = pow(2, (float)4. / 12.);
-  rt_params p[2];
+  float     scale_factor = pow(2, (float)0. / 12.);
   rt_uint   i, f;
-  for (i = 0; i < 2; i++) {
-    p[i] = rt_init(frame_size, 8, buffer_size, 44100.f, scale_factor);
-  }
-  WAV     wav = read_from_wav("in.wav", block_size);
-  rt_real temp_null;
-  rt_uint latency_size = frame_size;
+  rt_params p   = rt_init(2, frame_size, buffer_size, 4, 0, 44100.f);
+  WAV       wav = read_from_wav("in.wav", block_size);
+  rt_real   temp_null;
+  rt_uint   latency_size = frame_size;
   for (i = 0; i < block_size; i++) {
     //   /* if (i >= latency_size && i < block_size - latency_size) {
     //     wav.data[1][i] = wav.data[0][i - latency_size];
@@ -70,14 +67,15 @@ int main()
   }
 
   start_timer(t);
-  for (i = 0; i < 1; i++) {
-    for (f = 0; f < block_size; f += buffer_size) {
-      rt_cycle(p[i], wav.data[i] + f, buffer_size);
-    }
+  for (f = 0; f < block_size; f += buffer_size) {
+    // for (i = 0; i < 2; i++) {
+    //   rt_cycle_chan(p, i, wav.data[i] + f, buffer_size);
+    // }
+    rt_cycle_offset(p, wav.data, 2, buffer_size, f);
   }
   stop_timer(t);
 
   write_to_wav("out.wav", &wav);
-  rt_clean(p[0]);
+  rt_clean(p);
   return 0;
 }

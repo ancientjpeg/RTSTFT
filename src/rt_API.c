@@ -4,7 +4,8 @@
 
 rt_chan rt_chan_init(rt_params p)
 {
-  rt_chan chan       = malloc(sizeof(rt_chan_t));
+  rt_chan chan       = (rt_chan)malloc(sizeof(rt_chan_t));
+  chan->first_frame  = 1;
   chan->framebuf     = rt_framebuf_init(p, 2);
   chan->in           = rt_fifo_init(rt_max(p->buffer_size, p->frame_size * 2));
   rt_uint lerp_frame = p->overlap_factor * p->hop_s + p->frame_size;
@@ -32,9 +33,28 @@ rt_chan rt_chan_clean(rt_chan chan)
   return (rt_chan)NULL;
 }
 
-rt_params rt_init(rt_uint num_channels, rt_uint frame_size,
-                  rt_uint overlap_factor, rt_uint buffer_size,
-                  float sample_rate, float scale_factor)
+void rt_cycle_single(rt_params p, rt_real *buffer, rt_uint buffer_len)
+{
+  rt_cycle_chan(p, 0, buffer, buffer_len);
+}
+
+void rt_cycle(rt_params p, rt_real **buffers, rt_uint num_buffers,
+              rt_uint buffer_len)
+{
+  rt_cycle_offset(p, buffers, num_buffers, buffer_len, 0);
+}
+
+void rt_cycle_offset(rt_params p, rt_real **buffers, rt_uint num_buffers,
+                     rt_uint buffer_len, rt_uint sample_offset)
+{
+  rt_uint i;
+  for (i = 0; i < num_buffers; i++) {
+    rt_cycle_chan(p, i, buffers[i] + sample_offset, buffer_len);
+  }
+}
+
+rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
+                  rt_uint overlap_factor, rt_uint pad_factor, float sample_rate)
 {
   if (frame_size * sizeof(float) % 16 != 0) {
     fprintf(stderr, "Frames  must be able to by byte-aligned to 16 bytes.");
@@ -45,8 +65,8 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size,
     exit(1);
   }
   rt_params p     = malloc(sizeof(rt_params_t));
-  p->scale_factor = scale_factor;
-  p->pad_factor   = 0;
+  p->scale_factor = 1.0;
+  p->pad_factor   = pad_factor;
   p->frame_size   = frame_size;
   p->fft_size     = frame_size * (1 << p->pad_factor);
   p->pad_offset   = (p->fft_size - p->frame_size) / 2;
@@ -68,7 +88,7 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size,
   p->chans          = malloc(p->num_chans * sizeof(rt_chan));
   rt_uint i;
   for (i = 0; i < p->num_chans; i++) {
-    p->chans = rt_chan_init(p);
+    p->chans[i] = rt_chan_init(p);
   }
   return p;
 }
@@ -83,3 +103,5 @@ rt_params rt_clean(rt_params p)
   free(p);
   return (rt_params)NULL;
 }
+
+rt_uint rt_real_size() { return sizeof(rt_real); }
