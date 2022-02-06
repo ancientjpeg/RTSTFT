@@ -93,21 +93,21 @@ void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
   }
   for (i = 1; i < p->fft_size / 2 - 1; i++) {
     rt_uint  phase_index    = p->fft_size - i;
-    rt_real *prev_phase     = c->framebuf->phases_prev + i;
-    rt_real *prev_phase_adj = c->framebuf->phases_cuml + i;
+    rt_real *phase_prev     = c->framebuf->phases_prev + i;
+    rt_real *phase_cuml     = c->framebuf->phases_cuml + i;
     rt_real *curr_phase_ptr = c->framebuf->frames[frame] + phase_index;
 
     rt_real  freq_dev_wrapped =
-        wrap((*curr_phase_ptr - *prev_phase) - (c->framebuf->freq_calc[i]));
+        wrap((*curr_phase_ptr - *phase_prev) - (c->framebuf->freq_calc[i]));
     rt_real freq_true = freq_dev_wrapped + c->framebuf->freq_calc[i];
-    *prev_phase       = *curr_phase_ptr;
+    *phase_prev       = *curr_phase_ptr;
     if (c->first_frame) {
       c->first_frame = 0;
     }
     else {
-      *curr_phase_ptr = wrap(*prev_phase_adj + (freq_true * p->scale_factor));
+      *curr_phase_ptr = wrap(*phase_cuml + (freq_true * p->scale_factor));
     }
-    *prev_phase_adj = *curr_phase_ptr;
+    *phase_cuml = *curr_phase_ptr;
   }
   c->framebuf->frame_data[frame] |= RT_FRAME_IS_PROCESSED;
   c->framebuf->next_unprocessed =
