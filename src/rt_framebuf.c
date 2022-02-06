@@ -1,5 +1,37 @@
+/**
+ * @file rt_framebuf.c
+ * @author Jackson Kaplan (jacksonkaplan@alum.calarts.edu)
+ * @brief
+ * @version 0.1a1
+ * @date 2022-02-05
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #include "rtstft.h"
 
+/**
+ * @brief Init function for RTSTFT's framebuffer.
+ *
+ *
+ * @param p An rt_params signifying the active instance of RTSTFT.
+ * @param num_frames The number of frames the framebuffer should be able to
+ * hold. Usually 2.
+ * @return rt_framebuf
+ *
+ * @bug Please note here: for some reason, fftw_alloc real seems to be a
+ * little iffy when it's placed in between the other mallocs and callocs. This
+ * error doesn't appear when only using one rt_params instance, and doesn't
+ * appear when fftw_alloc_real is placed at the end of this chain of allocs
+ * inside rt_framebuf_init. My suspicion is that the compiler decided to run
+ * two instances of rt_init somewhat "simultaneously", so that the
+ * rt_framebuf_init for channels 1 and 2 are run VERY close to each other.
+ * this may mess up something about how malloc keep track of memory, because
+ * the fftw malloc enforces alignment so strictly and possibly leaves extra
+ * memory at the edges of its allocation? Or I just don't understand at all
+ * how malloc works. tl;dr: fftw_alloc and fftw_plan do some weird shit so
+ * never rely on fftw buffers to behave like normal ones.
+ */
 rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
 {
   rt_framebuf framebuf       = (rt_framebuf)malloc(sizeof(rt_framebuf_t));
@@ -12,37 +44,29 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
   framebuf->frame_data  = (char *)calloc(framebuf->num_frames, sizeof(char));
   framebuf->freq_calc =
       (rt_real *)malloc(sizeof(rt_real) * (p->fft_size / 2 + 1));
-  framebuf->frames =
-      (rt_real **)malloc(sizeof(rt_real *) * framebuf->num_frames);
-  /*
-    Please note here: for some reason, fftw_alloc real seems to be a little iffy
-    when it's placed in between the other mallocs and callocs. This error
-    doesn't appear when only using one rt_params instance, and doesn't appear
-    when fftw_alloc_real is placed at the end of this chain of allocs inside
-    rt_framebuf_init. My suspicion is that the compiler decided to run two
-    instances of rt_init somewhat "simultaneously", so that the rt_framebuf_init
-    for channels 1 and 2 are run VERY close to each other. this may mess up
-    something about how malloc keep track of memory, because the fftw malloc
-    enforces alignment so strictly and possibly leaves extra memory at the edges
-    of its allocation? Or I just don't understand at all how malloc works.
-
-
-    tl;dr: fftw_alloc and fftw_plan do some weird shit so never rely on fftw
-    buffers to behave like normal ones.
-  */
-  framebuf->frames[0] =
-      (rt_real *)fftw_alloc_real(p->fft_size * framebuf->num_frames);
   rt_uint i;
-  for (i = 1; i < framebuf->num_frames; i++) {
-    framebuf->frames[i] = framebuf->frames[0] + (p->fft_size * i);
-  }
   for (i = 0; i <= p->fft_size / 2; i++) {
     framebuf->freq_calc[i] = /* freqs are in rads/hop */
         ((rt_real)i / p->fft_size) * 2 * M_PI * p->hop_a;
   }
+  framebuf->frames =
+      (rt_real **)malloc(sizeof(rt_real *) * framebuf->num_frames);
+
+  framebuf->frames[0] =
+      (rt_real *)fftw_alloc_real(p->fft_size * framebuf->num_frames);
+  for (i = 1; i < framebuf->num_frames; i++) {
+    framebuf->frames[i] = framebuf->frames[0] + (p->fft_size * i);
+  }
 
   return framebuf;
 }
+
+/**
+ * @brief Cleanup function for an rt_framebuf.
+ *
+ * @param framebuf Frame buffer to be deallocated.
+ * @return rt_framebuf
+ */
 rt_framebuf rt_framebuf_destroy(rt_framebuf framebuf)
 {
   fftw_free(framebuf->frames[0]);
@@ -78,19 +102,19 @@ void rt_framebuf_convert_frame(rt_params p, rt_chan c, rt_uint frame)
 #define wrap(a) (fmod(((a) + M_PI), 2. * M_PI) - M_PI)
 void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
 {
-
   rt_uint i, last_frame = rt_framebuf_relative_frame(c->framebuf, frame, -1);
   if (!(c->framebuf->frame_data[last_frame] & RT_FRAME_IS_PROCESSED) &&
       !c->first_frame) {
-    if (c->first_frame) {
-      c->first_frame = 0;
-    }
-    else {
-      fprintf(stderr, "Can't process frame before the previous frame has been "
-                      "processed!\n");
-      exit(1);
-    }
+    fprintf(stderr, "Can't process frame before the previous frame has been "
+                    "processed!\n");
+    exit(1);
   }
+
+  if (p->manip_settings) {
+    rt_chan input_chan = p->manip_multichannel ? c : p->chans[0];
+    rt_manip_process(p, input_chan, c->framebuf->frames[frame]);
+  }
+
   for (i = 1; i < p->fft_size / 2 - 1; i++) {
     rt_uint  phase_index    = p->fft_size - i;
     rt_real *phase_prev     = c->framebuf->phases_prev + i;

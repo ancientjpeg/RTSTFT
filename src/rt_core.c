@@ -1,20 +1,30 @@
+/**
+ * @file rt_core.c
+ * @author Jackson Kaplan (jacksonkaplan@alum.calarts.edu)
+ * @brief
+ * @version 0.1a1
+ * @date 2022-02-05
+ *
+ * @copyright Copyright (c) 2022
+ * - General plan
+ *   - user init
+ *     - user creates an rt_params_t struct, passes it to be initialized
+ *     - user is responsible for defining frame_size, block_size,
+ * overlap_factor, pad_factor
+ * - current issues
+ *   - STFT aliasing
+ *     - even at 1024 fft-size, severe aliasing w/ sine waves
+ *       - 1024 fft gives 512 real bands
+ *       - 1kHz -> 1.26 kHz (major third)
+ *         - 1kHz aliased between 990 and 1033 Hz
+ *         - 1.26kHz aliased between 1248 and 1290
+ *   - pitch issues
+ *     - even without clear aliasing, serious pitch drift sometimes
+ */
 #include "rtstft.h"
 
 /*
-  - General plan
-    - user init
-      - user creates an rt_params_t struct, passes it to be initialized
-      - user is responsible for defining frame_size, block_size, overlap_factor,
-        - (eventually) pad_factor
-  - current issues
-    - STFT aliasing
-      - even at 1024 fft-size, severe aliasing w/ sine waves
-        - 1024 fft gives 512 real bands
-        - 1kHz -> 1.26 kHz (major third)
-          - 1kHz aliased between 990 and 1033 Hz
-          - 1.26kHz aliased between 1248 and 1290
-    - pitch issues
-      - even without clear aliasing, serious pitch drift sometimes
+
 */
 
 void rt_digest_frame(rt_params p, rt_chan c)

@@ -47,4 +47,4 @@ run: debug
 	$(EXE)
 test: debug run clean
 show:
-	echo $(FFTW)
+	echo $(STUFF)

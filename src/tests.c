@@ -1,3 +1,13 @@
+/**
+ * @file tests.c
+ * @author Jackson Kaplan (jacksonkaplan@alum.calarts.edu)
+ * @brief
+ * @version 0.1a1
+ * @date 2022-02-05
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #include "rtstft.h"
 #include "wavfile.h"
 #include <time.h>
@@ -60,8 +70,8 @@ int main()
     //   /*     wav.data[0][i] *= 1.5;
     //       wav.data[1][i] *= 0.6; */
     double val     = sin((double)i / 44100. * 880. * 2 * M_PI);
-    wav.data[0][i] = val * 4000.;
-    wav.data[1][i] = val * 4000.;
+    wav.data[0][i] = val * 0.6;
+    wav.data[1][i] = val * 0.6;
     // wav.data[0][i] *= 0.5;
     // wav.data[1][i] *= 0.5;
   }

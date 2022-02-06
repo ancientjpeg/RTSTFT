@@ -49,22 +49,40 @@ rt_cycle(p, buffers, num_channels, 64);
 ```
 After the above block of code, `rt_cycle` will have consumed 64 samples of data but output 64 zeros back to the buffers. RTSTFT is a real-time algorithm (it's in the name!), so it will write back zeros until it has fully processed its first FFT frame, indicating a latency equal to the current FFT frame size.
 
-
-
-
+When you're done, you can tidily deallocate all the memory RTSTFT used with a single line of code:
+```c
+rt_clean(params);
+```
 
 ## Advanced Usage and Configuration
 -----
 
 #### Compilation
 
-WIP
+**I still have not thoroughly tested the Makefile!** Though I feel it is extraordinarily unlikely that a `make` error could cause any damage outside the local directory in the event of an error, I have only tested it on my personal machine so far.
+
+To enable RTSTFT in double-precision, just define the RT_DOUBLE environment variable in your make command:
+```make
+make RT_DOUBLE=1
+```
+
+If you would like to customize your installation of FFTW, you can find the relevant documentation on their site [here](https://www.fftw.org/fftw3_doc/Installation-and-Customization.html). In the context of RTSTFT, you just need to cd into the fftw_src directory *__before__* running `make`, and simply compile FFTW yourself following their instructions, i.e.:
+```make
+./configure [YOUR FFTW CONFIG FLAGS HERE]
+make
+make install
+```
+As of right now, I cannot make any promises as to whether or not any of these changes will break RTSTFT. In particular, enabling threading on FFTW could theoretically cause some issues––it won't *necessarily* break anything, but I have not prepared the RTSTFT system to handle FFTW threading its allocation routines.
 
 #### Data Types
 To use RTSTFT, it is highly recommended to place your data into arrays of type `rt_real`, which is a floating-point type that is defined to allow the library to be implemented in single or double precision. If this is not possible, you can verify the floating-point precision using the provided utility function `rt_real_size()`.
 
+`rt_uint` is an unsigned integral type that is guaranteed at compile time to be at least 4 bytes. This is done for internal consistency, and for most practical purposes one needn't worry about this and may simply pass integer literals (as long as they're not negative!).
+
+`rt_params` is an opaque pointer type used to communicate and manage RTSTFT algorithm's state. This typedef was not made for the sake of convenience, but instead to clearly convey that the internal workings of RTSTFT should not be meddled with directly at runtime. Instead, RTSTFT implements an outward-facing API where each function takes an `rt_params` variable as its first argument.
+
 #### API
-With its simplest API functionality, RTSTFT will take blocks of data from some number of channels, digest and process the data using its own internal data structures, and write its results to the same buffer it read from. One must first initialize an instance of `rt_params`, which is an opaque pointer type used to communicate and manage RTSTFT algorithm's state. The function `rt_init` will return an intialized `rt_params` instance.
+With its simplest API functionality, RTSTFT will take blocks of data from some number of channels, digest and process the data using its own internal data structures, and write its results to the same buffer it read from. One must first initialize an instance of `rt_params`, which should always be done using the API's `rt_init` function.
 
 Let's take a look at `rt_init`:
 ```c
@@ -72,8 +90,6 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size,
                   rt_uint buffer_size, rt_uint overlap_factor, 
                   rt_uint pad_factor, float sample_rate);
 ```
-
-First, note that `rt_uint` is an unsigned integral type that is guaranteed at compile time to be at least 4 bytes. This is done for internal consistency, and for most practical purposes one needn't worry about this and may simply pass integer literals.
 
 The first argument to `rt_init` is the number of channels, the second is the FFT frame size to be used.
 

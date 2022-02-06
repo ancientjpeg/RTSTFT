@@ -1,3 +1,13 @@
+/**
+ * @file wavfile.c
+ * @author Jackson Kaplan (jacksonkaplan@alum.calarts.edu)
+ * @brief
+ * @version 0.1a1
+ * @date 2022-02-05
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #include "wavfile.h"
 
 WAV read_from_wav(const char *filename, const rt_uint size)
@@ -29,7 +39,8 @@ WAV read_from_wav(const char *filename, const rt_uint size)
     fread(dataread + i, sizeof(short), readsize, file);
   }
   for (i = 0; i < wav.data_len * 2; i++) {
-    wav.data[i % 2][i / 2] = (rt_real)dataread[i];
+    wav.data[i % 2][i / 2] =
+        (rt_real)dataread[i] / (1U << (sizeof(dataread[0]) * 8 / 2));
   }
 
   int filesize                 = 44 + (raw_data_len);
@@ -49,7 +60,8 @@ void write_to_wav(const char *filename, WAV *wav)
 
   rt_uint i;
   for (i = 0; i < wav->data_len * 2; i++) {
-    datawrite[i] = (short)wav->data[i % 2][i / 2];
+    datawrite[i] = (short)(wav->data[i % 2][i / 2] *
+                           (1U << (sizeof(datawrite[0]) * 8 / 2)));
   }
   FILE *file = fopen(filename, "wb");
   if (!file) {

@@ -1,3 +1,13 @@
+/**
+ * @file rtstft.h
+ * @author Jackson Kaplan (jacksonkaplan@alum.calarts.edu)
+ * @brief
+ * @version 0.1a1
+ * @date 2022-02-05
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #ifndef RT_PHASEVOC_H
 #define RT_PHASEVOC_H
 
@@ -10,19 +20,32 @@
     - i.e. 2. for and octave up shift, 1.0595 for 1 st etc.
 */
 
+typedef enum RTSTFT_Manipulation_Values {
+  RT_MANIP_LEVEL,
+  RT_MANIP_CLAMP_LO,
+  RT_MANIP_CLAMP_HI,
+  RT_MANIP_TYPE_COUNT
+} rt_manip;
+
 typedef struct RTSTFT_Channel {
-  rt_framebuf framebuf;
-  fftw_plan   plan, plan_inv;
-  rt_fifo     in, pre_lerp, out;
-  char        first_frame;
+  rt_framebuf   framebuf;
+  fftw_plan     plan, plan_inv;
+  rt_fifo       in, pre_lerp, out;
+  rt_real      *manips;
+  unsigned char first_frame;
 } rt_chan_t;
 typedef rt_chan_t *rt_chan;
 
+/**
+ * @brief The internal struct that rt_params represents.
+ *
+ */
 typedef struct RTSTFT_Params {
   rt_uint num_chans, fft_size, frame_size, frame_max, overlap_factor,
       pad_factor, pad_offset, hop_a, hop_s, buffer_size;
-  rt_real  scale_factor, sample_rate;
-  rt_chan *chans;
+  rt_real       scale_factor, sample_rate;
+  rt_chan      *chans;
+  unsigned char manip_settings, manip_multichannel;
 } rt_params_t;
 typedef rt_params_t *rt_params;
 
@@ -37,6 +60,10 @@ void      rt_cycle_offset(rt_params p, rt_real **buffers, rt_uint num_buffers,
 void      rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
                         rt_uint buffer_len);
 rt_params rt_clean(rt_params p);
+
+/* ========   rt_manip    ======== */
+rt_real *rt_manip_init(rt_params p, rt_chan c);
+void     rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr);
 
 /* ========  rt_framebuf  ======== */
 rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames);

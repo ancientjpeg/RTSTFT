@@ -1,3 +1,13 @@
+/**
+ * @file wavfile.h
+ * @author Jackson Kaplan (jacksonkaplan@alum.calarts.edu)
+ * @brief
+ * @version 0.1a1
+ * @date 2022-02-05
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #include "rtstft.h"
 
 typedef struct WAV {

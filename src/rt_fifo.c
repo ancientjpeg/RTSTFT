@@ -1,3 +1,13 @@
+/**
+ * @file rt_fifo.c
+ * @author Jackson Kaplan (jacksonkaplan@alum.calarts.edu)
+ * @brief
+ * @version 0.1a1
+ * @date 2022-02-05
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #include "rtstft.h"
 
 rt_fifo rt_fifo_init(rt_uint len)
