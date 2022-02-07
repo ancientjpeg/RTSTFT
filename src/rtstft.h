@@ -20,6 +20,8 @@
     - i.e. 2. for and octave up shift, 1.0595 for 1 st etc.
 */
 
+#define rt_setup (p->fft_curr_pow - p->fft_min_pow)
+
 typedef enum RTSTFT_Manipulation_Values {
   RT_MANIP_LEVEL,
   RT_MANIP_CLAMP_LO,
@@ -29,8 +31,8 @@ typedef enum RTSTFT_Manipulation_Values {
 
 typedef struct RTSTFT_Channel {
   rt_framebuf   framebuf;
-  fftw_plan     plan, plan_inv;
   rt_fifo       in, pre_lerp, out;
+  PFFFT_Setup **setups;
   rt_real      *manips;
   unsigned char first_frame;
 } rt_chan_t;
@@ -42,16 +44,17 @@ typedef rt_chan_t *rt_chan;
  */
 typedef struct RTSTFT_Params {
   rt_uint num_chans, fft_size, frame_size, frame_max, overlap_factor,
-      pad_factor, pad_offset, hop_a, hop_s, buffer_size;
+      pad_factor, pad_offset, hop_a, hop_s, buffer_size, fft_min_pow,
+      fft_max_pow, fft_curr_pow;
   rt_real       scale_factor, sample_rate;
   rt_chan      *chans;
   unsigned char manip_settings, manip_multichannel;
 } rt_params_t;
 typedef rt_params_t *rt_params;
 
-rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
-                  rt_uint overlap_factor, rt_uint pad_factor,
-                  float sample_rate);
+rt_params            rt_init(rt_uint num_channels, rt_uint frame_size_pow,
+                             rt_uint buffer_size_pow, rt_uint overlap_factor,
+                             rt_uint pad_factor, float sample_rate);
 void      rt_cycle(rt_params p, rt_real **buffers, rt_uint num_buffers,
                    rt_uint buffer_len);
 void      rt_cycle_single(rt_params p, rt_real *buffer, rt_uint buffer_len);

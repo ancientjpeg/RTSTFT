@@ -51,12 +51,14 @@ FILE *closeJSON(FILE *json)
 int main()
 {
   time_t    t;
+  rt_uint   buffer_pow   = 8;
+  rt_uint   frame_pow    = 8;
   rt_uint   block_size   = 1 << 15;
-  rt_uint   buffer_size  = 1 << 8;
-  rt_uint   frame_size   = 1 << 8;
+  rt_uint   buffer_size  = 1 << buffer_pow;
+  rt_uint   frame_size   = 1 << frame_pow;
   float     scale_factor = pow(2, (float)0. / 12.);
   rt_uint   i, f;
-  rt_params p   = rt_init(2, frame_size, buffer_size, 4, 0, 44100.f);
+  rt_params p   = rt_init(2, frame_pow, buffer_pow, 4, 0, 44100.f);
   WAV       wav = read_from_wav("in.wav", block_size);
   rt_real   temp_null;
   rt_uint   latency_size = frame_size;

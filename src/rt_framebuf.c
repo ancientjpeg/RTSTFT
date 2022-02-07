@@ -53,10 +53,12 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
       (rt_real **)malloc(sizeof(rt_real *) * framebuf->num_frames);
 
   framebuf->frames[0] =
-      (rt_real *)fftw_alloc_real(p->fft_size * framebuf->num_frames);
+      (rt_real *)pffft_aligned_malloc(p->fft_size * framebuf->num_frames);
   for (i = 1; i < framebuf->num_frames; i++) {
     framebuf->frames[i] = framebuf->frames[0] + (p->fft_size * i);
   }
+  /** pffft work array */
+  framebuf->work = (rt_real *)pffft_aligned_malloc(p->fft_size);
 
   return framebuf;
 }
@@ -69,7 +71,8 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
  */
 rt_framebuf rt_framebuf_destroy(rt_framebuf framebuf)
 {
-  fftw_free(framebuf->frames[0]);
+  pffft_aligned_free(framebuf->work);
+  pffft_aligned_free(framebuf->frames[0]);
   free(framebuf->frames);
   free(framebuf->frame_data);
   free(framebuf->phases_prev);
@@ -85,16 +88,17 @@ void rt_framebuf_convert_frame(rt_params p, rt_chan c, rt_uint frame)
     fprintf(stderr, "Can't convert a frame that isn't filled!\n");
   }
   rt_window(c->framebuf->frames[frame] + p->pad_offset, p->frame_size);
-  fftw_execute_r2r(c->plan, c->framebuf->frames[frame],
-                   c->framebuf->frames[frame]);
+  pffft_transform_ordered(c->setups[rt_setup], c->framebuf->frames[frame],
+                          c->framebuf->frames[frame], c->framebuf->work,
+                          PFFFT_FORWARD);
   rt_real real, imag;
   rt_uint i;
-  for (i = 1; i < p->fft_size / 2 - 1; i++) {
-    real                          = c->framebuf->frames[frame][i];
-    imag                          = c->framebuf->frames[frame][p->fft_size - i];
+  for (i = 2; i < p->fft_size; i += 2) {
+    real                              = c->framebuf->frames[frame][i];
+    imag                              = c->framebuf->frames[frame][i + 1];
 
-    c->framebuf->frames[frame][i] = sqrt(real * real + imag * imag);
-    c->framebuf->frames[frame][p->fft_size - i] = atan2(imag, real);
+    c->framebuf->frames[frame][i]     = sqrt(real * real + imag * imag);
+    c->framebuf->frames[frame][i + 1] = atan2(imag, real);
   }
   c->framebuf->frame_data[frame] |= RT_FRAME_IS_CONVERTED;
 }
@@ -115,8 +119,8 @@ void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
     rt_manip_process(p, input_chan, c->framebuf->frames[frame]);
   }
 
-  for (i = 1; i < p->fft_size / 2 - 1; i++) {
-    rt_uint  phase_index    = p->fft_size - i;
+  for (i = 2; i < p->fft_size; i += 2) {
+    rt_uint  phase_index    = i + 1;
     rt_real *phase_prev     = c->framebuf->phases_prev + i;
     rt_real *phase_cuml     = c->framebuf->phases_cuml + i;
     rt_real *curr_phase_ptr = c->framebuf->frames[frame] + phase_index;
@@ -148,16 +152,19 @@ void rt_framebuf_revert_frame(rt_params p, rt_chan c, rt_uint frame)
   }
   rt_real amp, phase;
   rt_uint i;
-  for (i = 1; i < p->fft_size / 2 - 1; i++) {
-    amp                           = c->framebuf->frames[frame][i];
-    phase                         = c->framebuf->frames[frame][p->fft_size - i];
+  for (i = 2; i < p->fft_size; i += 2) {
+    amp                               = c->framebuf->frames[frame][i];
+    phase                             = c->framebuf->frames[frame][i + 1];
 
-    c->framebuf->frames[frame][i] = amp * cos(phase);
-    c->framebuf->frames[frame][p->fft_size - i] = amp * sin(phase);
+    c->framebuf->frames[frame][i]     = amp * cos(phase);
+    c->framebuf->frames[frame][i + 1] = amp * sin(phase);
   }
-  fftw_execute_r2r(c->plan_inv, c->framebuf->frames[frame],
-                   c->framebuf->frames[frame]);
+
+  pffft_transform_ordered(c->setups[rt_setup], c->framebuf->frames[frame],
+                          c->framebuf->frames[frame], c->framebuf->work,
+                          PFFFT_BACKWARD);
   for (i = 0; i < p->fft_size; i++) {
+    /* idk why this isn't divided by p->fft_size but whatever */
     c->framebuf->frames[frame][i] /= (rt_real)p->frame_size;
   }
   rt_window(c->framebuf->frames[frame] + p->pad_offset, p->frame_size);

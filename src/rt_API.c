@@ -13,36 +13,34 @@
 #define rt_min(a, b) ((a) < (b) ? (a) : (b))
 
 rt_chan   rt_chan_init(rt_params p);
-rt_chan   rt_chan_clean(rt_chan chan);
+rt_chan   rt_chan_clean(rt_params p, rt_chan chan);
 
-rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
-                  rt_uint overlap_factor, rt_uint pad_factor, float sample_rate)
+rt_params rt_init(rt_uint num_channels, rt_uint frame_size_pow,
+                  rt_uint buffer_size_pow, rt_uint overlap_factor,
+                  rt_uint pad_factor, float sample_rate)
 {
-  if (frame_size * sizeof(float) % 16 != 0) {
-    fprintf(stderr, "Frames  must be able to by byte-aligned to 16 bytes.");
-    exit(1);
-  }
-  else if (!frame_size || overlap_factor <= 0.f) {
-    fprintf(stderr, "Cannot have frame size or overlap factor be <= zero.");
-    exit(1);
-  }
   rt_params p     = malloc(sizeof(rt_params_t));
-  p->scale_factor = 1.0;
+  p->fft_min_pow  = 5; /** 2 * SIMD_SZ ^ 2 */
+  p->fft_max_pow  = 16;
   p->pad_factor   = pad_factor;
-  p->frame_size   = frame_size;
-  p->fft_size     = frame_size * (1 << p->pad_factor);
-  p->pad_offset   = (p->fft_size - p->frame_size) / 2;
-  p->frame_max    = 1 << 15;
-  if (p->fft_size > p->frame_max) {
+  p->fft_curr_pow = frame_size_pow + pad_factor;
+  if (p->fft_curr_pow > p->fft_max_pow) {
     fprintf(stderr, "Exceeded maximum frame size.\n");
     exit(1);
   }
-  else if (p->fft_size < 32) {
+  else if (p->fft_curr_pow < p->fft_min_pow) {
     fprintf(stderr, "Below minimum frame size.\n");
     exit(1);
   }
+
+  p->scale_factor   = 1.0;
+  p->frame_size     = 1 << frame_size_pow;
+  p->fft_size       = p->fft_curr_pow;
+  p->pad_offset     = (p->fft_size - p->frame_size) / 2;
+  p->frame_max      = 1 << 15;
+
   p->overlap_factor = overlap_factor;
-  p->buffer_size    = buffer_size;
+  p->buffer_size    = 1U << buffer_size_pow;
   p->sample_rate    = sample_rate;
   p->hop_a          = p->frame_size / p->overlap_factor;
   p->hop_s          = lround(p->hop_a * p->scale_factor);
@@ -64,7 +62,7 @@ rt_params rt_clean(rt_params p)
 {
   rt_uint i;
   for (i = 0; i < p->num_chans; i++) {
-    rt_chan_clean(p->chans[i]);
+    rt_chan_clean(p, p->chans[i]);
   }
   free(p->chans);
   free(p);
@@ -100,25 +98,30 @@ rt_chan rt_chan_init(rt_params p)
   chan->pre_lerp     = rt_fifo_init(
           rt_max((rt_uint)ceil((rt_real)p->buffer_size * 2 * p->scale_factor),
                  lerp_frame * 2));
-  chan->out      = rt_fifo_init(rt_max(p->buffer_size, p->frame_size * 2));
-  chan->manips   = rt_manip_init(p, chan);
-  chan->framebuf = rt_framebuf_init(p, 2);
-  chan->plan =
-      fftw_plan_r2r_1d(p->fft_size, chan->framebuf->frames[0],
-                       chan->framebuf->frames[0], FFTW_R2HC, FFTW_ESTIMATE);
-  chan->plan_inv =
-      fftw_plan_r2r_1d(p->fft_size, chan->framebuf->frames[0],
-                       chan->framebuf->frames[0], FFTW_HC2R, FFTW_ESTIMATE);
+  chan->out          = rt_fifo_init(rt_max(p->buffer_size, p->frame_size * 2));
+  chan->manips       = rt_manip_init(p, chan);
+  chan->framebuf     = rt_framebuf_init(p, 2);
+  rt_uint num_setups = p->fft_max_pow - p->fft_min_pow + 1;
+  chan->setups = (PFFFT_Setup **)malloc(num_setups * sizeof(PFFFT_Setup *));
+  rt_uint i, N, buffer_len;
+  for (i = p->fft_min_pow; i <= p->fft_max_pow; i++) {
+    N               = (1 << i);
+    chan->setups[i] = pffft_new_setup(N, PFFFT_REAL);
+  }
+
   return chan;
 }
 
-rt_chan rt_chan_clean(rt_chan chan)
+rt_chan rt_chan_clean(rt_params p, rt_chan chan)
 {
   chan->framebuf = rt_framebuf_destroy(chan->framebuf);
   chan->in       = rt_fifo_destroy(chan->in);
   chan->pre_lerp = rt_fifo_destroy(chan->pre_lerp);
-  fftw_destroy_plan(chan->plan);
-  fftw_destroy_plan(chan->plan_inv);
+  rt_uint i;
+  for (i = p->fft_min_pow; i <= p->fft_max_pow; i++) {
+    rt_uint curr = i - p->fft_min_pow;
+    pffft_destroy_setup(chan->setups[i]);
+  }
   free(chan);
   return (rt_chan)NULL;
 }

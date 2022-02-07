@@ -1,26 +1,21 @@
 SRC = $(wildcard src/*.c)
 OBJ = $(SRC:.c=.o)
+OBJ += src/pffft/pffft.o
 BUILD = build
 EXE = $(BUILD)/main
 CC  = clang
 LD = clang
-LDLIBS = -L./fftw/lib
 FFTW_CONF_ARGS = --prefix $(shell pwd)/fftw
 ifdef RT_DOUBLE
-CFLAGS += -D RT_DOUBLE
-LDLIBS += -lfftw3
-FFTW = fftw/lib/libfftw3.a
+# unused for now
 else
-LDLIBS += -lfftw3f
-FFTW = fftw/lib/libfftw3f.a
-FFTW_CONF_ARGS += --enable-float
 endif
 
 .PHONY: all release debug clean deepclean run test
 all: release
 release: OFLAGS = -Odebug
 debug:  $(OBJ) | $(FFTW) $(BUILD)
-	$(LD) $(LDLIBS) $(OBJ) -o $(EXE)
+	$(LD) $(OBJ) -o $(EXE)
 	dsymutil $(EXE)
 release: OFLAGS = -Ofast
 release: $(OBJ) | $(FFTW) $(BUILD)
@@ -28,7 +23,9 @@ release: $(OBJ) | $(FFTW) $(BUILD)
 $(BUILD):
 	-@mkdir -p $(BUILD)
 %.o: %.c
-	$(CC) -ansi -I fftw/include $(CFLAGS)$(OFLAGS) -c -g -o $@ $<
+	$(CC) $(CFLAGS)$(OFLAGS) -c -g -o $@ $<
+src/pffft/pffft.o: src/pffft/pffft.c
+	$(CC) $(CFLAGS)$(OFLAGS) -c -g -o $@ $<	
 clean:
 	-@rm $(OBJ) 2>/dev/null || true
 deepclean: clean
