@@ -52,11 +52,11 @@ int main()
 {
   time_t    t;
   rt_uint   buffer_pow   = 8;
-  rt_uint   frame_pow    = 8;
-  rt_uint   block_size   = 1 << 15;
+  rt_uint   frame_pow    = 10;
+  rt_uint   block_size   = 1 << 13;
   rt_uint   buffer_size  = 1 << buffer_pow;
   rt_uint   frame_size   = 1 << frame_pow;
-  float     scale_factor = pow(2, (float)0. / 12.);
+  float     scale_factor = pow(2, (float)12. / 12.);
   rt_uint   i, f;
   rt_params p   = rt_init(2, frame_pow, buffer_pow, 4, 0, 44100.f);
   WAV       wav = read_from_wav("in.wav", block_size);
@@ -71,7 +71,7 @@ int main()
     //   } */
     //   /*     wav.data[0][i] *= 1.5;
     //       wav.data[1][i] *= 0.6; */
-    double val     = sin((double)i / 44100. * 880. * 2 * M_PI);
+    double val     = sin((double)i / 44100. * 1000 * 2 * M_PI);
     wav.data[0][i] = val * 0.6;
     wav.data[1][i] = val * 0.6;
     // wav.data[0][i] *= 0.5;

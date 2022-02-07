@@ -40,7 +40,7 @@ WAV read_from_wav(const char *filename, const rt_uint size)
   }
   for (i = 0; i < wav.data_len * 2; i++) {
     wav.data[i % 2][i / 2] =
-        (rt_real)dataread[i] / (1U << (sizeof(dataread[0]) * 8 / 2));
+        (rt_real)dataread[i] / (1U << (sizeof(dataread[0]) * 8 - 1));
   }
 
   int filesize                 = 44 + (raw_data_len);
@@ -61,7 +61,7 @@ void write_to_wav(const char *filename, WAV *wav)
   rt_uint i;
   for (i = 0; i < wav->data_len * 2; i++) {
     datawrite[i] = (short)(wav->data[i % 2][i / 2] *
-                           (1U << (sizeof(datawrite[0]) * 8 / 2)));
+                           (1U << (sizeof(datawrite[0]) * 8 - 1)));
   }
   FILE *file = fopen(filename, "wb");
   if (!file) {

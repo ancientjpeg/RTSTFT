@@ -32,7 +32,6 @@ typedef enum RTSTFT_Manipulation_Values {
 typedef struct RTSTFT_Channel {
   rt_framebuf   framebuf;
   rt_fifo       in, pre_lerp, out;
-  PFFFT_Setup **setups;
   rt_real      *manips;
   unsigned char first_frame;
 } rt_chan_t;
@@ -70,7 +69,7 @@ void     rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr);
 
 /* ========  rt_framebuf  ======== */
 rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames);
-rt_framebuf rt_framebuf_destroy(rt_framebuf framebuf);
+rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf);
 rt_uint     rt_framebuf_relative_frame(rt_framebuf framebuf, rt_uint frame,
                                        int offset);
 void        rt_framebuf_convert_frame(rt_params p, rt_chan c, rt_uint frame);

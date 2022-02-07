@@ -10,9 +10,11 @@
  */
 #include "rtstft.h"
 
+#define rt_manip_len (p->frame_size / 2)
+
 rt_uint rt_manip_index(rt_params p, rt_uint manip_type, rt_uint frame_index)
 {
-  return manip_type * p->frame_size + frame_index;
+  return manip_type * rt_manip_len + frame_index;
 }
 
 /**
@@ -21,10 +23,13 @@ rt_uint rt_manip_index(rt_params p, rt_uint manip_type, rt_uint frame_index)
  * @param p An rt_params signifying the active instance of RTSTFT.
  * @param c An rt_chan signifying the currently active channel.
  * @return rt_real*
+ *
+ * Internally, the sample length of all the rt_manip buffers is N / 2, as a
+ * single manip buffer will only ever refer to amplitudes OR phases.
  */
 rt_real *rt_manip_init(rt_params p, rt_chan c)
 {
-  rt_uint  len  = RT_MANIP_TYPE_COUNT * p->frame_size;
+  rt_uint  len  = RT_MANIP_TYPE_COUNT * rt_manip_len;
   rt_real *temp = malloc(len * sizeof(rt_real));
   rt_uint  i, j;
   for (i = 0; i < RT_MANIP_TYPE_COUNT; i++) {
@@ -59,6 +64,9 @@ rt_real *rt_manip_init(rt_params p, rt_chan c)
  * @param frame_ptr Pointer to the frame currently being processed.
  * This should ALWAYS be the frame of the current channel, even if multichannel
  * is not enabled.
+ *
+ * Thresholds must be adjusted by fft size / 2 to bring the amplitudes to a
+ * range of -1 to 1
  */
 void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
 {
@@ -70,33 +78,51 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
   }
   rt_uint manip_index, i;
 
+  /**
+   * @brief Level manip section
+   *
+   */
   if (p->manip_settings & RT_MANIP_LEVEL) {
     manip_index = rt_manip_index(p, RT_MANIP_LEVEL, 0);
-    for (i = 0; i < p->fft_size; i++) {
-      frame_ptr[i] *= c->manips[manip_index++];
+    for (i = 0; i < rt_manip_len - 1; i++) {
+      frame_ptr[i * 2] *= c->manips[manip_index++];
+    }
+    frame_ptr[1] *= c->manips[rt_manip_len - 1];
+  }
+
+  /**
+   * @brief Gate section - lo threshold
+   *
+   */
+  rt_real thresh_adj;
+  rt_uint thresh_adj_factor = p->fft_size / 2;
+  if (p->manip_settings & RT_MANIP_CLAMP_LO) {
+    manip_index = rt_manip_index(p, RT_MANIP_CLAMP_LO, i);
+    for (i = 0; i < rt_manip_len - 1; i++) {
+      thresh_adj = (c->manips[manip_index++] * thresh_adj_factor);
+      if (fabs(frame_ptr[i * 2]) < thresh_adj) {
+        frame_ptr[i] = 0.;
+      }
+    }
+    if (fabs(frame_ptr[1]) < (c->manips[manip_index] * thresh_adj_factor)) {
+      frame_ptr[1] *= c->manips[rt_manip_len - 1];
     }
   }
 
   /**
-   * @brief theoretical FFT maximum amplitude for a signal with -1 to 1 range is
-   * N, or the fft_size. Need to find a happy medium for the practical gating.
+   * @brief Gate section - hi threshold
    *
    */
-  if (p->manip_settings & RT_MANIP_CLAMP_LO) {
-    manip_index = rt_manip_index(p, RT_MANIP_CLAMP_LO, i);
-    for (i = 0; i < p->fft_size; i++) {
-      if (fabs(frame_ptr[i]) < (c->manips[manip_index++] * p->fft_size)) {
+  if (p->manip_settings & RT_MANIP_CLAMP_HI) {
+    manip_index = rt_manip_index(p, RT_MANIP_CLAMP_HI, i);
+    for (i = 0; i < rt_manip_len - 1; i++) {
+      thresh_adj = (c->manips[manip_index++] * thresh_adj_factor);
+      if (fabs(frame_ptr[i]) > thresh_adj) {
         frame_ptr[i] = 0.;
       }
     }
-  }
-
-  if (p->manip_settings & RT_MANIP_CLAMP_HI) {
-    manip_index = rt_manip_index(p, RT_MANIP_CLAMP_HI, i);
-    for (i = 0; i < p->fft_size; i++) {
-      if (fabs(frame_ptr[i]) > (c->manips[manip_index++] * p->fft_size)) {
-        frame_ptr[i] = 0.;
-      }
+    if (fabs(frame_ptr[1]) > (c->manips[manip_index] * thresh_adj_factor)) {
+      frame_ptr[1] *= c->manips[rt_manip_len - 1];
     }
   }
 }

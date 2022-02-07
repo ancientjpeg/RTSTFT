@@ -33,9 +33,9 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size_pow,
     exit(1);
   }
 
-  p->scale_factor   = 1.0;
+  p->scale_factor   = 1.;
   p->frame_size     = 1 << frame_size_pow;
-  p->fft_size       = p->fft_curr_pow;
+  p->fft_size       = 1 << p->fft_curr_pow;
   p->pad_offset     = (p->fft_size - p->frame_size) / 2;
   p->frame_max      = 1 << 15;
 
@@ -98,30 +98,18 @@ rt_chan rt_chan_init(rt_params p)
   chan->pre_lerp     = rt_fifo_init(
           rt_max((rt_uint)ceil((rt_real)p->buffer_size * 2 * p->scale_factor),
                  lerp_frame * 2));
-  chan->out          = rt_fifo_init(rt_max(p->buffer_size, p->frame_size * 2));
-  chan->manips       = rt_manip_init(p, chan);
-  chan->framebuf     = rt_framebuf_init(p, 2);
-  rt_uint num_setups = p->fft_max_pow - p->fft_min_pow + 1;
-  chan->setups = (PFFFT_Setup **)malloc(num_setups * sizeof(PFFFT_Setup *));
-  rt_uint i, N, buffer_len;
-  for (i = p->fft_min_pow; i <= p->fft_max_pow; i++) {
-    N               = (1 << i);
-    chan->setups[i] = pffft_new_setup(N, PFFFT_REAL);
-  }
-
+  chan->out      = rt_fifo_init(rt_max(p->buffer_size, p->frame_size * 2));
+  chan->manips   = rt_manip_init(p, chan);
+  chan->framebuf = rt_framebuf_init(p, 2);
   return chan;
 }
 
 rt_chan rt_chan_clean(rt_params p, rt_chan chan)
 {
-  chan->framebuf = rt_framebuf_destroy(chan->framebuf);
+  chan->framebuf = rt_framebuf_destroy(p, chan->framebuf);
   chan->in       = rt_fifo_destroy(chan->in);
   chan->pre_lerp = rt_fifo_destroy(chan->pre_lerp);
-  rt_uint i;
-  for (i = p->fft_min_pow; i <= p->fft_max_pow; i++) {
-    rt_uint curr = i - p->fft_min_pow;
-    pffft_destroy_setup(chan->setups[i]);
-  }
+  chan->out      = rt_fifo_destroy(chan->out);
   free(chan);
   return (rt_chan)NULL;
 }

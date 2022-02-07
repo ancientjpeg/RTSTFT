@@ -72,10 +72,10 @@ void rt_assemble_frame(rt_params p, rt_chan c)
 
 void rt_lerp_read_out(rt_params p, rt_chan c, rt_uint num_hops)
 {
-  rt_uint          input_size  = p->hop_s * num_hops;
-  rt_uint          output_size = p->hop_a * num_hops;
-  register rt_real local_incr  = (rt_real)(input_size - 1) / (output_size - 1);
-  register rt_uint i;
+  rt_uint input_size  = p->hop_s * num_hops;
+  rt_uint output_size = p->hop_a * num_hops;
+  rt_real local_incr  = (rt_real)(input_size - 1) / (output_size - 1);
+  rt_uint i;
   for (i = 0; i < output_size - 1; i++) {
     rt_real pos       = i * local_incr;
     rt_uint pos_floor = (rt_uint)pos;
