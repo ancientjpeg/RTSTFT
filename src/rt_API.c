@@ -33,7 +33,7 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size_pow,
     exit(1);
   }
 
-  p->scale_factor   = 1.;
+  p->scale_factor   = 1.0;
   p->frame_size     = 1 << frame_size_pow;
   p->fft_size       = 1 << p->fft_curr_pow;
   p->pad_offset     = (p->fft_size - p->frame_size) / 2;

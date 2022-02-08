@@ -115,7 +115,7 @@ void rt_framebuf_convert_frame(rt_params p, rt_chan c, rt_uint frame)
   c->framebuf->frame_data[frame] |= RT_FRAME_IS_CONVERTED;
 }
 
-#define wrap(a) (fmod(((a) + M_PI), 2. * M_PI) - M_PI)
+#define wrap(phi) ((phi)-round(phi * M_1_PI) * 2. * M_PI)
 void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
 {
   rt_uint i, last_frame = rt_framebuf_relative_frame(c->framebuf, frame, -1);
@@ -125,24 +125,32 @@ void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
                     "processed!\n");
     exit(1);
   }
+
+  /** manipulate */
   if (p->manip_settings) {
     rt_chan input_chan = p->manip_multichannel ? c : p->chans[0];
     rt_manip_process(p, input_chan, c->framebuf->frames[frame]);
   }
 
+  /** phase adjustment */
+  rt_real  freq_dev, freq_dev_wrapped, freq_true, phase_adj;
+  rt_real *phase_prev, *phase_cuml, *curr_phase_ptr;
   for (i = 2; i < p->fft_size; i += 2) {
-    rt_real *phase_prev     = c->framebuf->phi_prev + i;
-    rt_real *phase_cuml     = c->framebuf->phi_cuml + i;
-    rt_real *curr_phase_ptr = c->framebuf->frames[frame] + i + 1;
+    phase_prev       = c->framebuf->phi_prev + i;
+    phase_cuml       = c->framebuf->phi_cuml + i;
+    curr_phase_ptr   = c->framebuf->frames[frame] + i + 1;
 
-    rt_real  freq_dev_wrapped =
-        wrap(*curr_phase_ptr - *phase_prev - c->framebuf->omega[i]);
-    rt_real freq_true = freq_dev_wrapped + c->framebuf->omega[i];
+    freq_dev         = *curr_phase_ptr - *phase_prev - c->framebuf->omega[i];
+    freq_dev_wrapped = wrap(freq_dev);
+    freq_true        = freq_dev_wrapped + c->framebuf->omega[i];
+    phase_adj        = *phase_cuml + (freq_true * p->scale_factor);
 
-    *phase_prev       = *curr_phase_ptr;
-    // *curr_phase_ptr   = wrap(*phase_cuml + (freq_true * p->scale_factor));
-    *phase_cuml = *curr_phase_ptr;
+    *phase_prev      = *curr_phase_ptr;
+    *curr_phase_ptr  = wrap(phase_adj);
+    *phase_cuml      = *curr_phase_ptr;
   }
+
+  /** handle tracking */
   c->first_frame = 0;
   c->framebuf->frame_data[frame] |= RT_FRAME_IS_PROCESSED;
   c->framebuf->next_unprocessed =
