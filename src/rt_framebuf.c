@@ -118,7 +118,7 @@ void rt_framebuf_convert_frame(rt_params p, rt_chan c, rt_uint frame)
   c->framebuf->frame_data[frame] |= RT_FRAME_IS_CONVERTED;
 }
 
-#define wrap(phi) ((phi) - (round((phi)*M_1_PI) * 2. * M_PI))
+#define wrap(phi) ((phi) - (round((phi)*M_1_PI * 0.5) * 2. * M_PI))
 void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
 {
   rt_uint last_frame = rt_framebuf_relative_frame(c->framebuf, frame, -1);
@@ -186,7 +186,7 @@ void rt_framebuf_revert_frame(rt_params p, rt_chan c, rt_uint frame)
   pffft_transform_ordered(c->framebuf->setups[rt_setup], frame_ptr, frame_ptr,
                           c->framebuf->work, PFFFT_BACKWARD);
   for (i = 0; i < p->fft_size; i++) {
-    frame_ptr[i] /= (rt_real)p->fft_size;
+    frame_ptr[i] /= (rt_real)p->fft_size * 2.;
   }
   rt_window(frame_ptr + p->pad_offset, p->frame_size);
   c->framebuf->frame_data[frame] |= RT_FRAME_IS_INVERTED;

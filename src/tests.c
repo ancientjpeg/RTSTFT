@@ -24,26 +24,25 @@ FILE *closeJSON(FILE *json);
 int   main()
 {
   time_t    t;
-  rt_uint   buffer_pow   = 8;
-  rt_uint   frame_pow    = 10;
-  rt_uint   block_size   = 1 << 13;
+  rt_uint   buffer_pow   = 14;
+  rt_uint   frame_pow    = 14;
+  rt_uint   block_size   = 1 << 17;
   rt_uint   buffer_size  = 1 << buffer_pow;
   rt_uint   frame_size   = 1 << frame_pow;
   float     scale_factor = pow(2, (float)12. / 12.);
   rt_uint   i, f;
-  rt_params p   = rt_init(2, frame_pow, buffer_pow, 4, 0, 44100.f);
-  WAV       wav = read_from_wav("in.wav", block_size);
-  rt_real   temp_null;
+  rt_params p            = rt_init(2, frame_pow, buffer_pow, 8, 0, 44100.f);
+  WAV       wav          = read_from_wav("in.wav", block_size);
   rt_uint   latency_size = frame_size;
   for (i = 0; i < block_size; i++) {
-    double val     = sin((double)i / 44100. * 1000 * 2 * M_PI);
+    double val     = sin((double)i / 44100. * 1033.5 * 2 * M_PI);
     wav.data[0][i] = val * 0.6;
     wav.data[1][i] = val * 0.6;
   }
 
   start_timer(t);
   for (f = 0; f < block_size; f += buffer_size) {
-    rt_cycle_offset(p, wav.data, 2, buffer_size, f);
+    rt_cycle_offset(p, wav.data, 1, buffer_size, f);
   }
   stop_timer(t);
 
