@@ -115,7 +115,7 @@ void rt_framebuf_convert_frame(rt_params p, rt_chan c, rt_uint frame)
   c->framebuf->frame_data[frame] |= RT_FRAME_IS_CONVERTED;
 }
 
-#define wrap(phi) ((phi)-round(phi * M_1_PI) * 2. * M_PI)
+#define wrap(phi) ((phi) - (round((phi)*M_1_PI) * 2. * M_PI))
 void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
 {
   rt_uint i, last_frame = rt_framebuf_relative_frame(c->framebuf, frame, -1);
