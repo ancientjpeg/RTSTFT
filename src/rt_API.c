@@ -51,7 +51,6 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size_pow,
     p->manip_settings |=
         1 << i; /**< sets all manipulation ON, except multichannel */
   }
-  /*   p->manip_settings = 0; // debug kill switch */
   for (i = 0; i < p->num_chans; i++) {
     p->chans[i] = rt_chan_init(p);
   }

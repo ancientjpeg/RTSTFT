@@ -78,15 +78,13 @@ void rt_lerp_read_out(rt_params p, rt_chan c, rt_uint num_hops)
   rt_real pos         = 0.;
   rt_uint i;
   for (i = 0; i < output_size; i++) {
-    rt_uint pos_floor = (rt_uint)(i == output_size - 1 ? pos : round(pos));
-    rt_real mod       = pos - pos_floor;
-    rt_uint i_input =
-        rt_fifo_new_pos(c->pre_lerp, c->pre_lerp->head, pos_floor);
-    rt_uint i_input_1 =
-        rt_fifo_new_pos(c->pre_lerp, c->pre_lerp->head, pos_floor + 1);
-    rt_real result =
-        (c->pre_lerp->queue[i_input_1] - c->pre_lerp->queue[i_input]) * mod +
-        c->pre_lerp->queue[i_input];
+    rt_uint x0       = (rt_uint)(i == output_size - 1 ? pos : round(pos));
+    rt_real mod      = pos - x0;
+    rt_uint x0_index = rt_fifo_new_pos(c->pre_lerp, c->pre_lerp->head, x0);
+    rt_uint x1_index = rt_fifo_new_pos(c->pre_lerp, c->pre_lerp->head, x0 + 1);
+    rt_real y0       = c->pre_lerp->queue[x0_index];
+    rt_real y1       = c->pre_lerp->queue[x1_index];
+    rt_real result   = (y1 - y0) * mod + y0;
 
     rt_fifo_enqueue_one(c->out, &result);
     pos += local_incr;
