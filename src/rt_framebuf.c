@@ -99,26 +99,29 @@ void rt_framebuf_convert_frame(rt_params p, rt_chan c, rt_uint frame)
   if (!(c->framebuf->frame_data[frame] & RT_FRAME_IS_FILLED)) {
     fprintf(stderr, "Can't convert a frame that isn't filled!\n");
   }
-  rt_window(c->framebuf->frames[frame] + p->pad_offset, p->frame_size);
-  pffft_transform_ordered(
-      c->framebuf->setups[rt_setup], c->framebuf->frames[frame],
-      c->framebuf->frames[frame], c->framebuf->work, PFFFT_FORWARD);
-  rt_real real, imag;
-  rt_uint i;
-  for (i = 2; i < p->fft_size; i += 2) {
-    real                              = c->framebuf->frames[frame][i];
-    imag                              = c->framebuf->frames[frame][i + 1];
 
-    c->framebuf->frames[frame][i]     = sqrt(real * real + imag * imag);
-    c->framebuf->frames[frame][i + 1] = atan2(imag, real);
+  rt_real *frame_ptr = c->framebuf->frames[frame];
+  rt_window(frame_ptr + p->pad_offset, p->frame_size);
+  pffft_transform_ordered(c->framebuf->setups[rt_setup], frame_ptr, frame_ptr,
+                          c->framebuf->work, PFFFT_FORWARD);
+
+  rt_uint i;
+  rt_real real, imag;
+  for (i = 2; i < p->fft_size; i += 2) {
+    real             = frame_ptr[i];
+    imag             = frame_ptr[i + 1];
+
+    frame_ptr[i]     = sqrt(real * real + imag * imag);
+    frame_ptr[i + 1] = atan2(imag, real);
   }
+
   c->framebuf->frame_data[frame] |= RT_FRAME_IS_CONVERTED;
 }
 
 #define wrap(phi) ((phi) - (round((phi)*M_1_PI) * 2. * M_PI))
 void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
 {
-  rt_uint i, last_frame = rt_framebuf_relative_frame(c->framebuf, frame, -1);
+  rt_uint last_frame = rt_framebuf_relative_frame(c->framebuf, frame, -1);
   if (!(c->framebuf->frame_data[last_frame] & RT_FRAME_IS_PROCESSED) &&
       !c->first_frame) {
     fprintf(stderr, "Can't process frame before the previous frame has been "
@@ -126,10 +129,13 @@ void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
     exit(1);
   }
 
+  rt_uint  i;
+  rt_real *frame_ptr = c->framebuf->frames[frame];
+
   /** manipulate */
   if (p->manip_settings) {
     rt_chan input_chan = p->manip_multichannel ? c : p->chans[0];
-    rt_manip_process(p, input_chan, c->framebuf->frames[frame]);
+    rt_manip_process(p, input_chan, frame_ptr);
   }
 
   /** phase adjustment */
@@ -138,7 +144,7 @@ void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
   for (i = 2; i < p->fft_size; i += 2) {
     phase_prev       = c->framebuf->phi_prev + i;
     phase_cuml       = c->framebuf->phi_cuml + i;
-    curr_phase_ptr   = c->framebuf->frames[frame] + i + 1;
+    curr_phase_ptr   = frame_ptr + i + 1;
 
     freq_dev         = *curr_phase_ptr - *phase_prev - c->framebuf->omega[i];
     freq_dev_wrapped = wrap(freq_dev);
@@ -165,23 +171,24 @@ void rt_framebuf_revert_frame(rt_params p, rt_chan c, rt_uint frame)
             "Can't revert frame before the next frame has been processed!\n");
     exit(1);
   }
-  rt_real amp, phase;
-  rt_uint i;
+
+  rt_real *frame_ptr = c->framebuf->frames[frame];
+  rt_uint  i;
+  rt_real  amp, phase;
   for (i = 2; i < p->fft_size; i += 2) {
-    amp                               = c->framebuf->frames[frame][i];
-    phase                             = c->framebuf->frames[frame][i + 1];
+    amp              = frame_ptr[i];
+    phase            = frame_ptr[i + 1];
 
-    c->framebuf->frames[frame][i]     = amp * cos(phase);
-    c->framebuf->frames[frame][i + 1] = amp * sin(phase);
+    frame_ptr[i]     = amp * cos(phase);
+    frame_ptr[i + 1] = amp * sin(phase);
   }
 
-  pffft_transform_ordered(
-      c->framebuf->setups[rt_setup], c->framebuf->frames[frame],
-      c->framebuf->frames[frame], c->framebuf->work, PFFFT_BACKWARD);
+  pffft_transform_ordered(c->framebuf->setups[rt_setup], frame_ptr, frame_ptr,
+                          c->framebuf->work, PFFFT_BACKWARD);
   for (i = 0; i < p->fft_size; i++) {
-    c->framebuf->frames[frame][i] /= (rt_real)p->fft_size;
+    frame_ptr[i] /= (rt_real)p->fft_size;
   }
-  rt_window(c->framebuf->frames[frame] + p->pad_offset, p->frame_size);
+  rt_window(frame_ptr + p->pad_offset, p->frame_size);
   c->framebuf->frame_data[frame] |= RT_FRAME_IS_INVERTED;
 }
 

@@ -29,25 +29,26 @@
 
 void rt_digest_frame(rt_params p, rt_chan c)
 {
-  rt_uint this_frame = c->framebuf->next_write;
+  rt_uint  this_frame = c->framebuf->next_write;
+  rt_real *frame_ptr  = c->framebuf->frames[this_frame];
   if (p->pad_factor != 0) {
     rt_uint i;
     for (i = 0; i < p->pad_offset; i++) {
-      c->framebuf->frames[this_frame][i]                   = 0.;
-      c->framebuf->frames[this_frame][p->fft_size - 1 - i] = 0.;
+      frame_ptr[i]                   = 0.;
+      frame_ptr[p->fft_size - 1 - i] = 0.;
     }
     for (i = 0; i < p->fft_size; i++) {
-      c->framebuf->frames[this_frame][i] = 0.;
+      frame_ptr[i] = 0.;
     }
   }
-  rt_fifo_dequeue_staggered(c->in,
-                            c->framebuf->frames[this_frame] + p->pad_offset,
-                            p->frame_size, p->hop_a);
+  rt_fifo_dequeue_staggered(c->in, frame_ptr + p->pad_offset, p->frame_size,
+                            p->hop_a);
   c->framebuf->frame_data[this_frame] |= RT_FRAME_IS_FILLED;
   c->framebuf->next_write =
       rt_framebuf_relative_frame(c->framebuf, this_frame, 1);
   rt_framebuf_convert_frame(p, c, this_frame);
 }
+
 void rt_process_frame(rt_params p, rt_chan c)
 {
   rt_uint this_frame = c->framebuf->next_unprocessed;
