@@ -36,17 +36,25 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
   framebuf->next_unprocessed = 0;
   framebuf->next_write       = 0;
   framebuf->num_frames       = num_frames;
-  framebuf->phi_prev   = (rt_real *)calloc(p->fft_size / 2, sizeof(rt_real));
-  framebuf->phi_cuml   = (rt_real *)calloc(p->fft_size / 2, sizeof(rt_real));
-  framebuf->frame_data = (char *)calloc(framebuf->num_frames, sizeof(char));
-  framebuf->omega = (rt_real *)malloc(sizeof(rt_real) * (p->fft_size / 2 + 1));
+
+  /**
+   * @brief !!including 0 bin!!, number of bins is N / 2 + 1
+   * unneeded for phase vocoder, but keeping for posterity
+   *
+   */
+  rt_uint num_real_bins = p->fft_size / 2 + 1;
+  framebuf->phi_prev    = (rt_real *)calloc(num_real_bins, sizeof(rt_real));
+  framebuf->phi_cuml    = (rt_real *)calloc(num_real_bins, sizeof(rt_real));
+  framebuf->frame_data  = (char *)calloc(framebuf->num_frames, sizeof(char));
+
+  /**< represents per-bin phase offset in rads/hop */
+  framebuf->omega = (rt_real *)malloc(sizeof(rt_real) * (num_real_bins));
   rt_uint i;
-  for (i = 0; i <= p->fft_size / 2; i++) {
-    framebuf->omega[i] = /* freqs are in rads/hop */
-        ((rt_real)i / p->fft_size) * 2 * M_PI * p->hop_a;
+  for (i = 0; i < num_real_bins; i++) {
+    framebuf->omega[i] = ((rt_real)i / p->fft_size) * 2 * M_PI * p->hop_a;
   }
 
-  rt_uint N_bytes = p->frame_size * sizeof(rt_real);
+  rt_uint N_bytes = p->fft_size * sizeof(rt_real);
   framebuf->frames =
       (rt_real **)malloc(sizeof(rt_real *) * framebuf->num_frames);
   framebuf->frames[0] =
@@ -141,10 +149,11 @@ void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
   /** phase adjustment */
   rt_real  freq_dev, freq_dev_wrapped, freq_true, phase_adj;
   rt_real *phase_prev, *phase_cuml, *curr_phase_ptr;
-  for (i = 2; i < p->fft_size; i += 2) {
+  rt_uint  frame_phase_index = 3;
+  for (i = 1; i < p->fft_size / 2; i++) {
     phase_prev       = c->framebuf->phi_prev + i;
     phase_cuml       = c->framebuf->phi_cuml + i;
-    curr_phase_ptr   = frame_ptr + i + 1;
+    curr_phase_ptr   = frame_ptr + (frame_phase_index);
 
     freq_dev         = *curr_phase_ptr - *phase_prev - c->framebuf->omega[i];
     freq_dev_wrapped = wrap(freq_dev);
@@ -154,6 +163,7 @@ void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
     *phase_prev      = *curr_phase_ptr;
     *curr_phase_ptr  = wrap(phase_adj);
     *phase_cuml      = *curr_phase_ptr;
+    frame_phase_index += 2;
   }
 
   /** handle tracking */

@@ -27,3 +27,25 @@ void rt_hamming(rt_real *data, rt_uint len)
     data[n] *= hamm;
   }
 }
+
+/**
+ * @brief !! Not used, just wanted to keep it here !!
+ *
+ *
+ * Function for debugging the PFFFT method for alligned malloc.
+ *
+ * @param p a params object
+ * @param f a framebuf
+ *
+ */
+void printPointers(rt_params p, rt_framebuf f)
+{
+  rt_uint i, num_setups = p->fft_max_pow - p->fft_min_pow;
+  for (i = 0; i < num_setups; i++) {
+    void **d    = (void **)f->setups[i] + 9;
+    void **mem  = (void **)*d;
+    void **mem0 = *(mem - 1);
+    printf("%p %p\n", mem, mem0);
+  }
+  printf("block done\n");
+}
