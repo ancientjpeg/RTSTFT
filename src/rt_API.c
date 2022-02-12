@@ -12,40 +12,60 @@
 #define rt_max(a, b) ((a) > (b) ? (a) : (b))
 #define rt_min(a, b) ((a) < (b) ? (a) : (b))
 
-rt_chan   rt_chan_init(rt_params p);
-rt_chan   rt_chan_clean(rt_params p, rt_chan chan);
+void rt_set_params(rt_params p, rt_uint frame_size_pow, rt_uint buffer_size_pow,
+                   rt_uint overlap_factor, rt_uint pad_factor,
+                   rt_real scale_factor, char init)
+{
+  p->pad_factor   = pad_factor;
+  p->fft_size_pow = frame_size_pow + pad_factor;
+  if (p->fft_size_pow > p->fft_max_pow) {
+    fprintf(stderr, "Exceeded maximum frame size.\n");
+    exit(1);
+  }
+  else if (p->fft_size_pow < p->fft_min_pow) {
+    fprintf(stderr, "Below minimum frame size.\n");
+    exit(1);
+  }
+  p->frame_size   = 1 << frame_size_pow;
+  p->fft_size     = 1 << p->fft_size_pow;
+  p->pad_offset   = (p->fft_size - p->frame_size) / 2;
+
+  p->scale_factor = scale_factor;
+  if (p->scale_factor > p->scale_factor_max ||
+      p->scale_factor < (1. / p->scale_factor)) {
+    fprintf(stderr, "Scale factor must be in range %.1f-%.1f.\n",
+            p->scale_factor_max, p->scale_factor_min);
+    exit(1);
+  }
+
+  p->overlap_factor = overlap_factor;
+  p->buffer_size    = 1U << buffer_size_pow;
+  p->hop_a          = p->frame_size / p->overlap_factor;
+  p->hop_s          = lround(p->hop_a * p->scale_factor);
+  rt_uint i;
+  for (i = 1; i < RT_MANIP_TYPE_COUNT; i++) {
+    /* do not forget to set appropriate manips ! */
+  }
+}
 
 rt_params rt_init(rt_uint num_channels, rt_uint frame_size_pow,
                   rt_uint buffer_size_pow, rt_uint overlap_factor,
                   rt_uint pad_factor, float sample_rate)
 {
-  rt_params p     = malloc(sizeof(rt_params_t));
-  p->fft_min_pow  = 5; /** 2 * SIMD_SZ ^ 2 */
-  p->fft_max_pow  = 16;
-  p->pad_factor   = pad_factor;
-  p->fft_curr_pow = frame_size_pow + pad_factor;
-  if (p->fft_curr_pow > p->fft_max_pow) {
-    fprintf(stderr, "Exceeded maximum frame size.\n");
-    exit(1);
-  }
-  else if (p->fft_curr_pow < p->fft_min_pow) {
-    fprintf(stderr, "Below minimum frame size.\n");
-    exit(1);
-  }
+  rt_params p           = malloc(sizeof(rt_params_t));
+  p->fft_min_pow        = 5; /** 2 * SIMD_SZ ^ 2 */
+  p->fft_max_pow        = 16;
+  p->fft_max_size       = 1 << p->fft_max_pow;
+  p->scale_factor_max   = 2.0;
+  p->scale_factor_min   = 1. / p->scale_factor_max;
+  p->sample_rate        = sample_rate;
+  p->num_chans          = num_channels;
+  p->manip_multichannel = 0; /* implement multichannel manip later plz */
 
-  p->scale_factor   = 1.256;
-  p->frame_size     = 1 << frame_size_pow;
-  p->fft_size       = 1 << p->fft_curr_pow;
-  p->pad_offset     = (p->fft_size - p->frame_size) / 2;
-  p->frame_max      = 1 << 15;
+  rt_set_params(p, frame_size_pow, buffer_size_pow, overlap_factor, pad_factor,
+                1.256, 1);
 
-  p->overlap_factor = overlap_factor;
-  p->buffer_size    = 1U << buffer_size_pow;
-  p->sample_rate    = sample_rate;
-  p->hop_a          = p->frame_size / p->overlap_factor;
-  p->hop_s          = lround(p->hop_a * p->scale_factor);
-  p->num_chans      = num_channels;
-  p->chans          = malloc(p->num_chans * sizeof(rt_chan));
+  p->chans = malloc(p->num_chans * sizeof(rt_chan));
   rt_uint i;
   for (i = 1; i < RT_MANIP_TYPE_COUNT; i++) {
     p->manip_settings |=
@@ -90,14 +110,14 @@ void rt_cycle_offset(rt_params p, rt_real **buffers, rt_uint num_buffers,
 
 rt_chan rt_chan_init(rt_params p)
 {
-  rt_chan chan       = (rt_chan)malloc(sizeof(rt_chan_t));
-  chan->first_frame  = 1;
-  chan->in           = rt_fifo_init(rt_max(p->buffer_size, p->frame_size * 2));
-  rt_uint lerp_frame = p->overlap_factor * p->hop_s + p->frame_size;
+  rt_chan chan      = (rt_chan)malloc(sizeof(rt_chan_t));
+  chan->first_frame = 1;
+  chan->in          = rt_fifo_init(rt_max(p->buffer_size, p->fft_max_size * 2));
+  rt_uint lerp_frame = p->overlap_factor * p->hop_s + p->fft_max_size;
   chan->pre_lerp     = rt_fifo_init(
-          rt_max((rt_uint)ceil((rt_real)p->buffer_size * 2 * p->scale_factor),
+          rt_max((rt_uint)ceil((rt_real)p->buffer_size * 2 * p->scale_factor_max),
                  lerp_frame * 2));
-  chan->out      = rt_fifo_init(rt_max(p->buffer_size, p->frame_size * 2));
+  chan->out      = rt_fifo_init(rt_max(p->buffer_size, p->fft_max_size * 2));
   chan->manips   = rt_manip_init(p, chan);
   chan->framebuf = rt_framebuf_init(p, 2);
   return chan;

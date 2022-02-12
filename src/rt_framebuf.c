@@ -17,7 +17,7 @@
  * @param p An rt_params signifying the active instance of RTSTFT.
  * @param num_frames The number of frames the framebuffer should be able to
  * hold. Usually 2.
- * @return rt_framebuf
+ * @return rt_framebuf returns this framebuffer.
  *
  *
  * Detailed description here. For reference, omega designates the "ideal"
@@ -54,16 +54,23 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
     framebuf->omega[i] = ((rt_real)i / p->fft_size) * 2 * M_PI * p->hop_a;
   }
 
-  rt_uint N_bytes = p->fft_size * sizeof(rt_real);
+  /**
+   * @brief Frame allocation occurs here. Frames are allocated to maximum size
+   * to prevent any need for reallocation during processing in the event of a
+   * modification to the FFT size.
+   *
+   */
+  rt_uint N_bytes = p->fft_max_size * sizeof(rt_real);
   framebuf->frames =
       (rt_real **)malloc(sizeof(rt_real *) * framebuf->num_frames);
   framebuf->frames[0] =
       (rt_real *)pffft_aligned_malloc(N_bytes * framebuf->num_frames);
   framebuf->work = (rt_real *)pffft_aligned_malloc(N_bytes);
   for (i = 1; i < framebuf->num_frames; i++) {
-    framebuf->frames[i] = framebuf->frames[0] + (p->fft_size * i);
+    framebuf->frames[i] = framebuf->frames[0] + (p->fft_max_size * i);
   }
 
+  /**< setup allocation */
   rt_uint num_setups = p->fft_max_pow - p->fft_min_pow + 1;
   framebuf->setups = (PFFFT_Setup **)malloc(num_setups * sizeof(PFFFT_Setup *));
   rt_uint N, curr;
@@ -72,8 +79,6 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
     curr                   = i - p->fft_min_pow;
     framebuf->setups[curr] = pffft_new_setup(N, PFFFT_REAL);
   }
-
-  /** pffft work array */
 
   return framebuf;
 }
