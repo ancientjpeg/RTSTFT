@@ -172,7 +172,6 @@ void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
   }
 
   /** handle tracking */
-  c->first_frame = 0;
   c->framebuf->frame_data[frame] |= RT_FRAME_IS_PROCESSED;
   c->framebuf->next_unprocessed =
       rt_framebuf_relative_frame(c->framebuf, frame, 1);

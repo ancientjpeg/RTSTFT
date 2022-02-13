@@ -106,10 +106,12 @@ void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
 
     while (rt_fifo_payload(c->in) >= p->frame_size) {
       rt_digest_frame(p, c);
-      char was_first = c->first_frame;
       rt_process_frame(p, c);
-      if (!was_first) {
+      if (!c->first_frame) {
         rt_assemble_frame(p, c);
+      }
+      else {
+        c->first_frame = 0;
       }
       if (rt_fifo_readable(c->pre_lerp) >= p->hop_s * p->overlap_factor) {
         rt_lerp_read_out(p, c, p->overlap_factor);
