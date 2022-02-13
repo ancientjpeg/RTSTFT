@@ -14,9 +14,7 @@
 #include "rt_globals.h"
 
 #define RT_FRAME_IS_FILLED (1 << 0)
-#define RT_FRAME_IS_CONVERTED (1 << 1)
-#define RT_FRAME_IS_PROCESSED (1 << 2)
-#define RT_FRAME_IS_INVERTED (1 << 3)
+#define RT_FRAME_IS_PROCESSED (1 << 1)
 
 typedef struct rt_framebuf {
   rt_real     **frames, *omega, *phi_prev, *phi_cuml, *work;

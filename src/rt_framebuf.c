@@ -107,43 +107,39 @@ rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf)
   return NULL;
 }
 
-void rt_framebuf_convert_frame(rt_params p, rt_chan c, rt_uint frame)
+#define wrap(phi) ((phi) - (round((phi)*M_1_PI * 0.5) * 2. * M_PI))
+void rt_framebuf_digest_frame(rt_params p, rt_chan c, rt_uint frame)
 {
+
+  /** error checking */
+  rt_uint last_frame = rt_framebuf_relative_frame(c->framebuf, frame, -1);
   if (!(c->framebuf->frame_data[frame] & RT_FRAME_IS_FILLED)) {
     fprintf(stderr, "Can't convert a frame that isn't filled!\n");
   }
-
-  rt_real *frame_ptr = c->framebuf->frames[frame];
-  rt_window(frame_ptr + p->pad_offset, p->frame_size);
-  pffft_transform_ordered(c->framebuf->setups[rt_setup], frame_ptr, frame_ptr,
-                          c->framebuf->work, PFFFT_FORWARD);
-
-  rt_uint i;
-  rt_real real, imag;
-  for (i = 2; i < p->fft_size; i += 2) {
-    real             = frame_ptr[i];
-    imag             = frame_ptr[i + 1];
-
-    frame_ptr[i]     = sqrt(real * real + imag * imag);
-    frame_ptr[i + 1] = atan2(imag, real);
-  }
-
-  c->framebuf->frame_data[frame] |= RT_FRAME_IS_CONVERTED;
-}
-
-#define wrap(phi) ((phi) - (round((phi)*M_1_PI * 0.5) * 2. * M_PI))
-void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
-{
-  rt_uint last_frame = rt_framebuf_relative_frame(c->framebuf, frame, -1);
-  if (!(c->framebuf->frame_data[last_frame] & RT_FRAME_IS_PROCESSED) &&
-      !c->first_frame) {
+  else if (!(c->framebuf->frame_data[last_frame] & RT_FRAME_IS_PROCESSED) &&
+           !c->first_frame) {
     fprintf(stderr, "Can't process frame before the previous frame has been "
                     "processed!\n");
     exit(1);
   }
 
-  rt_uint  i;
+  /** variable declarations */
   rt_real *frame_ptr = c->framebuf->frames[frame];
+  rt_uint  i;
+  rt_real  real, imag, amp, phase;
+  rt_real  freq_dev, freq_dev_wrapped, freq_true, phase_adj;
+  rt_real *phase_prev, *phase_cuml, *curr_phase_ptr;
+
+  /** forward transform */
+  rt_window(frame_ptr + p->pad_offset, p->frame_size);
+  pffft_transform_ordered(c->framebuf->setups[rt_setup], frame_ptr, frame_ptr,
+                          c->framebuf->work, PFFFT_FORWARD);
+  for (i = 2; i < p->fft_size; i += 2) {
+    real             = frame_ptr[i];
+    imag             = frame_ptr[i + 1];
+    frame_ptr[i]     = sqrt(real * real + imag * imag);
+    frame_ptr[i + 1] = atan2(imag, real);
+  }
 
   /** manipulate */
   if (p->manip_settings) {
@@ -152,9 +148,7 @@ void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
   }
 
   /** phase adjustment */
-  rt_real  freq_dev, freq_dev_wrapped, freq_true, phase_adj;
-  rt_real *phase_prev, *phase_cuml, *curr_phase_ptr;
-  rt_uint  frame_phase_index = 3;
+  rt_uint frame_phase_index = 3;
   for (i = 1; i < p->fft_size / 2; i++) {
     phase_prev       = c->framebuf->phi_prev + i;
     phase_cuml       = c->framebuf->phi_cuml + i;
@@ -171,58 +165,26 @@ void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
     frame_phase_index += 2;
   }
 
+  /** begin inversion */
+  for (i = 2; i < p->fft_size; i += 2) {
+    amp              = frame_ptr[i];
+    phase            = frame_ptr[i + 1];
+    frame_ptr[i]     = amp * cos(phase);
+    frame_ptr[i + 1] = amp * sin(phase);
+  }
+  pffft_transform_ordered(c->framebuf->setups[rt_setup], frame_ptr, frame_ptr,
+                          c->framebuf->work, PFFFT_BACKWARD);
+  for (i = 0; i < p->fft_size; i++) {
+    frame_ptr[i] /= (rt_real)p->fft_size * 2.;
+  }
+  rt_window(frame_ptr + p->pad_offset, p->frame_size);
+
+  /** immediately lerp to c->out */
+
   /** handle tracking */
   c->framebuf->frame_data[frame] |= RT_FRAME_IS_PROCESSED;
   c->framebuf->next_unprocessed =
       rt_framebuf_relative_frame(c->framebuf, frame, 1);
-
-  rt_real *frame_ptr = c->framebuf->frames[frame];
-  rt_uint  i;
-  rt_real  amp, phase;
-  for (i = 2; i < p->fft_size; i += 2) {
-    amp              = frame_ptr[i];
-    phase            = frame_ptr[i + 1];
-
-    frame_ptr[i]     = amp * cos(phase);
-    frame_ptr[i + 1] = amp * sin(phase);
-  }
-
-  pffft_transform_ordered(c->framebuf->setups[rt_setup], frame_ptr, frame_ptr,
-                          c->framebuf->work, PFFFT_BACKWARD);
-  for (i = 0; i < p->fft_size; i++) {
-    frame_ptr[i] /= (rt_real)p->fft_size * 2.;
-  }
-  rt_window(frame_ptr + p->pad_offset, p->frame_size);
-  c->framebuf->frame_data[frame] |= RT_FRAME_IS_INVERTED;
-}
-
-void rt_framebuf_revert_frame(rt_params p, rt_chan c, rt_uint frame)
-{
-  rt_uint next_frame = rt_framebuf_relative_frame(c->framebuf, frame, 1);
-  if (!(c->framebuf->frame_data[next_frame] & RT_FRAME_IS_PROCESSED)) {
-    fprintf(stderr,
-            "Can't revert frame before the next frame has been processed!\n");
-    exit(1);
-  }
-
-  rt_real *frame_ptr = c->framebuf->frames[frame];
-  rt_uint  i;
-  rt_real  amp, phase;
-  for (i = 2; i < p->fft_size; i += 2) {
-    amp              = frame_ptr[i];
-    phase            = frame_ptr[i + 1];
-
-    frame_ptr[i]     = amp * cos(phase);
-    frame_ptr[i + 1] = amp * sin(phase);
-  }
-
-  pffft_transform_ordered(c->framebuf->setups[rt_setup], frame_ptr, frame_ptr,
-                          c->framebuf->work, PFFFT_BACKWARD);
-  for (i = 0; i < p->fft_size; i++) {
-    frame_ptr[i] /= (rt_real)p->fft_size * 2.;
-  }
-  rt_window(frame_ptr + p->pad_offset, p->frame_size);
-  c->framebuf->frame_data[frame] |= RT_FRAME_IS_INVERTED;
 }
 
 rt_uint rt_framebuf_relative_frame(rt_framebuf framebuf, rt_uint frame,

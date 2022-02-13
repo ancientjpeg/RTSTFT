@@ -37,29 +37,14 @@ void rt_digest_frame(rt_params p, rt_chan c)
       frame_ptr[i]                   = 0.;
       frame_ptr[p->fft_size - 1 - i] = 0.;
     }
-    for (i = 0; i < p->fft_size; i++) {
-      frame_ptr[i] = 0.;
-    }
   }
   rt_fifo_dequeue_staggered(c->in, frame_ptr + p->pad_offset, p->frame_size,
                             p->hop_a);
   c->framebuf->frame_data[this_frame] |= RT_FRAME_IS_FILLED;
   c->framebuf->next_write =
       rt_framebuf_relative_frame(c->framebuf, this_frame, 1);
-  rt_framebuf_convert_frame(p, c, this_frame);
-}
-
-void rt_process_frame(rt_params p, rt_chan c)
-{
-  rt_uint this_frame = c->framebuf->next_unprocessed;
-  rt_framebuf_process_frame(p, c, this_frame);
-}
-
-void rt_assemble_frame(rt_params p, rt_chan c)
-{
-  rt_uint this_frame = c->framebuf->next_unread;
-  rt_framebuf_revert_frame(p, c, this_frame);
-  if (c->framebuf->frame_data[this_frame] & RT_FRAME_IS_INVERTED) {
+  rt_framebuf_digest_frame(p, c, this_frame);
+  if (c->framebuf->frame_data[this_frame] & RT_FRAME_IS_PROCESSED) {
     rt_fifo_enqueue_staggered(c->pre_lerp,
                               c->framebuf->frames[this_frame] + p->pad_offset,
                               p->frame_size, p->hop_s);
@@ -106,18 +91,11 @@ void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
 
     while (rt_fifo_payload(c->in) >= p->frame_size) {
       rt_digest_frame(p, c);
-      rt_process_frame(p, c);
-      if (!c->first_frame) {
-        rt_assemble_frame(p, c);
-      }
-      else {
-        c->first_frame = 0;
-      }
       if (rt_fifo_readable(c->pre_lerp) >= p->hop_s * p->overlap_factor) {
         rt_lerp_read_out(p, c, p->overlap_factor);
       }
       if (++check > 1) {
-        fprintf(stderr, "Extracted more than one frame.\n");
+        fprintf(stderr, "Unexpected: extracted more than one frame.\n");
         exit(1);
       }
     }

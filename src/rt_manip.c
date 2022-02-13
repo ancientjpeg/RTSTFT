@@ -97,7 +97,7 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
   rt_real thresh_adj;
   rt_uint thresh_adj_factor = p->fft_size / 2;
   if (p->manip_settings & RT_MANIP_GATE) {
-    manip_index = rt_manip_index(p, RT_MANIP_GATE, i);
+    manip_index = rt_manip_index(p, RT_MANIP_GATE, 0);
     for (i = 0; i < rt_manip_len - 1; i++) {
       thresh_adj = (c->manips[manip_index++] * thresh_adj_factor);
       if (fabs(frame_ptr[i * 2]) < thresh_adj) {
@@ -114,7 +114,7 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
    *
    */
   if (p->manip_settings & RT_MANIP_LIMIT) {
-    manip_index = rt_manip_index(p, RT_MANIP_LIMIT, i);
+    manip_index = rt_manip_index(p, RT_MANIP_LIMIT, 0);
     for (i = 0; i < rt_manip_len - 1; i++) {
       thresh_adj = (c->manips[manip_index++] * thresh_adj_factor);
       if (fabs(frame_ptr[i]) > thresh_adj) {

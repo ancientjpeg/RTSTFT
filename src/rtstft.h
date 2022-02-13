@@ -80,9 +80,7 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames);
 rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf);
 rt_uint     rt_framebuf_relative_frame(rt_framebuf framebuf, rt_uint frame,
                                        int offset);
-void        rt_framebuf_convert_frame(rt_params p, rt_chan c, rt_uint frame);
-void        rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame);
-void        rt_framebuf_revert_frame(rt_params p, rt_chan c, rt_uint frame);
+void        rt_framebuf_digest_frame(rt_params p, rt_chan c, rt_uint frame);
 
 /* ======== MATH UTILS ======== */
 void rt_hanning(rt_real *data, rt_uint len);
