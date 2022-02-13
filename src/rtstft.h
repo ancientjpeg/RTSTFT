@@ -45,7 +45,8 @@ typedef struct RTSTFT_Params {
   rt_uint num_chans, fft_size, fft_min_pow, fft_max_pow, fft_max_size,
       fft_size_pow, frame_size, overlap_factor, pad_factor, pad_offset, hop_a,
       hop_s, buffer_size;
-  rt_real       scale_factor, scale_factor_max, scale_factor_min, sample_rate;
+  rt_real scale_factor, scale_factor_max, scale_factor_min, phase_modif,
+      sample_rate;
   rt_chan      *chans;
   unsigned char manip_settings, manip_multichannel;
 } rt_params_t;

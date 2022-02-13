@@ -163,11 +163,11 @@ void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
     freq_dev         = *curr_phase_ptr - *phase_prev - c->framebuf->omega[i];
     freq_dev_wrapped = wrap(freq_dev);
     freq_true        = freq_dev_wrapped + c->framebuf->omega[i];
-    phase_adj        = *phase_cuml + (freq_true * p->scale_factor);
+    phase_adj   = *phase_cuml + (freq_true * p->scale_factor * p->phase_modif);
 
-    *phase_prev      = *curr_phase_ptr;
-    *curr_phase_ptr  = wrap(phase_adj);
-    *phase_cuml      = *curr_phase_ptr;
+    *phase_prev = *curr_phase_ptr;
+    *curr_phase_ptr = wrap(phase_adj);
+    *phase_cuml     = *curr_phase_ptr;
     frame_phase_index += 2;
   }
 

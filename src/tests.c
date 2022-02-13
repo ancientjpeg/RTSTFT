@@ -25,7 +25,7 @@ int   main()
 {
   time_t    t;
   rt_uint   buffer_pow   = 14;
-  rt_uint   frame_pow    = 10;
+  rt_uint   frame_pow    = 12;
   rt_uint   block_size   = 1 << 19;
   rt_uint   buffer_size  = 1 << buffer_pow;
   rt_uint   frame_size   = 1 << frame_pow;
