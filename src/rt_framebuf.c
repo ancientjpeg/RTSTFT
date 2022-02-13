@@ -146,7 +146,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   pffft_transform_ordered(c->framebuf->setups[rt_setup], frame_ptr, frame_ptr,
                           c->framebuf->work, PFFFT_BACKWARD);
   for (i = 0; i < p->fft_size; i++) {
-    frame_ptr[i] /= (rt_real)p->fft_size * 2.;
+    frame_ptr[i] /= (rt_real)p->fft_size * p->scale_factor;
   }
   /**
    * A note for the future:

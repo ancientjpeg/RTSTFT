@@ -27,7 +27,7 @@ void rt_fifo_enqueue(rt_fifo fifo, rt_real *data, int n)
   rt_fifo_enqueue_staggered(fifo, data, n, n);
 }
 
-void rt_fifo_enqueue_one(rt_fifo fifo, rt_real *data)
+void rt_fifo_enqueue_one(rt_fifo fifo, rt_real data)
 {
   if (fifo->head == fifo->tail && !fifo->empty) {
     fprintf(stderr, "Cannot enqueue sample. FIFO is full.");
@@ -35,7 +35,7 @@ void rt_fifo_enqueue_one(rt_fifo fifo, rt_real *data)
   }
   fifo->empty      = 0;
   fifo->read_empty = 0;
-  fifo->queue[fifo->write_pos] += *data;
+  fifo->queue[fifo->write_pos] += data;
   char wasTail    = fifo->write_pos == fifo->tail ? 1 : 0;
   fifo->write_pos = rt_fifo_new_pos(fifo, fifo->write_pos, 1);
   fifo->tail      = wasTail ? fifo->write_pos : fifo->tail;

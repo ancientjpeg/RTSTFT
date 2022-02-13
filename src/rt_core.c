@@ -6,6 +6,7 @@
  * @date 2022-02-05
  *
  * @copyright Copyright (c) 2022
+ *
  * - General plan
  *   - user init
  *     - user creates an rt_params_t struct, passes it to be initialized
@@ -40,8 +41,32 @@ void rt_digest_frame(rt_params p, rt_chan c)
   rt_fifo_dequeue_staggered(c->in, frame_ptr + p->pad_offset, p->frame_size,
                             p->hop_a);
   rt_framebuf_digest_frame(p, c);
-  rt_fifo_enqueue_staggered(c->pre_lerp, c->framebuf->frame, p->frame_size,
-                            p->hop_s);
+  // rt_fifo_enqueue_staggered(c->pre_lerp, c->framebuf->frame, p->frame_size,
+  //                           p->hop_s);
+
+  /** to lerp directly from framebuf to c->out, we do a slightly backwards lerp,
+   * i.e. we write to the next hop_a position but write N * scale_factor
+   * samples.
+   */
+  rt_uint input_size    = p->frame_size;
+  rt_uint hop_s_inverse = round(p->hop_a / p->scale_factor);
+  rt_uint output_size   = hop_s_inverse * p->overlap_factor;
+  rt_real pos = 0., local_incr = (rt_real)(input_size - 1) / (output_size - 1);
+  rt_uint out_pos_init = c->out->write_pos;
+  rt_uint i, x0, x1;
+  rt_real mod, y0, y1, result;
+  for (i = 0; i < output_size; i++) {
+    x0     = (rt_uint)(i == output_size - 1 ? pos : round(pos));
+    x1     = x0 + 1;
+    mod    = pos - x0;
+    y0     = c->framebuf->frame[x0];
+    y1     = c->framebuf->frame[x1];
+    result = (y1 - y0) * mod + y0;
+
+    rt_fifo_enqueue_one(c->out, result);
+    pos += local_incr;
+  }
+  c->out->write_pos = rt_fifo_new_pos(c->out, out_pos_init, p->hop_a);
 }
 
 void rt_lerp_read_out(rt_params p, rt_chan c, rt_uint num_hops)
@@ -60,7 +85,7 @@ void rt_lerp_read_out(rt_params p, rt_chan c, rt_uint num_hops)
     rt_real y1       = c->pre_lerp->queue[x1_index];
     rt_real result   = (y1 - y0) * mod + y0;
 
-    rt_fifo_enqueue_one(c->out, &result);
+    rt_fifo_enqueue_one(c->out, result);
     pos += local_incr;
   }
 
@@ -74,19 +99,11 @@ void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
   rt_real *buffer_orig     = buffer;
   rt_uint  buffer_len_save = buffer_len;
   while (buffer_len > 0) {
-    rt_fifo_enqueue_one(c->in, buffer);
-    char check = 0;
-
-    while (rt_fifo_payload(c->in) >= p->frame_size) {
+    rt_fifo_enqueue_one(c->in, *buffer);
+    if (rt_fifo_payload(c->in) >= p->frame_size) {
       rt_digest_frame(p, c);
-      if (rt_fifo_readable(c->pre_lerp) >= p->hop_s * p->overlap_factor) {
-        rt_lerp_read_out(p, c, p->overlap_factor);
-      }
-      if (++check > 1) {
-        fprintf(stderr, "Unexpected: extracted more than one frame.\n");
-        exit(1);
-      }
     }
+
     if (rt_fifo_readable(c->out)) {
       rt_fifo_dequeue_one(c->out, buffer);
     }

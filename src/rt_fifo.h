@@ -16,7 +16,7 @@
 #define rt_fifo_head_ptr(f) ((f)->queue + (f)->head)
 #define rt_fifo_write_ptr(f) ((f)->queue + (f)->head)
 #define rt_fifo_tail_ptr(f) ((f)->queue + (f)->tail)
-#define rt_fifo_new_pos(f, i, n) (ldiv(((i) + (n)), (f)->len)).rem
+#define rt_fifo_new_pos(f, i, n) ((ldiv(((i) + (n)), (f)->len)).rem)
 #define rt_fifo_get_diff(f, start, end)                                        \
   ((start) <= (end) ? (end) - (start) : (f)->len - ((start) - (end)))
 
@@ -30,7 +30,7 @@ typedef rt_fifo_t *rt_fifo;
 
 rt_fifo            rt_fifo_init(rt_uint len);
 void               rt_fifo_enqueue(rt_fifo fifo, rt_real *data, int n);
-void               rt_fifo_enqueue_one(rt_fifo fifo, rt_real *data);
+void               rt_fifo_enqueue_one(rt_fifo fifo, rt_real data);
 void rt_fifo_enqueue_staggered(rt_fifo fifo, rt_real *data, int n, int advance);
 void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n);
 void rt_fifo_dequeue(rt_fifo fifo, int n);
