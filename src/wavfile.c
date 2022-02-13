@@ -43,7 +43,7 @@ WAV read_from_wav(const char *filename, const rt_uint size)
         (rt_real)dataread[i] / (1U << (sizeof(dataread[0]) * 8 - 1));
   }
 
-  int filesize                 = 44 + (raw_data_len);
+  /*   int filesize                 = 44 + (raw_data_len); */
   *((int *)(wav.headers + 4))  = 36 + raw_data_len;
   *((int *)(wav.headers + 40)) = raw_data_len;
 

@@ -11,37 +11,25 @@ ifdef RT_DOUBLE
 else
 endif
 
-.PHONY: all release debug clean deepclean run test
+.PHONY: all release debug clean distclean run test
 all: release
-release: OFLAGS = -Odebug
+debug: CFLAGS = -Wall -g -O0
 debug:  $(OBJ) | $(FFTW) $(BUILD)
 	$(LD) $(OBJ) -o $(EXE)
 	dsymutil $(EXE)
-release: OFLAGS = -Ofast
+release: CFLAGS = -Ofast
 release: $(OBJ) | $(FFTW) $(BUILD)
 	$(LD) $(LDLIBS)  $(OBJ) -o $(EXE)
 $(BUILD):
 	-@mkdir -p $(BUILD)
 %.o: %.c
-	$(CC) $(CFLAGS)$(OFLAGS) -c -g -o $@ $<
+	$(CC) $(CFLAGS) -c -o $@ $<
 src/pffft/pffft.o: src/pffft/pffft.c
-	$(CC) $(CFLAGS)$(OFLAGS) -c -g -o $@ $<	
+	$(CC) $(CFLAGS) -c -o $@ $<	
 clean:
 	-@rm $(OBJ) 2>/dev/null || true
-deepclean: clean
+distclean: clean
 	-@rm -rf build 2>/dev/null || true
-ech:
-	@echo $(SRC)
-setup-lib: $(FFTW)
-$(FFTW): | fftw
-	cd fftw_src && ./configure $(FFTW_CONF_ARGS)
-	make -C fftw_src
-	make install -C fftw_src
-	make distclean -C fftw_src
-fftw:
-	mkdir fftw
-run: debug
+run: 
 	$(EXE)
 test: debug run clean
-show:
-	echo $(STUFF)

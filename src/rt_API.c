@@ -9,8 +9,6 @@
  *
  */
 #include "rtstft.h"
-#define rt_max(a, b) ((a) > (b) ? (a) : (b))
-#define rt_min(a, b) ((a) < (b) ? (a) : (b))
 
 rt_params rt_init(rt_uint num_channels, rt_uint frame_size_pow,
                   rt_uint buffer_size_pow, rt_uint overlap_factor,
@@ -108,31 +106,6 @@ void rt_cycle_offset(rt_params p, rt_real **buffers, rt_uint num_buffers,
   for (i = 0; i < num_buffers; i++) {
     rt_cycle_chan(p, i, buffers[i] + sample_offset, buffer_len);
   }
-}
-
-rt_chan rt_chan_init(rt_params p)
-{
-  rt_chan chan = (rt_chan)malloc(sizeof(rt_chan_t));
-  chan->in     = rt_fifo_init(rt_max(p->buffer_size, p->fft_max_size * 2));
-  rt_uint lerp_frame = p->overlap_factor * p->hop_s + p->fft_max_size;
-  /*   chan->pre_lerp     = rt_fifo_init(
-            rt_max((rt_uint)ceil((rt_real)p->buffer_size * 2 *
-     p->scale_factor_max), lerp_frame * 2)); */
-  rt_uint padded_out = ceil(p->fft_max_size * 2 * p->scale_factor_max);
-  chan->out          = rt_fifo_init(rt_max(p->buffer_size, padded_out));
-  chan->manips       = rt_manip_init(p, chan);
-  chan->framebuf     = rt_framebuf_init(p);
-  return chan;
-}
-
-rt_chan rt_chan_clean(rt_params p, rt_chan chan)
-{
-  chan->framebuf = rt_framebuf_destroy(p, chan->framebuf);
-  chan->in       = rt_fifo_destroy(chan->in);
-  // chan->pre_lerp = rt_fifo_destroy(chan->pre_lerp);
-  chan->out = rt_fifo_destroy(chan->out);
-  free(chan);
-  return (rt_chan)NULL;
 }
 
 rt_uint rt_real_size() { return sizeof(rt_real); }
