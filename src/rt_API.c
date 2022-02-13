@@ -30,7 +30,7 @@ void rt_set_params(rt_params p, rt_uint frame_size_pow, rt_uint buffer_size_pow,
   p->fft_size     = 1 << p->fft_size_pow;
   p->pad_offset   = (p->fft_size - p->frame_size) / 2;
 
-  p->phase_modif  = 0.0;
+  p->phase_modif  = 1.0;
   p->scale_factor = scale_factor;
   if (p->scale_factor > p->scale_factor_max ||
       p->scale_factor < (1. / p->scale_factor)) {
@@ -64,7 +64,7 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size_pow,
   p->manip_multichannel = 0; /* implement multichannel manip later plz */
 
   rt_set_params(p, frame_size_pow, buffer_size_pow, overlap_factor, pad_factor,
-                1.256, 1);
+                1.259, 1);
 
   p->chans = malloc(p->num_chans * sizeof(rt_chan));
   rt_uint i;

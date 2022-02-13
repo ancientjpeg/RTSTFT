@@ -39,10 +39,10 @@ rt_real *rt_manip_init(rt_params p, rt_chan c)
       case RT_MANIP_LEVEL:
         temp[frame_index] = 1.;
         break;
-      case RT_MANIP_CLAMP_LO:
+      case RT_MANIP_GATE:
         temp[frame_index] = 0.;
         break;
-      case RT_MANIP_CLAMP_HI:
+      case RT_MANIP_LIMIT:
         temp[frame_index] = 1.;
         break;
       default:
@@ -96,8 +96,8 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
    */
   rt_real thresh_adj;
   rt_uint thresh_adj_factor = p->fft_size / 2;
-  if (p->manip_settings & RT_MANIP_CLAMP_LO) {
-    manip_index = rt_manip_index(p, RT_MANIP_CLAMP_LO, i);
+  if (p->manip_settings & RT_MANIP_GATE) {
+    manip_index = rt_manip_index(p, RT_MANIP_GATE, i);
     for (i = 0; i < rt_manip_len - 1; i++) {
       thresh_adj = (c->manips[manip_index++] * thresh_adj_factor);
       if (fabs(frame_ptr[i * 2]) < thresh_adj) {
@@ -113,8 +113,8 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
    * @brief Gate section - hi threshold
    *
    */
-  if (p->manip_settings & RT_MANIP_CLAMP_HI) {
-    manip_index = rt_manip_index(p, RT_MANIP_CLAMP_HI, i);
+  if (p->manip_settings & RT_MANIP_LIMIT) {
+    manip_index = rt_manip_index(p, RT_MANIP_LIMIT, i);
     for (i = 0; i < rt_manip_len - 1; i++) {
       thresh_adj = (c->manips[manip_index++] * thresh_adj_factor);
       if (fabs(frame_ptr[i]) > thresh_adj) {

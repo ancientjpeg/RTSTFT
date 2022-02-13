@@ -24,8 +24,8 @@
 
 typedef enum RTSTFT_Manipulation_Values {
   RT_MANIP_LEVEL,
-  RT_MANIP_CLAMP_LO,
-  RT_MANIP_CLAMP_HI,
+  RT_MANIP_GATE,
+  RT_MANIP_LIMIT,
   RT_MANIP_TYPE_COUNT
 } rt_manip;
 
