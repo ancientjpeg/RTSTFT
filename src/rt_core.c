@@ -29,8 +29,7 @@
 
 void rt_digest_frame(rt_params p, rt_chan c)
 {
-  rt_uint  this_frame = c->framebuf->next_write;
-  rt_real *frame_ptr  = c->framebuf->frames[this_frame];
+  rt_real *frame_ptr = c->framebuf->frame;
   if (p->pad_factor != 0) {
     rt_uint i;
     for (i = 0; i < p->pad_offset; i++) {
@@ -40,20 +39,9 @@ void rt_digest_frame(rt_params p, rt_chan c)
   }
   rt_fifo_dequeue_staggered(c->in, frame_ptr + p->pad_offset, p->frame_size,
                             p->hop_a);
-  c->framebuf->frame_data[this_frame] |= RT_FRAME_IS_FILLED;
-  c->framebuf->next_write =
-      rt_framebuf_relative_frame(c->framebuf, this_frame, 1);
-  rt_framebuf_digest_frame(p, c, this_frame);
-  if (c->framebuf->frame_data[this_frame] & RT_FRAME_IS_PROCESSED) {
-    rt_fifo_enqueue_staggered(c->pre_lerp,
-                              c->framebuf->frames[this_frame] + p->pad_offset,
-                              p->frame_size, p->hop_s);
-    c->framebuf->next_unread =
-        rt_framebuf_relative_frame(c->framebuf, this_frame, 1);
-  }
-  else {
-    fprintf(stderr, "Frame error in assemble.\n");
-  }
+  rt_framebuf_digest_frame(p, c);
+  rt_fifo_enqueue_staggered(c->pre_lerp, c->framebuf->frame + p->pad_offset,
+                            p->frame_size, p->hop_s);
 }
 
 void rt_lerp_read_out(rt_params p, rt_chan c, rt_uint num_hops)

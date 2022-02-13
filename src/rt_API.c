@@ -33,9 +33,10 @@ void rt_set_params(rt_params p, rt_uint frame_size_pow, rt_uint buffer_size_pow,
   p->phase_modif  = 1.0;
   p->scale_factor = scale_factor;
   if (p->scale_factor > p->scale_factor_max ||
-      p->scale_factor < (1. / p->scale_factor)) {
-    fprintf(stderr, "Scale factor must be in range %.1f-%.1f.\n",
-            p->scale_factor_max, p->scale_factor_min);
+      p->scale_factor < p->scale_factor_min) {
+    fprintf(stderr,
+            "Scale factor must be in range %.1f-%.1f. Found value %.4f\n",
+            p->scale_factor_max, p->scale_factor_min, p->scale_factor);
     exit(1);
   }
 
@@ -64,7 +65,7 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size_pow,
   p->manip_multichannel = 0; /* implement multichannel manip later plz */
 
   rt_set_params(p, frame_size_pow, buffer_size_pow, overlap_factor, pad_factor,
-                1.259, 1);
+                0.7, 1);
 
   p->chans = malloc(p->num_chans * sizeof(rt_chan));
   rt_uint i;
@@ -111,16 +112,15 @@ void rt_cycle_offset(rt_params p, rt_real **buffers, rt_uint num_buffers,
 
 rt_chan rt_chan_init(rt_params p)
 {
-  rt_chan chan      = (rt_chan)malloc(sizeof(rt_chan_t));
-  chan->first_frame = 1;
-  chan->in          = rt_fifo_init(rt_max(p->buffer_size, p->fft_max_size * 2));
+  rt_chan chan = (rt_chan)malloc(sizeof(rt_chan_t));
+  chan->in     = rt_fifo_init(rt_max(p->buffer_size, p->fft_max_size * 2));
   rt_uint lerp_frame = p->overlap_factor * p->hop_s + p->fft_max_size;
   chan->pre_lerp     = rt_fifo_init(
           rt_max((rt_uint)ceil((rt_real)p->buffer_size * 2 * p->scale_factor_max),
                  lerp_frame * 2));
   chan->out      = rt_fifo_init(rt_max(p->buffer_size, p->fft_max_size * 2));
   chan->manips   = rt_manip_init(p, chan);
-  chan->framebuf = rt_framebuf_init(p, 2);
+  chan->framebuf = rt_framebuf_init(p);
   return chan;
 }
 

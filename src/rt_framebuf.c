@@ -15,8 +15,6 @@
  *
  *
  * @param p An rt_params signifying the active instance of RTSTFT.
- * @param num_frames The number of frames the framebuffer should be able to
- * hold. Usually 2.
  * @return rt_framebuf returns this framebuffer.
  *
  *
@@ -29,13 +27,9 @@
  * the current calculated phase offset, and then wrapped, for each frame.
  *
  */
-rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
+rt_framebuf rt_framebuf_init(rt_params p)
 {
-  rt_framebuf framebuf       = (rt_framebuf)malloc(sizeof(rt_framebuf_t));
-  framebuf->next_unread      = 0;
-  framebuf->next_unprocessed = 0;
-  framebuf->next_write       = 0;
-  framebuf->num_frames       = num_frames;
+  rt_framebuf framebuf = (rt_framebuf)malloc(sizeof(rt_framebuf_t));
 
   /**
    * @brief !!including 0 bin!!, number of bins is N / 2 + 1
@@ -45,7 +39,6 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
   rt_uint num_real_bins = p->fft_size / 2 + 1;
   framebuf->phi_prev    = (rt_real *)calloc(num_real_bins, sizeof(rt_real));
   framebuf->phi_cuml    = (rt_real *)calloc(num_real_bins, sizeof(rt_real));
-  framebuf->frame_data  = (char *)calloc(framebuf->num_frames, sizeof(char));
 
   /**< represents per-bin phase offset in rads/hop */
   framebuf->omega = (rt_real *)malloc(sizeof(rt_real) * (num_real_bins));
@@ -58,17 +51,10 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
    * @brief Frame allocation occurs here. Frames are allocated to maximum size
    * to prevent any need for reallocation during processing in the event of a
    * modification to the FFT size.
-   *
    */
-  rt_uint N_bytes = p->fft_max_size * sizeof(rt_real);
-  framebuf->frames =
-      (rt_real **)malloc(sizeof(rt_real *) * framebuf->num_frames);
-  framebuf->frames[0] =
-      (rt_real *)pffft_aligned_malloc(N_bytes * framebuf->num_frames);
-  framebuf->work = (rt_real *)pffft_aligned_malloc(N_bytes);
-  for (i = 1; i < framebuf->num_frames; i++) {
-    framebuf->frames[i] = framebuf->frames[0] + (p->fft_max_size * i);
-  }
+  framebuf->frame =
+      (rt_real *)pffft_aligned_malloc(2 * p->fft_max_size * sizeof(rt_real));
+  framebuf->work = framebuf->frame + p->fft_max_size;
 
   /**< setup allocation */
   rt_uint num_setups = p->fft_max_pow - p->fft_min_pow + 1;
@@ -91,15 +77,13 @@ rt_framebuf rt_framebuf_init(rt_params p, rt_uint num_frames)
  */
 rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf)
 {
-  pffft_aligned_free(framebuf->work);
-  pffft_aligned_free(framebuf->frames[0]);
+  // pffft_aligned_free(framebuf->work);
+  pffft_aligned_free(framebuf->frame);
   rt_uint i;
   for (i = p->fft_min_pow; i <= p->fft_max_pow; i++) {
     rt_uint curr = i - p->fft_min_pow;
     pffft_destroy_setup(framebuf->setups[curr]);
   }
-  free(framebuf->frames);
-  free(framebuf->frame_data);
   free(framebuf->phi_prev);
   free(framebuf->phi_cuml);
   free(framebuf->omega);
@@ -108,23 +92,10 @@ rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf)
 }
 
 #define wrap(phi) ((phi) - (round((phi)*M_1_PI * 0.5) * 2. * M_PI))
-void rt_framebuf_digest_frame(rt_params p, rt_chan c, rt_uint frame)
+void rt_framebuf_digest_frame(rt_params p, rt_chan c)
 {
-
-  /** error checking */
-  rt_uint last_frame = rt_framebuf_relative_frame(c->framebuf, frame, -1);
-  if (!(c->framebuf->frame_data[frame] & RT_FRAME_IS_FILLED)) {
-    fprintf(stderr, "Can't convert a frame that isn't filled!\n");
-  }
-  else if (!(c->framebuf->frame_data[last_frame] & RT_FRAME_IS_PROCESSED) &&
-           !c->first_frame) {
-    fprintf(stderr, "Can't process frame before the previous frame has been "
-                    "processed!\n");
-    exit(1);
-  }
-
   /** variable declarations */
-  rt_real *frame_ptr = c->framebuf->frames[frame];
+  rt_real *frame_ptr = c->framebuf->frame;
   rt_uint  i;
   rt_real  real, imag, amp, phase;
   rt_real  freq_dev, freq_dev_wrapped, freq_true, phase_adj;
@@ -180,29 +151,4 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c, rt_uint frame)
   rt_window(frame_ptr + p->pad_offset, p->frame_size);
 
   /** immediately lerp to c->out */
-
-  /** handle tracking */
-  c->framebuf->frame_data[frame] |= RT_FRAME_IS_PROCESSED;
-  c->framebuf->next_unprocessed =
-      rt_framebuf_relative_frame(c->framebuf, frame, 1);
-}
-
-rt_uint rt_framebuf_relative_frame(rt_framebuf framebuf, rt_uint frame,
-                                   int offset)
-{
-  rt_uint offset_abs = abs(offset);
-  if (offset_abs > framebuf->num_frames - 1) {
-    fprintf(stderr,
-            "Offset cannot be of greater magnitude than num_frames - 1\n");
-    return frame;
-  }
-  rt_uint pre_sum;
-  if (offset < 0) {
-    pre_sum = offset_abs > frame ? framebuf->num_frames - (offset_abs - frame)
-                                 : frame - offset_abs;
-  }
-  else {
-    pre_sum = (frame + offset) % framebuf->num_frames;
-  }
-  return pre_sum;
 }
