@@ -175,6 +175,25 @@ void rt_framebuf_process_frame(rt_params p, rt_chan c, rt_uint frame)
   c->framebuf->frame_data[frame] |= RT_FRAME_IS_PROCESSED;
   c->framebuf->next_unprocessed =
       rt_framebuf_relative_frame(c->framebuf, frame, 1);
+
+  rt_real *frame_ptr = c->framebuf->frames[frame];
+  rt_uint  i;
+  rt_real  amp, phase;
+  for (i = 2; i < p->fft_size; i += 2) {
+    amp              = frame_ptr[i];
+    phase            = frame_ptr[i + 1];
+
+    frame_ptr[i]     = amp * cos(phase);
+    frame_ptr[i + 1] = amp * sin(phase);
+  }
+
+  pffft_transform_ordered(c->framebuf->setups[rt_setup], frame_ptr, frame_ptr,
+                          c->framebuf->work, PFFFT_BACKWARD);
+  for (i = 0; i < p->fft_size; i++) {
+    frame_ptr[i] /= (rt_real)p->fft_size * 2.;
+  }
+  rt_window(frame_ptr + p->pad_offset, p->frame_size);
+  c->framebuf->frame_data[frame] |= RT_FRAME_IS_INVERTED;
 }
 
 void rt_framebuf_revert_frame(rt_params p, rt_chan c, rt_uint frame)

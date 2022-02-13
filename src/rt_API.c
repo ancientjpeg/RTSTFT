@@ -91,7 +91,7 @@ rt_params rt_clean(rt_params p)
 
 void rt_cycle_single(rt_params p, rt_real *buffer, rt_uint buffer_len)
 {
-  rt_cycle_chan(p, 0, buffer, buffer_len);
+  rt_cycle_offset(p, &buffer, 1, buffer_len, 0);
 }
 
 void rt_cycle(rt_params p, rt_real **buffers, rt_uint num_buffers,
