@@ -25,20 +25,20 @@ int   main()
 {
   time_t    t;
   rt_uint   buffer_pow   = 14;
-  rt_uint   frame_pow    = 10;
+  rt_uint   frame_pow    = 12;
   rt_uint   block_size   = 1 << 19;
   rt_uint   buffer_size  = 1 << buffer_pow;
   rt_uint   frame_size   = 1 << frame_pow;
   float     scale_factor = pow(2, (float)12. / 12.);
   rt_uint   i, f;
   rt_params p            = rt_init(2, frame_pow, buffer_pow, 8, 0, 44100.f);
-  WAV       wav          = read_from_wav("in.wav", block_size);
+  WAV       wav          = read_from_wav("in2.wav", block_size);
   rt_uint   latency_size = frame_size;
-  // for (i = 0; i < block_size; i++) {
-  //   double val     = sin((double)i / frame_size * 2 * M_PI * 1000.);
-  //   wav.data[0][i] = val * 0.6;
-  //   wav.data[1][i] = val * 0.6;
-  // }
+  for (i = 0; i < block_size; i++) {
+    double val     = sin((double)i / 44100. * 2 * M_PI * 500.);
+    wav.data[0][i] = val * 0.2;
+    wav.data[1][i] = val * 0.2;
+  }
 
   start_timer(t);
   for (f = 0; f < block_size; f += buffer_size) {

@@ -148,7 +148,29 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   for (i = 0; i < p->fft_size; i++) {
     frame_ptr[i] /= (rt_real)p->fft_size * 2.;
   }
-  rt_window(frame_ptr + p->pad_offset, p->frame_size);
+  /**
+   * A note for the future:
+   * We window the inverse transformed time-domain signal from the START of the
+   * signal. This is because the phase vocoder calculation offsets the initial
+   * phase of each sinusoid in order to keep its phase angle at the START of the
+   * frame consistent with what it should be given that we are offseting its
+   * starting position.
+   *
+   * For example, let's assume we're scaling a signal with a single bin-1
+   * sinusoid, with a wavelength exactly equal to the frame size, with hop size
+   * N/4. For the second frame we analyze, its phase will be pi / 2. If our
+   * synthesis hop size is say N/2 (pitching up an octave), then the theoretical
+   * phase that the synthesis sinusoid should have will be pi. With an FFT, this
+   * will be reflected by the returned time-domain signal having a bin-1
+   * sinusoid that STARTS at phase pi, i.e. signal == 0 and begins decreasing.
+   * As such, we should window and overlap add starting from the first sample of
+   * the returned frame, not the sample that is pad_factor samples into the
+   * array.
+   *
+   * !!I may be wrong about this!!, but I don't think I am...
+   *
+   */
+  rt_window(frame_ptr, p->frame_size);
 
   /** immediately lerp to c->out */
 }

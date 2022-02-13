@@ -65,7 +65,7 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size_pow,
   p->manip_multichannel = 0; /* implement multichannel manip later plz */
 
   rt_set_params(p, frame_size_pow, buffer_size_pow, overlap_factor, pad_factor,
-                0.7, 1);
+                2., 1);
 
   p->chans = malloc(p->num_chans * sizeof(rt_chan));
   rt_uint i;

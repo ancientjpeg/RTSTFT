@@ -40,8 +40,8 @@ void rt_digest_frame(rt_params p, rt_chan c)
   rt_fifo_dequeue_staggered(c->in, frame_ptr + p->pad_offset, p->frame_size,
                             p->hop_a);
   rt_framebuf_digest_frame(p, c);
-  rt_fifo_enqueue_staggered(c->pre_lerp, c->framebuf->frame + p->pad_offset,
-                            p->frame_size, p->hop_s);
+  rt_fifo_enqueue_staggered(c->pre_lerp, c->framebuf->frame, p->frame_size,
+                            p->hop_s);
 }
 
 void rt_lerp_read_out(rt_params p, rt_chan c, rt_uint num_hops)
