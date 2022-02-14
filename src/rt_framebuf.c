@@ -53,16 +53,16 @@ rt_framebuf rt_framebuf_init(rt_params p)
    * modification to the FFT size.
    */
   framebuf->frame =
-      (rt_real *)pffft_aligned_malloc(2 * p->fft_max_size * sizeof(rt_real));
-  framebuf->work = framebuf->frame + p->fft_max_size;
+      (rt_real *)pffft_aligned_malloc(2 * p->fft_max * sizeof(rt_real));
+  framebuf->work = framebuf->frame + p->fft_max;
 
   /**< setup allocation */
-  rt_uint num_setups = p->fft_max_pow - p->fft_min_pow + 1;
+  rt_uint num_setups = p->fft_max - p->fft_min + 1;
   framebuf->setups = (PFFFT_Setup **)malloc(num_setups * sizeof(PFFFT_Setup *));
   rt_uint N, curr;
-  for (i = p->fft_min_pow; i <= p->fft_max_pow; i++) {
+  for (i = p->fft_min; i <= p->fft_max; i++) {
     N                      = (1 << i);
-    curr                   = i - p->fft_min_pow;
+    curr                   = i - p->fft_min;
     framebuf->setups[curr] = pffft_new_setup(N, PFFFT_REAL);
   }
 
@@ -80,8 +80,8 @@ rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf)
   // pffft_aligned_free(framebuf->work);
   pffft_aligned_free(framebuf->frame);
   rt_uint i;
-  for (i = p->fft_min_pow; i <= p->fft_max_pow; i++) {
-    rt_uint curr = i - p->fft_min_pow;
+  for (i = p->fft_min; i <= p->fft_max; i++) {
+    rt_uint curr = i - p->fft_min;
     pffft_destroy_setup(framebuf->setups[curr]);
   }
   free(framebuf->phi_prev);
@@ -113,7 +113,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   }
 
   /** manipulate */
-  if (p->manip_settings) {
+  if (p->manips_enabled) {
     rt_chan input_chan = p->manip_multichannel ? c : p->chans[0];
     rt_manip_process(p, input_chan, frame_ptr);
   }

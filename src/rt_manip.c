@@ -27,23 +27,23 @@ rt_uint rt_manip_index(rt_params p, rt_uint manip_type, rt_uint frame_index)
  * Internally, the sample length of all the rt_manip buffers is N / 2, as a
  * single manip buffer will only ever refer to amplitudes OR phases.
  */
-rt_real *rt_manip_init(rt_params p, rt_chan c)
+rt_real *rt_manip_init(rt_params p)
 {
-  rt_uint  len  = RT_MANIP_TYPE_COUNT * rt_manip_len;
-  rt_real *temp = malloc(len * sizeof(rt_real));
+  rt_uint  len    = RT_MANIP_TYPE_COUNT * rt_manip_len;
+  rt_real *manips = malloc(len * sizeof(rt_real));
   rt_uint  i, j;
   for (i = 0; i < RT_MANIP_TYPE_COUNT; i++) {
     for (j = 0; j < len; j++) {
       rt_uint frame_index = rt_manip_index(p, i, j);
       switch (i) {
       case RT_MANIP_LEVEL:
-        temp[frame_index] = 1.;
+        manips[frame_index] = 1.;
         break;
       case RT_MANIP_GATE:
-        temp[frame_index] = 0.;
+        manips[frame_index] = 0.;
         break;
       case RT_MANIP_LIMIT:
-        temp[frame_index] = 1.;
+        manips[frame_index] = 1.;
         break;
       default:
         fprintf(stderr, "Need to intialize all rt_manip fields.\n");
@@ -52,7 +52,7 @@ rt_real *rt_manip_init(rt_params p, rt_chan c)
       }
     }
   }
-  return temp;
+  return manips;
 }
 
 /**
@@ -76,18 +76,18 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
             "Sorry! Zero-padding and bin manipulation not yet compatible.");
     exit(1);
   }
-  rt_uint manip_index, i;
-
+  rt_uint  manip_index, i;
+  rt_real *manips = p->manip_multichannel ? c->manips : p->chans[0]->manips;
   /**
    * @brief Level manip section
    *
    */
-  if (p->manip_settings & RT_MANIP_LEVEL) {
+  if (p->manips_enabled & RT_MANIP_LEVEL) {
     manip_index = rt_manip_index(p, RT_MANIP_LEVEL, 0);
     for (i = 0; i < rt_manip_len - 1; i++) {
-      frame_ptr[i * 2] *= c->manips[manip_index++];
+      frame_ptr[i * 2] *= manips[manip_index++];
     }
-    frame_ptr[1] *= c->manips[rt_manip_len - 1];
+    frame_ptr[1] *= manips[rt_manip_len - 1];
   }
 
   /**
@@ -96,16 +96,16 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
    */
   rt_real thresh_adj;
   rt_uint thresh_adj_factor = p->fft_size / 2;
-  if (p->manip_settings & RT_MANIP_GATE) {
+  if (p->manips_enabled & RT_MANIP_GATE) {
     manip_index = rt_manip_index(p, RT_MANIP_GATE, 0);
     for (i = 0; i < rt_manip_len - 1; i++) {
-      thresh_adj = (c->manips[manip_index++] * thresh_adj_factor);
+      thresh_adj = (manips[manip_index++] * thresh_adj_factor);
       if (fabs(frame_ptr[i * 2]) < thresh_adj) {
         frame_ptr[i] = 0.;
       }
     }
-    if (fabs(frame_ptr[1]) < (c->manips[manip_index] * thresh_adj_factor)) {
-      frame_ptr[1] *= c->manips[rt_manip_len - 1];
+    if (fabs(frame_ptr[1]) < (manips[manip_index] * thresh_adj_factor)) {
+      frame_ptr[1] *= manips[rt_manip_len - 1];
     }
   }
 
@@ -113,16 +113,16 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
    * @brief Gate section - hi threshold
    *
    */
-  if (p->manip_settings & RT_MANIP_LIMIT) {
+  if (p->manips_enabled & RT_MANIP_LIMIT) {
     manip_index = rt_manip_index(p, RT_MANIP_LIMIT, 0);
     for (i = 0; i < rt_manip_len - 1; i++) {
-      thresh_adj = (c->manips[manip_index++] * thresh_adj_factor);
+      thresh_adj = (manips[manip_index++] * thresh_adj_factor);
       if (fabs(frame_ptr[i]) > thresh_adj) {
         frame_ptr[i] = 0.;
       }
     }
-    if (fabs(frame_ptr[1]) > (c->manips[manip_index] * thresh_adj_factor)) {
-      frame_ptr[1] *= c->manips[rt_manip_len - 1];
+    if (fabs(frame_ptr[1]) > (manips[manip_index] * thresh_adj_factor)) {
+      frame_ptr[1] *= manips[rt_manip_len - 1];
     }
   }
 }

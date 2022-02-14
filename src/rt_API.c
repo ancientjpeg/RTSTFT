@@ -10,71 +10,34 @@
  */
 #include "rtstft.h"
 
-rt_params rt_init(rt_uint num_channels, rt_uint frame_size_pow,
-                  rt_uint buffer_size_pow, rt_uint overlap_factor,
-                  rt_uint pad_factor, float sample_rate)
+rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
+                  rt_uint overlap_factor, rt_uint pad_factor, float sample_rate)
 {
-  rt_params p           = malloc(sizeof(rt_params_t));
-  p->fft_min_pow        = 5; /** 2 * SIMD_SZ ^ 2 */
-  p->fft_max_pow        = 16;
-  p->fft_max_size       = 1 << p->fft_max_pow;
-  p->scale_factor_max   = 2.0;
-  p->scale_factor_min   = 1. / p->scale_factor_max;
-  p->sample_rate        = sample_rate;
-  p->num_chans          = num_channels;
+  rt_params p          = malloc(sizeof(rt_params_t));
+  p->initialized       = 0;
+  rt_real scale_factor = 1.0;
+  p->fft_min           = 1UL << RT_FFT_MIN_POW; /** 2 * SIMD_SZ ^ 2 */
+  p->fft_max           = 1UL << RT_FFT_MAX_POW;
+  p->scale_factor_max  = 2.0;
+  p->scale_factor_min  = 1. / p->scale_factor_max;
+  p->hold        = rt_holder_init(p, num_channels, frame_size, buffer_size,
+                                  overlap_factor, pad_factor, sample_rate);
+  p->sample_rate = sample_rate;
+  p->num_chans   = num_channels;
   p->manip_multichannel = 0; /* implement multichannel manip later plz */
+  p->phase_modif        = 1.0;
 
-  rt_set_params(p, frame_size_pow, buffer_size_pow, overlap_factor, pad_factor,
-                2.0, 1);
+  rt_set_params(p, 1);
 
   p->chans = malloc(p->num_chans * sizeof(rt_chan));
   rt_uint i;
   for (i = 1; i < RT_MANIP_TYPE_COUNT; i++) {
-    p->manip_settings |=
-        1 << i; /**< sets all manipulation ON, except multichannel */
   }
   for (i = 0; i < p->num_chans; i++) {
     p->chans[i] = rt_chan_init(p);
   }
+  p->initialized = 1;
   return p;
-}
-
-void rt_set_params(rt_params p, rt_uint frame_size_pow, rt_uint buffer_size_pow,
-                   rt_uint overlap_factor, rt_uint pad_factor,
-                   rt_real scale_factor, char init)
-{
-  p->pad_factor   = pad_factor;
-  p->fft_size_pow = frame_size_pow + pad_factor;
-  if (p->fft_size_pow > p->fft_max_pow) {
-    fprintf(stderr, "Exceeded maximum frame size.\n");
-    exit(1);
-  }
-  else if (p->fft_size_pow < p->fft_min_pow) {
-    fprintf(stderr, "Below minimum frame size.\n");
-    exit(1);
-  }
-  p->frame_size   = 1 << frame_size_pow;
-  p->fft_size     = 1 << p->fft_size_pow;
-  p->pad_offset   = (p->fft_size - p->frame_size) / 2;
-
-  p->phase_modif  = 1.0;
-  p->scale_factor = scale_factor;
-  if (p->scale_factor > p->scale_factor_max ||
-      p->scale_factor < p->scale_factor_min) {
-    fprintf(stderr,
-            "Scale factor must be in range %.1f-%.1f. Found value %.4f\n",
-            p->scale_factor_max, p->scale_factor_min, p->scale_factor);
-    exit(1);
-  }
-
-  p->overlap_factor = overlap_factor;
-  p->buffer_size    = 1U << buffer_size_pow;
-  p->hop_a          = p->frame_size / p->overlap_factor;
-  p->hop_s          = lround(p->hop_a * p->scale_factor);
-  rt_uint i;
-  for (i = 1; i < RT_MANIP_TYPE_COUNT; i++) {
-    /* do not forget to set appropriate manips ! */
-  }
 }
 
 rt_params rt_clean(rt_params p)
@@ -84,6 +47,7 @@ rt_params rt_clean(rt_params p)
     rt_chan_clean(p, p->chans[i]);
   }
   free(p->chans);
+  free(p->hold);
   free(p);
   return (rt_params)NULL;
 }
@@ -108,4 +72,22 @@ void rt_cycle_offset(rt_params p, rt_real **buffers, rt_uint num_buffers,
   }
 }
 
-rt_uint rt_real_size() { return sizeof(rt_real); }
+rt_uint rt_check_pow_2(rt_uint num)
+{
+  rt_uint i = 0, check;
+  do {
+    check = 1UL << i;
+    if (check & num) {
+      if (~check & num) {
+        fprintf(stderr,
+                "FFT size must be a power of two. Supplied value: %lu\n", num);
+        return RT_UINT_FALSE;
+      }
+      return i;
+    }
+  } while (i++ < RT_FFT_MAX_POW);
+
+  fprintf(stderr, "%lu is an invalid frame size. Must be greater than %lu.\n",
+          num, 1UL << RT_FFT_MIN_POW);
+  return RT_UINT_FALSE;
+}

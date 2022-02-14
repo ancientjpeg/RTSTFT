@@ -22,4 +22,37 @@ typedef unsigned long rt_uint;
 #else
 typedef unsigned int rt_uint;
 #endif
+
+#define RT_UINT_FALSE ((rt_uint)-1)
+
+#ifdef RT_FFT_MIN_POW_OVERRIDE
+#define RRT_FFT_MIN_POW RT_FFT_MIN_POW_OVERRIDE
+#else
+#define RT_FFT_MIN_POW 5
+#endif
+
+#ifdef RT_FFT_MAX_POW_OVERRIDE
+#define RRT_FFT_MAX_POW RT_FFT_MAX_POW_OVERRIDE
+#else
+#define RT_FFT_MAX_POW 16
+#endif
+
+#ifdef RT_OVERLAP_MIN_OVERRIDE
+#define RRT_OVERLAP_MIN RT_OVERLAP_MIN_OVERRIDE
+#else
+#define RT_OVERLAP_MIN 2
+#endif
+
+#ifdef RT_OVERLAP_MAX_OVERRIDE
+#define RRT_OVERLAP_MAX RT_OVERLAP_MAX_OVERRIDE
+#else
+#define RT_OVERLAP_MAX 16
+#endif
+
+#ifdef RT_PAD_MAX_OVERRIDE
+#define RRT_PAD_MAX RT_PAD_MAX_OVERRIDE
+#else
+#define RT_PAD_MAX 3
+#endif
+
 #endif

@@ -7,4 +7,4 @@ fftw*
 **/*.asd
 out.json
 lerp.py
-src/pffft
+src/pffft/*
