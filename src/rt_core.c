@@ -41,14 +41,13 @@ void rt_digest_frame(rt_params p, rt_chan c)
   rt_fifo_dequeue_staggered(c->in, frame_ptr + p->pad_offset, p->frame_size,
                             p->hop_a);
   rt_framebuf_digest_frame(p, c);
-  // rt_fifo_enqueue_staggered(c->pre_lerp, c->framebuf->frame, p->frame_size,
-  //                           p->hop_s);
 
-  /** to lerp directly from framebuf to c->out, we do a slightly backwards lerp,
-   * i.e. we write to the next hop_a position but write N * scale_factor
-   * samples.
+  /** to lerp directly from framebuf to c->out, we do a slightly backwards
+   * lerp, i.e. we write to the next hop_a position but write N *
+   * scale_factor samples.
    */
   rt_uint input_size    = p->frame_size;
+
   rt_uint hop_s_inverse = round(p->hop_a / p->scale_factor);
   rt_uint output_size   = hop_s_inverse * p->overlap_factor;
   rt_real pos = 0., local_incr = (rt_real)(input_size - 1) / (output_size - 1);

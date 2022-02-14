@@ -60,9 +60,9 @@ rt_framebuf rt_framebuf_init(rt_params p)
   rt_uint num_setups = p->fft_max - p->fft_min + 1;
   framebuf->setups = (PFFFT_Setup **)malloc(num_setups * sizeof(PFFFT_Setup *));
   rt_uint N, curr;
-  for (i = p->fft_min; i <= p->fft_max; i++) {
+  for (i = RT_FFT_MIN_POW; i <= RT_FFT_MAX_POW; i++) {
     N                      = (1 << i);
-    curr                   = i - p->fft_min;
+    curr                   = i - RT_FFT_MIN_POW;
     framebuf->setups[curr] = pffft_new_setup(N, PFFFT_REAL);
   }
 
@@ -80,8 +80,8 @@ rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf)
   // pffft_aligned_free(framebuf->work);
   pffft_aligned_free(framebuf->frame);
   rt_uint i;
-  for (i = p->fft_min; i <= p->fft_max; i++) {
-    rt_uint curr = i - p->fft_min;
+  for (i = RT_FFT_MIN_POW; i <= RT_FFT_MAX_POW; i++) {
+    rt_uint curr = i - RT_FFT_MIN_POW;
     pffft_destroy_setup(framebuf->setups[curr]);
   }
   free(framebuf->phi_prev);
@@ -103,7 +103,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
 
   /** forward transform */
   rt_window(frame_ptr + p->pad_offset, p->frame_size);
-  pffft_transform_ordered(c->framebuf->setups[rt_setup], frame_ptr, frame_ptr,
+  pffft_transform_ordered(c->framebuf->setups[p->setup], frame_ptr, frame_ptr,
                           c->framebuf->work, PFFFT_FORWARD);
   for (i = 2; i < p->fft_size; i += 2) {
     real             = frame_ptr[i];
@@ -113,7 +113,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   }
 
   /** manipulate */
-  if (p->manips_enabled) {
+  if (p->enabled_manips) {
     rt_chan input_chan = p->manip_multichannel ? c : p->chans[0];
     rt_manip_process(p, input_chan, frame_ptr);
   }
@@ -143,10 +143,10 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
     frame_ptr[i]     = amp * cos(phase);
     frame_ptr[i + 1] = amp * sin(phase);
   }
-  pffft_transform_ordered(c->framebuf->setups[rt_setup], frame_ptr, frame_ptr,
+  pffft_transform_ordered(c->framebuf->setups[p->setup], frame_ptr, frame_ptr,
                           c->framebuf->work, PFFFT_BACKWARD);
   for (i = 0; i < p->fft_size; i++) {
-    frame_ptr[i] /= (rt_real)p->fft_size * p->scale_factor;
+    frame_ptr[i] /= (rt_real)p->fft_size * p->scale_factor * 4.;
   }
   /**
    * A note for the future:

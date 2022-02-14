@@ -13,17 +13,16 @@
 rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
                   rt_uint overlap_factor, rt_uint pad_factor, float sample_rate)
 {
-  rt_params p          = malloc(sizeof(rt_params_t));
-  p->initialized       = 0;
-  rt_real scale_factor = 1.0;
-  p->fft_min           = 1UL << RT_FFT_MIN_POW; /** 2 * SIMD_SZ ^ 2 */
-  p->fft_max           = 1UL << RT_FFT_MAX_POW;
-  p->scale_factor_max  = 2.0;
-  p->scale_factor_min  = 1. / p->scale_factor_max;
-  p->hold        = rt_holder_init(p, num_channels, frame_size, buffer_size,
-                                  overlap_factor, pad_factor, sample_rate);
-  p->sample_rate = sample_rate;
-  p->num_chans   = num_channels;
+  rt_params p         = malloc(sizeof(rt_params_t));
+  p->initialized      = 0;
+  p->fft_min          = 1UL << RT_FFT_MIN_POW; /** 2 * SIMD_SZ ^ 2 */
+  p->fft_max          = 1UL << RT_FFT_MAX_POW;
+  p->scale_factor_max = 2.0;
+  p->scale_factor_min = 1. / p->scale_factor_max;
+  rt_holder_init(p, num_channels, frame_size, buffer_size, overlap_factor,
+                 pad_factor, sample_rate);
+  p->sample_rate        = sample_rate;
+  p->num_chans          = num_channels;
   p->manip_multichannel = 0; /* implement multichannel manip later plz */
   p->phase_modif        = 1.0;
 

@@ -18,7 +18,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define rt_setup (p->fft_size - p->fft_min)
 #define rt_max(a, b) ((a) > (b) ? (a) : (b))
 #define rt_min(a, b) ((a) < (b) ? (a) : (b))
 
@@ -27,11 +26,11 @@ rt_chan rt_chan_init(rt_params p);
 rt_chan rt_chan_clean(rt_params p, rt_chan chan);
 
 /* ========   rt_holder   ======== */
-rt_holder rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
-                         rt_uint buffer_size, rt_uint overlap_factor,
-                         rt_uint pad_factor, rt_real sample_rate);
-void      rt_set_frame_pad(rt_params p, rt_uint frame_size, rt_uint pad_factor);
-void      rt_set_params(rt_params p, char init);
+void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
+                    rt_uint buffer_size, rt_uint overlap_factor,
+                    rt_uint pad_factor, rt_real sample_rate);
+void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint pad_factor);
+void rt_set_params(rt_params p, char init);
 
 /* ========   rt_manip    ======== */
 rt_real *rt_manip_init(rt_params p);

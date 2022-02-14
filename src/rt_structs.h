@@ -30,7 +30,7 @@ typedef enum RTSTFT_Manipulation_Values {
 } rt_manip;
 
 typedef struct RTSTFT_Holder {
-  rt_uint frame_size, buffer_size, overlap_factor, pad_factor, fft_size,
+  rt_uint frame_size, buffer_size, overlap_factor, pad_factor, fft_size, setup,
       tracker;
   rt_real scale_factor, sample_rate;
 } rt_holder_t;
@@ -50,12 +50,12 @@ typedef rt_chan_t *rt_chan;
  */
 typedef struct RTSTFT_Params {
   rt_uint num_chans, fft_size, fft_min, fft_max, frame_size, overlap_factor,
-      pad_factor, pad_offset, hop_a, hop_s, buffer_size;
+      pad_factor, pad_offset, hop_a, hop_s, buffer_size, setup;
   rt_real scale_factor, scale_factor_max, scale_factor_min, phase_modif,
       sample_rate;
   rt_chan      *chans;
   rt_holder     hold;
-  unsigned char manips_enabled, manip_multichannel, initialized;
+  unsigned char enabled_manips, manip_multichannel, initialized;
 } rt_params_t;
 typedef rt_params_t *rt_params;
 
