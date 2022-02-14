@@ -47,7 +47,6 @@ void rt_digest_frame(rt_params p, rt_chan c)
    * scale_factor samples.
    */
   rt_uint input_size    = p->frame_size;
-
   rt_uint hop_s_inverse = round(p->hop_a / p->scale_factor);
   rt_uint output_size   = hop_s_inverse * p->overlap_factor;
   rt_real pos = 0., local_incr = (rt_real)(input_size - 1) / (output_size - 1);
@@ -95,6 +94,7 @@ void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
                    rt_uint buffer_len)
 {
   rt_chan c = p->chans[channel_index];
+  rt_params_check_mod(p);
   while (buffer_len > 0) {
     rt_fifo_enqueue_one(c->in, *buffer);
     if (rt_fifo_payload(c->in) >= p->frame_size) {
@@ -109,5 +109,12 @@ void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
     }
     ++buffer;
     --buffer_len;
+  }
+}
+
+void rt_params_check_mod(rt_params p)
+{
+  if (p->hold->tracker) {
+    rt_set_params(p);
   }
 }

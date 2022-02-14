@@ -27,7 +27,7 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
   } while (++i < RT_NUM_PARAMS_TRACKED);
 }
 
-void rt_set_params(rt_params p, char init)
+void rt_set_params(rt_params p)
 {
   const rt_holder h = p->hold;
 
@@ -38,6 +38,7 @@ void rt_set_params(rt_params p, char init)
   p->pad_offset     = (p->fft_size - p->frame_size) / 2;
   p->scale_factor   = h->scale_factor;
   p->setup          = h->setup;
+  p->sample_rate    = h->sample_rate;
 
   p->buffer_size    = h->buffer_size;
   p->hop_a          = p->frame_size / p->overlap_factor;
@@ -64,6 +65,7 @@ void rt_set_buffer_size(rt_params p, rt_uint buffer_size)
     exit(1);
   }
   p->hold->buffer_size = buffer_size;
+  p->hold->tracker |= RT_BUFFER_CHANGED;
 }
 
 void rt_set_overlap(rt_params p, rt_uint overlap_factor)

@@ -13,22 +13,19 @@
 rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
                   rt_uint overlap_factor, rt_uint pad_factor, float sample_rate)
 {
-  rt_params p         = malloc(sizeof(rt_params_t));
-  p->initialized      = 0;
-  p->fft_min          = 1UL << RT_FFT_MIN_POW; /** 2 * SIMD_SZ ^ 2 */
-  p->fft_max          = 1UL << RT_FFT_MAX_POW;
-  p->scale_factor_max = 2.0;
-  p->scale_factor_min = 1. / p->scale_factor_max;
+  rt_params p           = malloc(sizeof(rt_params_t));
+  p->initialized        = 0;
+  p->fft_min            = 1UL << RT_FFT_MIN_POW; /** 2 * SIMD_SZ ^ 2 */
+  p->fft_max            = 1UL << RT_FFT_MAX_POW;
+  p->scale_factor_max   = 2.0;
+  p->scale_factor_min   = 1. / p->scale_factor_max;
+  p->manip_multichannel = 0; /* implement multichannel manip later plz */
+  p->num_chans          = num_channels;
   rt_holder_init(p, num_channels, frame_size, buffer_size, overlap_factor,
                  pad_factor, sample_rate);
-  p->sample_rate        = sample_rate;
-  p->num_chans          = num_channels;
-  p->manip_multichannel = 0; /* implement multichannel manip later plz */
-  p->phase_modif        = 1.0;
-
-  rt_set_params(p, 1);
-
-  p->chans = malloc(p->num_chans * sizeof(rt_chan));
+  rt_set_params(p);
+  p->phase_modif = 1.0;
+  p->chans       = malloc(p->num_chans * sizeof(rt_chan));
   rt_uint i;
   for (i = 1; i < RT_MANIP_TYPE_COUNT; i++) {
   }
@@ -50,6 +47,8 @@ rt_params rt_clean(rt_params p)
   free(p);
   return (rt_params)NULL;
 }
+void rt_start_cycle(rt_params p) { p->in_cycle = 1; }
+void rt_end_cycle(rt_params p) { p->in_cycle = 0; }
 
 void rt_cycle_single(rt_params p, rt_real *buffer, rt_uint buffer_len)
 {
