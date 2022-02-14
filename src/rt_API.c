@@ -23,17 +23,42 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
   p->num_chans          = num_channels;
   rt_holder_init(p, num_channels, frame_size, buffer_size, overlap_factor,
                  pad_factor, sample_rate);
-  rt_set_params(p);
+  rt_update_params(p);
   p->phase_modif = 1.0;
   p->chans       = malloc(p->num_chans * sizeof(rt_chan));
   rt_uint i;
-  for (i = 1; i < RT_MANIP_TYPE_COUNT; i++) {
-  }
   for (i = 0; i < p->num_chans; i++) {
     p->chans[i] = rt_chan_init(p);
   }
   p->initialized = 1;
   return p;
+}
+
+void rt_update_params(rt_params p)
+{
+  const rt_holder h = p->hold;
+
+  p->frame_size     = h->frame_size;
+  p->fft_size       = h->fft_size;
+  p->overlap_factor = h->overlap_factor;
+  p->pad_factor     = h->pad_factor;
+  p->pad_offset     = (p->fft_size - p->frame_size) / 2;
+  p->scale_factor   = h->scale_factor;
+  p->setup          = h->setup;
+  p->sample_rate    = h->sample_rate;
+
+  p->buffer_size    = h->buffer_size;
+  p->hop_a          = p->frame_size / p->overlap_factor;
+  p->hop_s          = lround(p->hop_a * p->scale_factor);
+  rt_uint i;
+  for (i = 1; i < RT_MANIP_TYPE_COUNT; i++) {
+    p->enabled_manips |=
+        1 << i; /**< sets all manipulation ON, except multichannel */
+  }
+  if ((p->hold->tracker & RT_MANIPS_CHANGED) && p->initialized) {
+    rt_update_manips(p);
+  }
+  p->hold->tracker = 0;
 }
 
 rt_params rt_clean(rt_params p)
@@ -47,18 +72,37 @@ rt_params rt_clean(rt_params p)
   free(p);
   return (rt_params)NULL;
 }
-void rt_start_cycle(rt_params p) { p->in_cycle = 1; }
-void rt_end_cycle(rt_params p) { p->in_cycle = 0; }
+
+void rt_start_cycle(rt_params p)
+{
+  p->cycle_info |= RT_IN_CYCLE;
+  p->cycle_info |= RT_AT_CYCLE_START;
+  rt_update_params(p);
+}
+void rt_end_cycle(rt_params p) { p->cycle_info = 0; }
 
 void rt_cycle_single(rt_params p, rt_real *buffer, rt_uint buffer_len)
 {
   rt_cycle_offset(p, &buffer, 1, buffer_len, 0);
 }
 
-void rt_cycle(rt_params p, rt_real **buffers, rt_uint num_buffers,
-              rt_uint buffer_len)
+/**
+ * @brief The simplest interface for cycling RTSTFT over a set of input buffers.
+ *
+ * @param p rt_params object representing the active RTSTFT instance.
+ * @param buffers Array of rt_real buffers--should have as many buffers as
+ * RTSTFT has channels.
+ * @param buffer_len The length of the supplied buffers.
+ *
+ * Do note: rt_cycle is the only API cycling function that will call
+ * rt_start_cycle() and rt_end_cycle() for you. When using all other cycling
+ * functions, these must be called manually.
+ */
+void rt_cycle(rt_params p, rt_real **buffers, rt_uint buffer_len)
 {
-  rt_cycle_offset(p, buffers, num_buffers, buffer_len, 0);
+  rt_start_cycle(p);
+  rt_cycle_offset(p, buffers, p->num_chans, buffer_len, 0);
+  rt_end_cycle(p);
 }
 
 void rt_cycle_offset(rt_params p, rt_real **buffers, rt_uint num_buffers,

@@ -27,28 +27,13 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
   } while (++i < RT_NUM_PARAMS_TRACKED);
 }
 
-void rt_set_params(rt_params p)
+void rt_update_manips(rt_params p)
 {
-  const rt_holder h = p->hold;
-
-  p->frame_size     = h->frame_size;
-  p->fft_size       = h->fft_size;
-  p->overlap_factor = h->overlap_factor;
-  p->pad_factor     = h->pad_factor;
-  p->pad_offset     = (p->fft_size - p->frame_size) / 2;
-  p->scale_factor   = h->scale_factor;
-  p->setup          = h->setup;
-  p->sample_rate    = h->sample_rate;
-
-  p->buffer_size    = h->buffer_size;
-  p->hop_a          = p->frame_size / p->overlap_factor;
-  p->hop_s          = lround(p->hop_a * p->scale_factor);
-  rt_uint i;
-  for (i = 1; i < RT_MANIP_TYPE_COUNT; i++) {
-    p->enabled_manips |=
-        1 << i; /**< sets all manipulation ON, except multichannel */
+  rt_manip_len_max;
+  rt_uint i, num_chans = p->manip_multichannel ? p->num_chans : 1;
+  for (i = 0; i < num_chans; i++) {
+    memcpy(p->chans[i]->manips, p->chans[i]->hold_manips, rt_manip_block_len);
   }
-  p->hold->tracker = 0;
 }
 
 void rt_set_frame_size(rt_params p, rt_uint frame_size)

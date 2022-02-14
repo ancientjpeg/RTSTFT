@@ -25,8 +25,8 @@ int   main()
 {
   time_t  t;
   rt_uint buffer_size = 1UL << 14;
-  rt_uint frame_size  = 1UL << 12;
-  rt_uint block_size  = 1 << 19;
+  rt_uint frame_size  = 1UL << 9;
+  rt_uint block_size  = 1 << 20;
   /*   float     scale_factor = pow(2, (float)12. / 12.); */
   rt_uint   f;
   rt_params p   = rt_init(2, frame_size, buffer_size, 8, 0, 44100.f);
@@ -40,10 +40,13 @@ int   main()
 
   start_timer(t);
   for (f = 0; f < block_size; f += buffer_size) {
-    rt_real this_scale = (float)f / block_size + 1.;
+    rt_real this_scale = ((float)f / block_size * 0.2) + 1.0;
     this_scale         = this_scale > 1.489 ? 1.489 : this_scale;
+    /*     this_scale         = 1.256; */
     rt_set_scale_factor(p, this_scale);
+    rt_start_cycle(p);
     rt_cycle_offset(p, wav.data, 2, buffer_size, f);
+    rt_end_cycle(p);
   }
   stop_timer(t);
 

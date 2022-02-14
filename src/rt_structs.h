@@ -15,12 +15,13 @@
 #include "rt_framebuf.h"
 #include "rt_globals.h"
 
-#define RT_FFT_CHANGED 1UL << 0
-#define RT_BUFFER_CHANGED 1UL << 1
-#define RT_OVERLAP_CHANGED 1UL << 2
-#define RT_SCALE_CHANGED 1UL << 3
-#define RT_SAMPLERATE_CHANGED 1UL << 4
-#define RT_NUM_PARAMS_TRACKED 5
+#define RT_FFT_CHANGED (1UL << 0)
+#define RT_BUFFER_CHANGED (1UL << 1)
+#define RT_OVERLAP_CHANGED (1UL << 2)
+#define RT_SCALE_CHANGED (1UL << 3)
+#define RT_SAMPLERATE_CHANGED (1UL << 4)
+#define RT_MANIPS_CHANGED (1UL << 5)
+#define RT_NUM_PARAMS_TRACKED (6)
 
 typedef enum RTSTFT_Manipulation_Values {
   RT_MANIP_LEVEL,
@@ -44,6 +45,8 @@ typedef struct RTSTFT_Channel {
 } rt_chan_t;
 typedef rt_chan_t *rt_chan;
 
+#define RT_IN_CYCLE (1 << 0)
+#define RT_AT_CYCLE_START (1 << 2)
 /**
  * @brief The internal struct that rt_params represents.
  *
@@ -55,7 +58,7 @@ typedef struct RTSTFT_Params {
       sample_rate;
   rt_chan      *chans;
   rt_holder     hold;
-  unsigned char enabled_manips, manip_multichannel, initialized, in_cycle;
+  unsigned char enabled_manips, manip_multichannel, initialized, cycle_info;
 } rt_params_t;
 typedef rt_params_t *rt_params;
 

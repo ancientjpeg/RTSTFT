@@ -22,8 +22,7 @@ rt_params rt_clean(rt_params p);
 /* ========     cycle    ======== */
 void rt_start_cycle(rt_params p);
 void rt_end_cycle(rt_params p);
-void rt_cycle(rt_params p, rt_real **buffers, rt_uint num_buffers,
-              rt_uint buffer_len);
+void rt_cycle(rt_params p, rt_real **buffers, rt_uint buffer_len);
 void rt_cycle_single(rt_params p, rt_real *buffer, rt_uint buffer_len);
 void rt_cycle_offset(rt_params p, rt_real **buffers, rt_uint num_buffers,
                      rt_uint buffer_len, rt_uint sample_offset);

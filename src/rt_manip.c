@@ -10,12 +10,22 @@
  */
 #include "rtstft.h"
 
-#define rt_manip_len_max (p->fft_max / 2)
-#define rt_manip_len (p->frame_size / 2)
-
-rt_uint rt_manip_index(rt_params p, rt_uint manip_type, rt_uint frame_index)
+/**
+ * @brief initializes the buffer that holds the manipulation parameter values.
+ *
+ * @param p An rt_params signifying the active instance of RTSTFT.
+ * @param c An rt_chan signifying the currently active channel.
+ * @return rt_real*
+ *
+ * Internally, the sample length of all the rt_manip buffers is N / 2, as a
+ * single manip buffer will only ever refer to amplitudes OR phases.
+ */
+rt_real *rt_manip_init(rt_params p)
 {
-  return manip_type * rt_manip_len + frame_index;
+  rt_uint  len    = rt_manip_block_len;
+  rt_real *manips = malloc(len * sizeof(rt_real));
+  rt_manip_reset(p, manips);
+  return manips;
 }
 
 void rt_manip_reset(rt_params p, rt_real *manips)
@@ -41,24 +51,6 @@ void rt_manip_reset(rt_params p, rt_real *manips)
       }
     }
   }
-}
-
-/**
- * @brief initializes the buffer that holds the manipulation parameter values.
- *
- * @param p An rt_params signifying the active instance of RTSTFT.
- * @param c An rt_chan signifying the currently active channel.
- * @return rt_real*
- *
- * Internally, the sample length of all the rt_manip buffers is N / 2, as a
- * single manip buffer will only ever refer to amplitudes OR phases.
- */
-rt_real *rt_manip_init(rt_params p)
-{
-  rt_uint  len    = RT_MANIP_TYPE_COUNT * rt_manip_len_max;
-  rt_real *manips = malloc(len * sizeof(rt_real));
-  rt_manip_reset(p, manips);
-  return manips;
 }
 
 /**
@@ -131,4 +123,9 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
       frame_ptr[1] *= manips[rt_manip_len - 1];
     }
   }
+}
+
+rt_uint rt_manip_index(rt_params p, rt_uint manip_type, rt_uint frame_index)
+{
+  return manip_type * rt_manip_len + frame_index;
 }

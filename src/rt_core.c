@@ -24,10 +24,13 @@
  */
 #include "rtstft.h"
 
-/*
-
-*/
-
+/**
+ * @brief Digest (i.e. transform, process, invert) a frame from p->in, then lerp
+ * and overlap-add it to p->out.
+ *
+ * @param p An rt_params signifying the active instance of RTSTFT.
+ * @param c An rt_chan signifying the currently active channel.
+ */
 void rt_digest_frame(rt_params p, rt_chan c)
 {
   rt_real *frame_ptr = c->framebuf->frame;
@@ -115,6 +118,7 @@ void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
 void rt_params_check_mod(rt_params p)
 {
   if (p->hold->tracker) {
-    rt_set_params(p);
+    rt_update_params(p);
+    p->cycle_info &= ~RT_AT_CYCLE_START;
   }
 }

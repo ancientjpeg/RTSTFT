@@ -30,12 +30,18 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
                     rt_uint buffer_size, rt_uint overlap_factor,
                     rt_uint pad_factor, rt_real sample_rate);
 void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint pad_factor);
-void rt_set_params(rt_params p);
+void rt_update_params(rt_params p);
+void rt_update_manips(rt_params p);
 void rt_params_check_mod(rt_params p);
 
 /* ========   rt_manip    ======== */
+#define rt_manip_len_max (p->fft_max / 2)
+#define rt_manip_len (p->frame_size / 2)
+#define rt_manip_block_len ((rt_manip_len_max)*RT_MANIP_TYPE_COUNT)
 rt_real *rt_manip_init(rt_params p);
+void     rt_manip_reset(rt_params p, rt_real *manips);
 void     rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr);
+rt_uint  rt_manip_index(rt_params p, rt_uint manip_type, rt_uint frame_index);
 
 /* ========  rt_framebuf  ======== */
 rt_framebuf rt_framebuf_init(rt_params p);
