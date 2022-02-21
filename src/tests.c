@@ -25,12 +25,12 @@ int   main()
 {
   time_t  t;
   rt_uint buffer_size = 1UL << 14;
-  rt_uint frame_size  = 1UL << 9;
+  rt_uint frame_size  = 1UL << 11;
   rt_uint block_size  = 1 << 20;
   /*   float     scale_factor = pow(2, (float)12. / 12.); */
   rt_uint   f;
   rt_params p   = rt_init(2, frame_size, buffer_size, 8, 0, 44100.f);
-  WAV       wav = read_from_wav("in2.wav", block_size);
+  WAV       wav = read_from_wav("in.wav", block_size);
   /*   rt_uint i;
     for (i = 0; i < block_size; i++) {
       double val     = sin((double)i / 44100. * 2 * M_PI * 500.);
@@ -40,8 +40,8 @@ int   main()
 
   start_timer(t);
   for (f = 0; f < block_size; f += buffer_size) {
-    rt_real this_scale = ((float)f / block_size * 0.2) + 1.0;
-    this_scale         = this_scale > 1.489 ? 1.489 : this_scale;
+    rt_real this_scale = ((float)f / block_size * .6) + 1.0;
+    this_scale         = this_scale > 1.334 ? 1.334 : this_scale;
     /*     this_scale         = 1.256; */
     rt_set_scale_factor(p, this_scale);
     rt_start_cycle(p);
