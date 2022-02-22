@@ -24,8 +24,6 @@ $(BUILD):
 	-@mkdir -p $(BUILD)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
-src/pffft/pffft.o: src/pffft/pffft.c
-	$(CC) $(CFLAGS) -c -o $@ $<	
 clean:
 	-@rm $(OBJ) 2>/dev/null || true
 distclean: clean
