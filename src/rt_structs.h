@@ -23,12 +23,12 @@
 #define RT_MANIPS_CHANGED (1UL << 5)
 #define RT_NUM_PARAMS_TRACKED (6)
 
-enum RT_MANIP_VALS {
+typedef enum RT_MANIP_TYPES {
   RT_MANIP_LEVEL,
   RT_MANIP_GATE,
   RT_MANIP_LIMIT,
   RT_MANIP_TYPE_COUNT
-};
+} rt_manip_type;
 
 #define RT_SCRIPT_MAX_ARGS 10
 #define RT_SCRIPT_MAX_ARG_LENGTH 10
@@ -36,6 +36,12 @@ typedef struct RTSTFT_Parser {
   char arg_buffer[RT_SCRIPT_MAX_ARGS][RT_SCRIPT_MAX_ARG_LENGTH];
 } rt_parser_t;
 typedef rt_parser_t *rt_parser;
+
+typedef struct RTSTFT_Manip {
+  rt_uint  manip_tracker, current_num_manips;
+  rt_real *manips, *hold_manips;
+} rt_manip_t;
+typedef rt_manip_t *rt_manip;
 
 typedef struct RTSTFT_Holder {
   rt_uint frame_size, buffer_size, overlap_factor, pad_factor, fft_size, setup,
@@ -47,7 +53,7 @@ typedef rt_holder_t *rt_holder;
 typedef struct RTSTFT_Channel {
   rt_framebuf framebuf;
   rt_fifo     in, pre_lerp, out;
-  rt_real    *manips, *hold_manips;
+  rt_manip    manip;
   rt_uint     this_index;
 } rt_chan_t;
 typedef rt_chan_t *rt_chan;
@@ -65,7 +71,8 @@ typedef struct RTSTFT_Params {
       sample_rate;
   rt_chan      *chans;
   rt_holder     hold;
-  unsigned char enabled_manips, manip_multichannel, initialized, cycle_info;
+  int           enabled_manips;
+  unsigned char manip_multichannel, initialized, cycle_info;
 } rt_params_t;
 typedef rt_params_t *rt_params;
 

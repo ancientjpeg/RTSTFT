@@ -97,10 +97,10 @@ void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
                    rt_uint buffer_len)
 {
   rt_chan c = p->chans[channel_index];
-  rt_params_check_mod(p);
   while (buffer_len > 0) {
     rt_fifo_enqueue_one(c->in, *buffer);
     if (rt_fifo_payload(c->in) >= p->frame_size) {
+      rt_params_check_mod(p);
       rt_digest_frame(p, c);
     }
 

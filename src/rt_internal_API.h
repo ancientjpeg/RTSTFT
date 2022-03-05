@@ -39,10 +39,12 @@ void rt_params_check_mod(rt_params p);
 #define rt_manip_len_max (p->fft_max / 2)
 #define rt_manip_len (p->frame_size / 2)
 #define rt_manip_block_len ((rt_manip_len_max)*RT_MANIP_TYPE_COUNT)
-rt_real *rt_manip_init(rt_params p);
-void     rt_manip_reset(rt_params p, rt_real *manips);
-void     rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr);
-rt_uint  rt_manip_index(rt_params p, rt_uint manip_type, rt_uint frame_index);
+rt_manip *rt_manip_init(rt_params p);
+void      rt_manip_clean(rt_manip m);
+void      rt_manip_reset(rt_params p, rt_manip m);
+void      rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr);
+rt_uint   rt_manip_index(rt_params p, rt_manip_type manip_type,
+                         rt_uint frame_index);
 
 /* ========  rt_framebuf  ======== */
 rt_framebuf rt_framebuf_init(rt_params p);

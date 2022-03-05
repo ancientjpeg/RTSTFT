@@ -20,15 +20,24 @@
  * Internally, the sample length of all the rt_manip buffers is N / 2, as a
  * single manip buffer will only ever refer to amplitudes OR phases.
  */
-rt_real *rt_manip_init(rt_params p)
+rt_manip *rt_manip_init(rt_params p)
 {
-  rt_uint  len    = rt_manip_block_len;
-  rt_real *manips = malloc(len * sizeof(rt_real));
-  rt_manip_reset(p, manips);
-  return manips;
+  rt_manip m     = malloc(sizeof(rt_manip_t));
+  rt_uint  len   = rt_manip_block_len;
+  m->manips      = pffft_aligned_malloc(len * sizeof(rt_real));
+  m->hold_manips = pffft_aligned_malloc(len * sizeof(rt_real));
+  rt_manip_reset(p, m);
+  return m;
 }
 
-void rt_manip_reset(rt_params p, rt_real *manips)
+void rt_manip_clean(rt_manip m)
+{
+  pffft_aligned_free(m->manips);
+  pffft_aligned_free(m->hold_manips);
+  free(m);
+}
+
+void rt_manip_reset(rt_params p, rt_manip m)
 {
   rt_uint i, j;
   for (i = 0; i < RT_MANIP_TYPE_COUNT; i++) {
@@ -36,13 +45,13 @@ void rt_manip_reset(rt_params p, rt_real *manips)
       rt_uint frame_index = rt_manip_index(p, i, j);
       switch (i) {
       case RT_MANIP_LEVEL:
-        manips[frame_index] = 1.;
+        m->manips[frame_index] = 1.;
         break;
       case RT_MANIP_GATE:
-        manips[frame_index] = 0.;
+        m->manips[frame_index] = 0.;
         break;
       case RT_MANIP_LIMIT:
-        manips[frame_index] = 1.;
+        m->manips[frame_index] = 1.;
         break;
       default:
         fprintf(stderr, "Need to intialize all rt_manip fields.\n");
@@ -51,6 +60,12 @@ void rt_manip_reset(rt_params p, rt_real *manips)
       }
     }
   }
+}
+
+rt_manip_set_single_param(rt_params p, rt_chan c, rt_manip_type manip_type,
+                          rt_uint bin, rt_real value)
+{
+  c->manip->hold_manips[rt_manip_index(p, manip_type, bin)] = value;
 }
 
 /**
@@ -75,7 +90,8 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
     exit(1);
   }
   rt_uint  manip_index, i;
-  rt_real *manips = p->manip_multichannel ? c->manips : p->chans[0]->manips;
+  rt_real *manips =
+      p->manip_multichannel ? c->manip->manips : p->chans[0]->manip->manips;
   /**
    * @brief Level manip section
    *
@@ -125,7 +141,8 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
   }
 }
 
-rt_uint rt_manip_index(rt_params p, rt_uint manip_type, rt_uint frame_index)
+rt_uint rt_manip_index(rt_params p, rt_manip_type manip_type,
+                       rt_uint frame_index)
 {
   return manip_type * rt_manip_len + frame_index;
 }
