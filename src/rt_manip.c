@@ -123,10 +123,11 @@ void rt_manip_set_bins_curved(rt_params p, rt_chan c, rt_manip_type manip_type,
   rt_real this_curve, this_mod;
   rt_uint bin_curr = bin0, range = binN - bin0;
   do {
-    this_mod      = (rt_real)bin_curr - bin0 / range;
-    this_curve    = fastPow(this_mod, curve_pow);
-    rt_real value = (valueN - value0) * this_mod + value0;
-    c->manip->hold_manips[rt_manip_index(p, manip_type, bin0)] = value;
+    this_mod     = ((rt_real)bin_curr - bin0) / range;
+    this_curve   = fastPow(this_mod, curve_pow);
+    rt_real lerp = (valueN - value0) * this_mod + value0;
+    c->manip->hold_manips[rt_manip_index(p, manip_type, bin0)] =
+        lerp * this_curve;
   } while (++bin_curr <= binN);
   c->manip->manip_tracker |= (1UL << manip_type);
 }

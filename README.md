@@ -6,15 +6,21 @@ This library is very incomplete.
 ## Synopsis
 -----
 
-RTSTFT is (or will be, at least), a library written in pure ANSI C that will lie at the core of jk's as-of yet unnamed audio plug-in. At its core, it is a framework that allows for extremely precise manipulation of the Short-Time Fourier Transform, a function that lies at the core of much of today's spectral-based audio processors. 
+RTSTFT is (or will be, at least), a C library that will lie at the core of jk's as-of yet unnamed audio plug-in. At its core, it is a framework that allows for extremely precise manipulation of the Short-Time Fourier Transform, a function that powers much of today's DSP. 
 
 ## TODO
 -----
 - [x] Data structures capable of handling audio blocks of unpredictable size
 - [x] Algorithm performs an unmodified STFT and returns an accurate result
-- [ ] Phase vocoder pitch-shifting (half-complete; sounds wrong below FFT size of ~1024-2048)
+- [x] Phase vocoder pitch-shifting 
 - [ ] Data structures capable of resizing FFT on the fly
+  - [ ] this may not be practical...
 - [ ] Per-bin spectral gating and muting
+  - [x] Create storage structure
+  - [x] Create logic to apply manipulations
+  - [ ] Create functions to adjust manips
+  - [ ] Manage manips in sync with control rate
+  - [ ] 
 - [ ] Small scripting language for precise per-bin control
 - [ ] ???
 - [ ] success
@@ -61,21 +67,9 @@ rt_clean(params);
 
 **I still have not thoroughly tested the Makefile!** Though I feel it is extraordinarily unlikely that a `make` error could cause any damage outside the local directory in the event of an error, I have only tested it on my personal machine so far.
 
-To enable RTSTFT in double-precision, just define the RT_DOUBLE environment variable in your make command:
-```make
-make RT_DOUBLE=1
-```
-
-If you would like to customize your installation of FFTW, you can find the relevant documentation on their site [here](https://www.fftw.org/fftw3_doc/Installation-and-Customization.html). In the context of RTSTFT, you just need to cd into the fftw_src directory *__before__* running `make`, and simply compile FFTW yourself following their instructions, i.e.:
-```make
-./configure [YOUR FFTW CONFIG FLAGS HERE]
-make
-make install
-```
-As of right now, I cannot make any promises as to whether or not any of these changes will break RTSTFT. In particular, enabling threading on FFTW could theoretically cause some issues––it won't *necessarily* break anything, but I have not prepared the RTSTFT system to handle FFTW threading its allocation routines.
 
 #### Data Types
-To use RTSTFT, it is highly recommended to place your data into arrays of type `rt_real`, which is a floating-point type that is defined to allow the library to be implemented in single or double precision. If this is not possible, you can verify the floating-point precision using the provided utility function `rt_real_size()`.
+To use RTSTFT, it is highly recommended to place your data into arrays of type `rt_real`, which is a floating-point type that is defined to allow the library to be implemented in single or double precision. The capability for switching RTSTFT into double precision was lost when FFTW was dropped in favor of PFFFT, but this may return in the future, thus `rt_real` has been kept. You can verify the floating-point precision using the provided utility function `rt_real_size()`.
 
 `rt_uint` is an unsigned integral type that is guaranteed at compile time to be at least 4 bytes. This is done for internal consistency, and for most practical purposes one needn't worry about this and may simply pass integer literals (as long as they're not negative!).
 
