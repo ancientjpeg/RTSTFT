@@ -34,21 +34,22 @@ void rt_update_params(rt_params p);
 void rt_update_manips(rt_params p);
 void rt_params_check_mod(rt_params p);
 /* ========   rt_parse    ======== */
+void rt_parser_clear_buffer(rt_parser parser);
 
 /* ========   rt_manip    ======== */
 #define rt_manip_len_max (p->fft_max / 2)
 #define rt_manip_len (p->frame_size / 2)
 #define rt_manip_block_len ((rt_manip_len_max)*RT_MANIP_TYPE_COUNT)
-rt_manip *rt_manip_init(rt_params p);
-void      rt_manip_clean(rt_manip m);
-void      rt_manip_reset(rt_params p, rt_manip m);
-void      rt_manip_update(rt_params p, rt_chan c) {}
-void      rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr);
-void      rt_manip_framesize_changed(rt_params p, rt_chan c);
-void      rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_type manip_type,
-                            rt_uint bin0, rt_uint binN, rt_real value);
-rt_uint   rt_manip_index(rt_params p, rt_manip_type manip_type,
-                         rt_uint frame_index);
+rt_manip rt_manip_init(rt_params p);
+void     rt_manip_clean(rt_manip m);
+void     rt_manip_reset(rt_params p, rt_manip m);
+void     rt_manip_update(rt_params p, rt_chan c);
+void     rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr);
+void     rt_manip_framesize_changed(rt_params p, rt_chan c);
+void     rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_type manip_type,
+                           rt_uint bin0, rt_uint binN, rt_real value);
+rt_uint  rt_manip_index(rt_params p, rt_manip_type manip_type,
+                        rt_uint frame_index);
 
 /* ========  rt_framebuf  ======== */
 rt_framebuf rt_framebuf_init(rt_params p);

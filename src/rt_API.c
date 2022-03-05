@@ -25,7 +25,8 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
                  pad_factor, sample_rate);
   rt_update_params(p);
   p->phase_modif = 1.0;
-  p->chans       = malloc(p->num_chans * sizeof(rt_chan));
+  rt_parser_clear_buffer(&(p->parser));
+  p->chans = malloc(p->num_chans * sizeof(rt_chan));
   rt_uint i;
   for (i = 0; i < p->num_chans; i++) {
     p->chans[i] = rt_chan_init(p);

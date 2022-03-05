@@ -30,10 +30,9 @@ typedef enum RT_MANIP_TYPES {
   RT_MANIP_TYPE_COUNT
 } rt_manip_type;
 
-#define RT_SCRIPT_MAX_ARGS 10
-#define RT_SCRIPT_MAX_ARG_LENGTH 10
 typedef struct RTSTFT_Parser {
   char arg_buffer[RT_SCRIPT_MAX_ARGS][RT_SCRIPT_MAX_ARG_LENGTH];
+  char buffer_active;
 } rt_parser_t;
 typedef rt_parser_t *rt_parser;
 
@@ -71,6 +70,7 @@ typedef struct RTSTFT_Params {
       sample_rate;
   rt_chan      *chans;
   rt_holder     hold;
+  rt_parser_t   parser;
   rt_uint       enabled_manips;
   unsigned char manip_multichannel, initialized, cycle_info;
 } rt_params_t;

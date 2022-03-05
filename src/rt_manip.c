@@ -23,9 +23,9 @@
  * always aligned, therefore aligning the manip buffers will likely speed up
  * parameter application with SIMD instructions.
  */
-rt_manip *rt_manip_init(rt_params p)
+rt_manip rt_manip_init(rt_params p)
 {
-  rt_manip m            = malloc(sizeof(rt_manip_t));
+  rt_manip m            = (rt_manip)malloc(sizeof(rt_manip_t));
   rt_uint  len          = rt_manip_block_len;
   m->manip_tracker      = 0;
   m->current_num_manips = p->fft_size;
@@ -90,6 +90,16 @@ void rt_manip_update(rt_params p, rt_chan c)
   m->manip_tracker = 0;
 }
 
+/**
+ * @brief
+ *
+ * @param p
+ * @param c
+ *
+ * Big note: because of how rt_lerp_samples works, the 0 and N/2 bins will be
+ * unchanged during the lerp. This is beneficial because they are somewhat
+ * "special" in terms of the FFT processing.
+ */
 void rt_manip_framesize_changed(rt_params p, rt_chan c)
 {
   rt_uint  i, manip_index;
