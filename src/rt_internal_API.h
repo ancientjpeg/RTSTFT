@@ -33,6 +33,7 @@ void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint pad_factor);
 void rt_update_params(rt_params p);
 void rt_update_manips(rt_params p);
 void rt_params_check_mod(rt_params p);
+/* ========   rt_parse    ======== */
 
 /* ========   rt_manip    ======== */
 #define rt_manip_len_max (p->fft_max / 2)

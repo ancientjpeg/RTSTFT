@@ -23,12 +23,19 @@
 #define RT_MANIPS_CHANGED (1UL << 5)
 #define RT_NUM_PARAMS_TRACKED (6)
 
-typedef enum RTSTFT_Manipulation_Values {
+enum RT_MANIP_VALS {
   RT_MANIP_LEVEL,
   RT_MANIP_GATE,
   RT_MANIP_LIMIT,
   RT_MANIP_TYPE_COUNT
-} rt_manip;
+};
+
+#define RT_SCRIPT_MAX_ARGS 10
+#define RT_SCRIPT_MAX_ARG_LENGTH 10
+typedef struct RTSTFT_Parser {
+  char arg_buffer[RT_SCRIPT_MAX_ARGS][RT_SCRIPT_MAX_ARG_LENGTH];
+} rt_parser_t;
+typedef rt_parser_t *rt_parser;
 
 typedef struct RTSTFT_Holder {
   rt_uint frame_size, buffer_size, overlap_factor, pad_factor, fft_size, setup,
