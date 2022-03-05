@@ -30,9 +30,9 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
 void rt_update_manips(rt_params p)
 {
   rt_manip_len_max;
-  rt_uint i, num_chans = p->manip_multichannel ? p->num_chans : 1;
+  rt_uint i, j, num_chans = p->manip_multichannel ? p->num_chans : 1;
   for (i = 0; i < num_chans; i++) {
-    memcpy(p->chans[i]->manips, p->chans[i]->hold_manips, rt_manip_block_len);
+    rt_manip_update(p, p->chans[i]);
   }
 }
 

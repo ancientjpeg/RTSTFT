@@ -42,7 +42,11 @@ void rt_params_check_mod(rt_params p);
 rt_manip *rt_manip_init(rt_params p);
 void      rt_manip_clean(rt_manip m);
 void      rt_manip_reset(rt_params p, rt_manip m);
+void      rt_manip_update(rt_params p, rt_chan c) {}
 void      rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr);
+void      rt_manip_framesize_changed(rt_params p, rt_chan c);
+void      rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_type manip_type,
+                            rt_uint bin0, rt_uint binN, rt_real value);
 rt_uint   rt_manip_index(rt_params p, rt_manip_type manip_type,
                          rt_uint frame_index);
 
@@ -54,8 +58,10 @@ rt_uint     rt_framebuf_relative_frame(rt_framebuf framebuf, rt_uint frame,
 void        rt_framebuf_digest_frame(rt_params p, rt_chan c);
 
 /* ======== MATH UTILS ======== */
-void rt_hanning(rt_real *data, rt_uint len);
-void rt_hamming(rt_real *data, rt_uint len);
+double fastPow(double a, double b);
+void   rt_lerp_samples(rt_real *in, rt_real *out, rt_uint len_I, rt_uint len_O);
+void   rt_hanning(rt_real *data, rt_uint len);
+void   rt_hamming(rt_real *data, rt_uint len);
 #define rt_window rt_hanning
 
 /* ======== MISC UTILS ======== */

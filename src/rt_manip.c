@@ -11,21 +11,26 @@
 #include "rtstft.h"
 
 /**
- * @brief initializes the buffer that holds the manipulation parameter values.
+ * @brief initializes the struct that holds the manipulation parameter values.
  *
  * @param p An rt_params signifying the active instance of RTSTFT.
  * @param c An rt_chan signifying the currently active channel.
  * @return rt_real*
  *
  * Internally, the sample length of all the rt_manip buffers is N / 2, as a
- * single manip buffer will only ever refer to amplitudes OR phases.
+ * single manip buffer will only ever refer to amplitudes OR phases. These
+ * internal buffers are allocated with an aligned malloc, as the FFT frames are
+ * always aligned, therefore aligning the manip buffers will likely speed up
+ * parameter application with SIMD instructions.
  */
 rt_manip *rt_manip_init(rt_params p)
 {
-  rt_manip m     = malloc(sizeof(rt_manip_t));
-  rt_uint  len   = rt_manip_block_len;
-  m->manips      = pffft_aligned_malloc(len * sizeof(rt_real));
-  m->hold_manips = pffft_aligned_malloc(len * sizeof(rt_real));
+  rt_manip m            = malloc(sizeof(rt_manip_t));
+  rt_uint  len          = rt_manip_block_len;
+  m->manip_tracker      = 0;
+  m->current_num_manips = p->fft_size;
+  m->manips             = pffft_aligned_malloc(len * sizeof(rt_real));
+  m->hold_manips        = pffft_aligned_malloc(len * sizeof(rt_real));
   rt_manip_reset(p, m);
   return m;
 }
@@ -62,10 +67,68 @@ void rt_manip_reset(rt_params p, rt_manip m)
   }
 }
 
-rt_manip_set_single_param(rt_params p, rt_chan c, rt_manip_type manip_type,
-                          rt_uint bin, rt_real value)
+/**
+ * @brief updates manips by copying values held in in hold_manips into manips
+ *
+ * @param p active rt_params object
+ * @param c the channel for which the manips should be updated
+ */
+void rt_manip_update(rt_params p, rt_chan c)
 {
-  c->manip->hold_manips[rt_manip_index(p, manip_type, bin)] = value;
+  rt_uint  i;
+  rt_manip m = c->manip;
+  if (m->current_num_manips != p->fft_size) {
+    rt_manip_framesize_changed(p, c);
+  }
+  else {
+    for (i = 0; i < RT_MANIP_TYPE_COUNT; i++) {
+      if (m->manip_tracker & (1UL << i)) {
+        memcpy(m->manips, m->hold_manips, p->fft_size);
+      }
+    }
+  }
+  m->manip_tracker = 0;
+}
+
+void rt_manip_framesize_changed(rt_params p, rt_chan c)
+{
+  rt_uint  i, manip_index;
+  rt_real *in, *out;
+  for (i = 0; i < RT_MANIP_TYPE_COUNT; i++) {
+    manip_index = rt_manip_index(p, i, 0);
+    in          = c->manip->manips + manip_index;
+    out         = c->manip->manips + manip_index;
+    rt_lerp_samples(in, out, c->manip->current_num_manips, p->fft_size);
+    /* because help manips still need to mirror real manips */
+    memcpy(in, out, p->fft_size * sizeof(rt_real));
+  }
+  c->manip->current_num_manips = p->fft_size;
+}
+
+void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_type manip_type,
+                       rt_uint bin0, rt_uint binN, rt_real value)
+{
+  do {
+    c->manip->hold_manips[rt_manip_index(p, manip_type, bin0)] = value;
+  } while (++bin0 <= binN);
+
+  c->manip->manip_tracker |= (1UL << manip_type);
+}
+
+void rt_manip_set_bins_curved(rt_params p, rt_chan c, rt_manip_type manip_type,
+                              rt_uint bin0, rt_uint binN, rt_real value0,
+                              rt_real valueN, rt_real curve_pow)
+{
+  /* curve pow should be 0-10 with 1. as midpoint */
+  rt_real this_curve, this_mod;
+  rt_uint bin_curr = bin0, range = binN - bin0;
+  do {
+    this_mod      = (rt_real)bin_curr - bin0 / range;
+    this_curve    = fastPow(this_mod, curve_pow);
+    rt_real value = (valueN - value0) * this_mod + value0;
+    c->manip->hold_manips[rt_manip_index(p, manip_type, bin0)] = value;
+  } while (++bin_curr <= binN);
+  c->manip->manip_tracker |= (1UL << manip_type);
 }
 
 /**
@@ -144,5 +207,5 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
 rt_uint rt_manip_index(rt_params p, rt_manip_type manip_type,
                        rt_uint frame_index)
 {
-  return manip_type * rt_manip_len + frame_index;
+  return manip_type * rt_manip_len_max + frame_index;
 }

@@ -71,7 +71,7 @@ typedef struct RTSTFT_Params {
       sample_rate;
   rt_chan      *chans;
   rt_holder     hold;
-  int           enabled_manips;
+  rt_uint       enabled_manips;
   unsigned char manip_multichannel, initialized, cycle_info;
 } rt_params_t;
 typedef rt_params_t *rt_params;
