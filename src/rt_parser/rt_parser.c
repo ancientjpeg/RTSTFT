@@ -72,7 +72,7 @@ int rt_parser_lex_args(rt_parser parser)
 {
   int     status = 1;
   rt_uint i;
-  for (i = 0; i < RT_CMD_MAX_ARGS; i++) {
+  for (i = 0; i < RT_CMD_ARGC_MAX; i++) {
     status = rt_parser_lex_one(parser->token_buffer + i);
     if (status == 42) {
       return 0;
@@ -133,8 +133,8 @@ int rt_parser_split_argv(rt_parser parser, const char *arg_str)
     }
 
     pos = 0;
-    row_offset += RT_CMD_MAX_ARG_LEN;
-  } while (++argc < RT_CMD_MAX_ARGS);
+    row_offset += RT_CMD_ARG_LEN_MAX;
+  } while (++argc < RT_CMD_ARGC_MAX);
   fprintf(stderr, "Arg string overflow.\n");
   return -2;
 }

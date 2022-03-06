@@ -55,8 +55,4 @@ typedef unsigned int rt_uint;
 #define RT_PAD_MAX 3
 #endif
 
-#define RT_CMD_MAX_ARGS 10
-#define RT_CMD_MAX_ARG_LEN 10
-#define RT_CMD_BUFFER_LEN (RT_CMD_MAX_ARGS * RT_CMD_MAX_ARG_LEN)
-
 #endif

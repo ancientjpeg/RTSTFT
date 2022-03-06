@@ -14,6 +14,7 @@
 #include "rt_fifo.h"
 #include "rt_framebuf.h"
 #include "rt_globals.h"
+#include "rt_parser/rt_parser.h"
 
 #define RT_FFT_CHANGED (1UL << 0)
 #define RT_BUFFER_CHANGED (1UL << 1)
@@ -22,33 +23,6 @@
 #define RT_SAMPLERATE_CHANGED (1UL << 4)
 #define RT_MANIPS_CHANGED (1UL << 5)
 #define RT_NUM_PARAMS_TRACKED (6)
-
-typedef enum RT_ARG_TYPES {
-  RT_UNDEFINED_ARG,
-  RT_PARAM_ARG,
-  RT_INT_ARG,
-  RT_INT_RANGE_ARG,
-  RT_FLOAT_ARG,
-  RT_STRING_ARG,
-  RT_COMMAND_ARG,
-  NUM_RT_ARG_TYPES
-} rt_arg_type;
-
-typedef struct RTSTFT_Lexed_Arg {
-  union {
-    char    str[RT_CMD_MAX_ARG_LEN];
-    rt_real f;
-    int     i;
-    int     irange[2];
-  } raw_arg;
-  rt_arg_type arg_type;
-} rt_arg;
-
-typedef struct RTSTFT_Parser {
-  rt_arg token_buffer[RT_CMD_MAX_ARGS];
-  char   buffer_active;
-} rt_parser_t;
-typedef rt_parser_t *rt_parser;
 
 typedef enum RT_MANIP_TYPES {
   RT_MANIP_LEVEL,
