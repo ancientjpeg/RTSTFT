@@ -1,4 +1,5 @@
 #include "rt_parser.h"
+
 const rt_command_table_t cmd_table = (rt_command_table_t){
     {{"gain", {RT_INT_RANGE_ARG, RT_FLOAT_ARG}, {}},
      {"limit",

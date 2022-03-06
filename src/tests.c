@@ -67,7 +67,6 @@ void test_parse()
 {
   rt_params p = rt_init(2, 512, 512, 8, 0, 44100.f);
   // rt_parse_and_execute(p, "limit -sx 5 25-30 -6");
-  rt_command_table_t t = cmd_table;
   rt_clean(p);
 }
 

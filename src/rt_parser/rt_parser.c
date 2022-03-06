@@ -1,4 +1,4 @@
-#include "rtstft.h"
+#include "../rtstft.h"
 
 int rt_parser_lex_numeric(rt_arg *arg)
 {

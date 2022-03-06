@@ -1,6 +1,6 @@
-SRC = $(wildcard src/*.c)
-OBJ = $(SRC:.c=.o)
-OBJ += src/pffft/pffft.o
+SRC = $(wildcard src/*.c) $(wildcard src/**/*.c)
+OBJ_EXCLUDE = src/pffft/fftpack.o src/pffft/test_pffft.o
+OBJ = $(filter-out $(OBJ_EXCLUDE),$(SRC:.c=.o))
 BUILD = build
 EXE = $(BUILD)/main
 CC  = clang
@@ -15,11 +15,11 @@ endif
 all: release
 debug: CFLAGS = -Wall -g -O0
 debug:  $(OBJ) | $(FFTW) $(BUILD)
-	$(LD) $(OBJ) -o $(EXE)
+	$(LD) $(OBJ) -o $(EXE) $(LFLAGS)
 	dsymutil $(EXE)
 release: CFLAGS = -Ofast
 release: $(OBJ) | $(FFTW) $(BUILD)
-	$(LD) $(LDLIBS)  $(OBJ) -o $(EXE)
+	$(LD) $(LDLIBS)  $(OBJ) -o $(EXE) $(LFLAGS)
 $(BUILD):
 	-@mkdir -p $(BUILD)
 %.o: %.c
@@ -31,3 +31,6 @@ distclean: clean
 run: 
 	$(EXE)
 test: debug run clean
+echo_obj:
+	@echo $(SRC)
+	@echo $(OBJ)
