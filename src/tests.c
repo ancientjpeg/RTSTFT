@@ -25,8 +25,8 @@ void  test_parse();
 
 int   main()
 {
-  // test_audio();
-  test_parse();
+  test_audio();
+  // test_parse();
   return 0;
 }
 
@@ -34,7 +34,7 @@ void test_audio()
 {
   time_t  t;
   rt_uint buffer_size = 1UL << 14;
-  rt_uint frame_size  = 1UL << 11;
+  rt_uint frame_size  = 1UL << 14;
   rt_uint block_size  = 1 << 20;
   /*   float     scale_factor = pow(2, (float)12. / 12.); */
   rt_uint   f;
@@ -67,15 +67,7 @@ void test_parse()
 {
   rt_params p = rt_init(2, 512, 512, 8, 0, 44100.f);
   rt_uint   i, j;
-  rt_parser_get_argv(&(p->parser), "limit 25-30 -6");
-  for (i = 0; i < RT_SCRIPT_MAX_ARGS; i++) {
-    for (j = 0; j < RT_SCRIPT_MAX_ARG_LENGTH; j++) {
-      char this_char = p->parser.arg_buffer[i][j];
-      printf("%c ", this_char);
-      // printf("%c(%d)", this_char, this_char);
-    }
-    printf("\n");
-  }
+  rt_parser_lex_string(&(p->parser), "limit -s 5 25-30 -6");
 }
 
 void printReals(FILE *stream, rt_real *arr, rt_uint len)

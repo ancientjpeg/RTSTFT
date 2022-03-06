@@ -23,18 +23,39 @@
 #define RT_MANIPS_CHANGED (1UL << 5)
 #define RT_NUM_PARAMS_TRACKED (6)
 
+typedef enum RT_ARG_TYPES {
+  RT_PARAM_ARG,
+  RT_INT_ARG,
+  RT_FLOAT_ARG,
+  RT_STRING_ARG,
+  NUM_RT_ARG_TYPES
+} rt_arg_type;
+
+typedef struct RTSTFT_Lexed_Arg {
+  union {
+    char    str[RT_CMD_MAX_ARG_LEN];
+    rt_real f;
+    int     i;
+  } raw_arg;
+  rt_arg_type arg_type;
+} rt_arg;
+
+typedef struct RTSTFT_Parser {
+  rt_arg  token_buffer[RT_CMD_MAX_ARGS];
+  char    current_cmd[RT_CMD_MAX_ARG_LEN];
+  char    opt_buffer[RT_CMD_MAX_ARGS];
+  char    arg_opt_buffer[RT_CMD_MAX_ARGS];
+  rt_real arg_val_buffer[RT_CMD_MAX_ARGS];
+  char    buffer_active;
+} rt_parser_t;
+typedef rt_parser_t *rt_parser;
+
 typedef enum RT_MANIP_TYPES {
   RT_MANIP_LEVEL,
   RT_MANIP_GATE,
   RT_MANIP_LIMIT,
   RT_MANIP_TYPE_COUNT
 } rt_manip_type;
-
-typedef struct RTSTFT_Parser {
-  char arg_buffer[RT_SCRIPT_MAX_ARGS][RT_SCRIPT_MAX_ARG_LENGTH];
-  char buffer_active;
-} rt_parser_t;
-typedef rt_parser_t *rt_parser;
 
 typedef struct RTSTFT_Manip {
   rt_uint  manip_tracker, current_num_manips;

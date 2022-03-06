@@ -13,6 +13,7 @@
 
 #include "pffft/pffft.h"
 #include "rt_structs.h"
+#include <ctype.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
