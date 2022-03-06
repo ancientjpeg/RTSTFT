@@ -29,36 +29,41 @@ int rt_parser_lex_numeric(rt_arg *arg)
     return 0;
   }
   char *check;
-  arg->raw_arg.i = strtol(arg->raw_arg.str + num_start, &check, 10);
+  int   temp = sign * strtol(arg->raw_arg.str + num_start, &check, 10);
   if (*check != '\0') {
     fprintf(stderr, "unexpected error during numeric lexing.\n");
     return 1;
   }
-  arg->arg_type = RT_INT_ARG;
+  arg->raw_arg.i = temp;
+  arg->arg_type  = RT_INT_ARG;
   return 0;
 }
 
 int rt_parser_lex_one(rt_arg *arg)
 {
   switch (arg->arg_type) {
+  case RT_COMMAND_ARG:
+    /* maybe check command existence here? */
+    return 0;
   case RT_PARAM_ARG:
-    if (arg->raw_arg.str[1] != '\0') {
+    if (arg->raw_arg.str[1] != '\0' || !isalpha(arg->raw_arg.str[0])) {
       fprintf(stderr, "invalid param token.\n");
       return -5;
     }
-    return 42;
+    return 0;
   default:
     if (isdigit(arg->raw_arg.str[0]) || arg->raw_arg.str[0] == '-') {
       int status = rt_parser_lex_numeric(arg);
       if (status) {
         return status;
       }
+      return 0;
     }
     if (arg->raw_arg.str[0] == '\0') {
       return 42;
     }
-    fprintf(stderr, "unexpected char %c during token lexing.\n",
-            arg->raw_arg.str[0]);
+    fprintf(stderr, "unexpected char %c (%d) during token lexing.\n",
+            arg->raw_arg.str[0], arg->raw_arg.str[0]);
     return 1;
   }
 }
@@ -88,6 +93,7 @@ int rt_parser_split_argv(rt_parser parser, const char *arg_str)
   parser->buffer_active = 1;
 
   int     status        = 0;
+  char    curr;
   rt_uint pos = 0, read_pos = 0, argc = 0, row_offset = 0;
   while (arg_str[read_pos] != ' ') {
     parser->token_buffer[argc].raw_arg.str[pos++] = arg_str[read_pos++];
@@ -98,23 +104,20 @@ int rt_parser_split_argv(rt_parser parser, const char *arg_str)
   argc = 1;
 
   do {
-    char curr = arg_str[read_pos++];
-    switch (curr) {
+    switch (arg_str[read_pos]) {
     case '-':
-      if (isdigit(arg_str[read_pos])) {
-        parser->token_buffer[argc].raw_arg.str[pos++] = '-';
-      }
-      else {
-        while (isalpha(arg_str[read_pos])) {
-          parser->token_buffer[argc].arg_type             = RT_PARAM_ARG;
-          parser->token_buffer[argc++].raw_arg.str[pos++] = arg_str[read_pos++];
+      if (isalpha(arg_str[read_pos + 1])) {
+        while (isalpha(arg_str[++read_pos])) {
+          parser->token_buffer[argc].arg_type         = RT_PARAM_ARG;
+          parser->token_buffer[argc].raw_arg.str[0]   = arg_str[read_pos];
+          parser->token_buffer[argc++].raw_arg.str[1] = '\0';
         }
-        argc -= 1;
         if (strchr(" \0", arg_str[read_pos]) == NULL) {
           fprintf(stderr, "unexpected char %c (%d) during argv separation.\n",
                   arg_str[read_pos], arg_str[read_pos]);
           return 1;
         }
+        read_pos++;
       }
     default:
       while (arg_str[read_pos] != ' ') {
@@ -125,6 +128,7 @@ int rt_parser_split_argv(rt_parser parser, const char *arg_str)
         parser->token_buffer[argc].raw_arg.str[pos++] = curr;
       }
       parser->token_buffer[argc].raw_arg.str[pos] = '\0';
+      read_pos++;
       break;
     }
 

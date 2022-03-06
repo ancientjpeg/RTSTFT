@@ -66,7 +66,8 @@ void test_audio()
 void test_parse()
 {
   rt_params p = rt_init(2, 512, 512, 8, 0, 44100.f);
-  rt_parse_and_execute(p, "limit -s 5 25-30 -6");
+  rt_parse_and_execute(p, "limit -sx 5 25-30 -6");
+  rt_clean(p);
 }
 
 void printReals(FILE *stream, rt_real *arr, rt_uint len)
