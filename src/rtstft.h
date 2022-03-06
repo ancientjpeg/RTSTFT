@@ -35,7 +35,7 @@ void rt_set_buffer_size(rt_params p, rt_uint buffer_size);
 void rt_set_overlap(rt_params p, rt_uint overlap_factor);
 void rt_set_pad_factor(rt_params p, rt_uint pad_factor);
 void rt_set_scale_factor(rt_params p, rt_real scale_factor);
-int  rt_parser_lex_string(rt_parser parser, const char *arg_str);
+int  rt_parser_split_argv(rt_parser parser, const char *arg_str);
 void rt_parse_and_execute(rt_params p, const char *arg_str);
 
 /* ========   MISC UTILS  ======== */

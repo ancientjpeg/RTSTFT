@@ -25,8 +25,8 @@ void  test_parse();
 
 int   main()
 {
-  test_audio();
-  // test_parse();
+  // test_audio();
+  test_parse();
   return 0;
 }
 
@@ -66,8 +66,7 @@ void test_audio()
 void test_parse()
 {
   rt_params p = rt_init(2, 512, 512, 8, 0, 44100.f);
-  rt_uint   i, j;
-  rt_parser_lex_string(&(p->parser), "limit -s 5 25-30 -6");
+  rt_parse_and_execute(p, "limit -s 5 25-30 -6");
 }
 
 void printReals(FILE *stream, rt_real *arr, rt_uint len)
