@@ -9,7 +9,7 @@
 #define RT_CMD_NAME_LEN 10
 #define RT_CMD_MAX_OPTS 4
 #define RT_CMD_OPT_ARGC_MAX 3
-#define RT_CMD_MAX_COMMAND_ARGS 3
+#define RT_CMD_COMMAND_ARGC_MAX 3
 #define RT_CMD_ALL_COMMANDS_COUNT 20
 
 typedef enum RT_ARG_TYPES {
@@ -27,7 +27,7 @@ typedef enum RT_ARG_TYPES {
 typedef struct RTSTFT_Command_Table {
   const struct RTSTFT_Command_Define {
     const char        name[RT_CMD_NAME_LEN];
-    const rt_arg_type cmd_argtypes[RT_CMD_MAX_COMMAND_ARGS];
+    const rt_arg_type cmd_argtypes[RT_CMD_COMMAND_ARGC_MAX];
     const struct RTSTFT_Option_Define {
       const char        flag;
       const rt_arg_type opt_argtypes[RT_CMD_OPT_ARGC_MAX];
@@ -44,16 +44,20 @@ typedef struct RTSTFT_Lexed_Arg {
     int     irange[2];
   } raw_arg;
   rt_arg_type arg_type;
-} rt_lexed_arg_t;
+} rt_arg_t;
 
-/* ========     structure for parsed cmds     ======== */
+/* ========      structs for parsed cmds      ======== */
+typedef struct RTSTFT_Parsed_Option {
+} rt_opt_t;
 typedef struct RTSTFT_Parsed_Command {
-
-} rt_cmd_command_t;
+  char     name[RT_CMD_NAME_LEN];
+  rt_arg_t command_args[RT_CMD_COMMAND_ARGC_MAX];
+  rt_opt_t options[RT_CMD_MAX_OPTS];
+} rt_command_t;
 
 typedef struct RTSTFT_Parser {
-  rt_lexed_arg_t token_buffer[RT_CMD_ARGC_MAX];
-  char           buffer_active;
+  rt_arg_t token_buffer[RT_CMD_ARGC_MAX];
+  char     buffer_active;
 } rt_parser_t;
 typedef rt_parser_t            *rt_parser;
 
