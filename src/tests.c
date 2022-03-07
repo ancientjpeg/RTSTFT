@@ -67,6 +67,9 @@ void test_parse()
 {
   rt_params p      = rt_init(2, 512, 512, 8, 0, 44100.f);
   int       status = rt_parse_and_execute(p, "limit -sx 5 25-30 -6");
+  if (status) {
+    printf("%s\n", p->parser.error_msg_buffer);
+  }
   rt_clean(p);
 }
 

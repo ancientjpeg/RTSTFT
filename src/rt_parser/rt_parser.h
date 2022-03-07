@@ -10,7 +10,7 @@
 #define RT_CMD_MAX_OPTS 4
 #define RT_CMD_OPT_ARGC_MAX 3
 #define RT_CMD_COMMAND_ARGC_MAX 3
-#define RT_CMD_ALL_COMMANDS_COUNT 20
+#define RT_CMD_ALL_COMMANDS_COUNT 5
 
 typedef enum RT_TOKEN_FLAVORS {
   RT_CMD_UNDEFINED_T,
@@ -24,16 +24,14 @@ typedef enum RT_TOKEN_FLAVORS {
 } rt_token_flavor;
 
 /* ========    structure for command table    ======== */
-typedef struct RTSTFT_Command_Table {
-  const struct RTSTFT_Command_Define {
-    const char            name[RT_CMD_NAME_LEN];
-    const rt_token_flavor cmd_argtypes[RT_CMD_COMMAND_ARGC_MAX];
-    const struct RTSTFT_Option_Define {
-      const char            flag;
-      const rt_token_flavor opt_argtypes[RT_CMD_OPT_ARGC_MAX];
-    } opts[RT_CMD_MAX_OPTS];
-  } commands[RT_CMD_ALL_COMMANDS_COUNT];
-} rt_command_table_t;
+typedef struct RTSTFT_Command_Define {
+  const char            name[RT_CMD_NAME_LEN];
+  const rt_token_flavor cmd_argtypes[RT_CMD_COMMAND_ARGC_MAX];
+  const struct RTSTFT_Option_Define {
+    const char            flag;
+    const rt_token_flavor opt_argtypes[RT_CMD_OPT_ARGC_MAX];
+  } opts[RT_CMD_MAX_OPTS];
+} rt_command_define_t;
 
 /* ========    structure for lexed tokens     ======== */
 typedef struct RTSTFT_Lexed_Token {
@@ -64,11 +62,13 @@ typedef struct RTSTFT_Parser {
   char         error_msg_buffer[100];
   char         buffer_active;
 } rt_parser_t;
-typedef rt_parser_t            *rt_parser;
+typedef rt_parser_t             *rt_parser;
 
-const extern rt_command_table_t cmd_table;
+const extern rt_command_define_t cmd_table[];
 
 /* ========            functions             ======== */
-void rt_parser_clear_buffer(rt_parser parser);
+void                       rt_parser_clear_buffer(rt_parser parser);
+const rt_command_define_t *rt_parser_check_command_exists(rt_parser   parser,
+                                                          const char *token);
 
 #endif
