@@ -53,4 +53,7 @@ typedef rt_parser_t            *rt_parser;
 
 const extern rt_command_table_t cmd_table;
 
+/* ========   functions    ======== */
+void rt_parser_clear_buffer(rt_parser parser);
+
 #endif
