@@ -1,6 +1,17 @@
 #include "../rtstft.h"
 
-int rt_parser_lex_numeric(rt_arg_t *arg)
+rt_token_t *rt_parser_next_available_token_slot(rt_parser parser)
+{
+  rt_token_t *ptr = parser->token_buffer;
+  do {
+    if (ptr->token_flavor == RT_CMD_UNDEFINED_T) {
+      return ptr;
+    }
+  } while (++ptr != parser->token_buffer + RT_CMD_ARGC_MAX);
+  return NULL;
+}
+
+int rt_parser_lex_numeric(rt_token_t *arg, char *error_msg_buffer)
 {
   rt_uint num_start = 0;
   int     sign      = 1;
@@ -8,13 +19,13 @@ int rt_parser_lex_numeric(rt_arg_t *arg)
   if (dash_ptr == arg->raw_arg.str) {
     sign = -1;
     if (strchr(arg->raw_arg.str + 1, '-') != NULL) {
-      fprintf(stderr, "negative numbers in int range not allowed.\n");
+      sprintf(error_msg_buffer, "negative numbers in int range not allowed.\n");
       return -10;
     }
     num_start = 1;
   }
   else if (dash_ptr != NULL) {
-    arg->arg_type           = RT_INT_RANGE_ARG;
+    arg->token_flavor       = RT_CMD_CHAN_RANGE_T;
     int second_num_position = dash_ptr - (char *)arg->raw_arg.str + 1;
     int i0                  = atoi(arg->raw_arg.str);
     int i1                  = atoi(arg->raw_arg.str + second_num_position);
@@ -24,118 +35,103 @@ int rt_parser_lex_numeric(rt_arg_t *arg)
   }
 
   if (strchr(arg->raw_arg.str, '.') != NULL) {
-    arg->raw_arg.f = (rt_real)sign * atof(arg->raw_arg.str + num_start);
-    arg->arg_type  = RT_FLOAT_ARG;
+    arg->raw_arg.f    = (rt_real)sign * atof(arg->raw_arg.str + num_start);
+    arg->token_flavor = RT_CMD_FLOAT_T;
     return 0;
   }
   char *check;
   int   temp = sign * strtol(arg->raw_arg.str + num_start, &check, 10);
   if (*check != '\0') {
-    fprintf(stderr, "unexpected error during numeric lexing.\n");
+    sprintf(error_msg_buffer, "unexpected error during numeric lexing.\n");
     return 1;
   }
-  arg->raw_arg.i = temp;
-  arg->arg_type  = RT_INT_ARG;
+  arg->raw_arg.i    = temp;
+  arg->token_flavor = RT_CMD_INT_T;
   return 0;
 }
 
-int rt_parser_lex_one(rt_arg_t *arg)
+int rt_parser_lex_param(rt_parser parser, const char *current_token)
 {
-  switch (arg->arg_type) {
-  case RT_COMMAND_ARG:
-    /* maybe check command existence here? */
-    return 0;
-  case RT_PARAM_ARG:
-    if (arg->raw_arg.str[1] != '\0' || !isalpha(arg->raw_arg.str[0])) {
-      fprintf(stderr, "invalid param token.\n");
-      return -5;
+  rt_uint     i = 1;
+  rt_token_t *token;
+  do {
+    token = rt_parser_next_available_token_slot(parser);
+    if (token == NULL) {
+      sprintf(parser->error_msg_buffer,
+              "Ran out of token slots during lexing.\n");
+      return 10;
     }
-    return 0;
-  default:
-    if (isdigit(arg->raw_arg.str[0]) || arg->raw_arg.str[0] == '-') {
-      int status = rt_parser_lex_numeric(arg);
-      if (status) {
-        return status;
-      }
-      return 0;
-    }
-    if (arg->raw_arg.str[0] == '\0') {
-      return 42;
-    }
-    fprintf(stderr, "unexpected char %c (%d) during token lexing.\n",
-            arg->raw_arg.str[0], arg->raw_arg.str[0]);
-    return 1;
-  }
+
+    token->token_flavor   = RT_CMD_PARAM_T;
+    token->raw_arg.str[0] = current_token[i];
+  } while (current_token[++i] != '\0');
+  return 0;
 }
 
 int rt_parser_lex_args(rt_parser parser)
 {
-  int     status = 1;
-  rt_uint i;
-  for (i = 0; i < RT_CMD_ARGC_MAX; i++) {
-    status = rt_parser_lex_one(parser->token_buffer + i);
-    if (status == 42) {
-      return 0;
+  rt_uint     argc = 0;
+  const char *this_arg;
+  int         status;
+  do {
+    this_arg = parser->argv + argc;
+    if (this_arg[0] == '-') {
+      if (isalpha(this_arg[1])) {
+        status = rt_parser_lex_param(parser, parser->argv[argc]);
+      }
+      else if (isdigit(this_arg[1])) {
+      }
+      else {
+        sprintf(parser->error_msg_buffer, "Unexpected char %c during lexing\n",
+                this_arg[1]);
+      }
     }
-    else if (status != 0) {
-      return status;
-    }
+  } while (parser->argv[++argc][0] != '\0');
+  if (argc >= RT_CMD_ARGC_MAX || argc == 0) {
+    return 1;
   }
-  return 1;
+  return 0;
 }
 int rt_parser_split_argv(rt_parser parser, const char *arg_str)
 {
   if (parser->buffer_active) {
-    fprintf(stderr, "Tried to double-fill parser buffer.\n");
+    sprintf(parser->error_msg_buffer, "Tried to double-fill parser buffer.\n");
     exit(-1);
   }
   rt_parser_clear_buffer(parser);
   parser->buffer_active = 1;
 
-  int     status        = 0;
-  char    curr;
+  char    curr, reading, end = 0;
   rt_uint pos = 0, read_pos = 0, argc = 0, row_offset = 0;
-  while (arg_str[read_pos] != ' ') {
-    parser->token_buffer[argc].raw_arg.str[pos++] = arg_str[read_pos++];
-  }
-  parser->token_buffer[argc].arg_type = RT_COMMAND_ARG;
-  read_pos++;
-  pos  = 0;
-  argc = 1;
 
   do {
-    switch (arg_str[read_pos]) {
-    case '-':
-      if (isalpha(arg_str[read_pos + 1])) {
-        while (isalpha(arg_str[++read_pos])) {
-          parser->token_buffer[argc].arg_type         = RT_PARAM_ARG;
-          parser->token_buffer[argc].raw_arg.str[0]   = arg_str[read_pos];
-          parser->token_buffer[argc++].raw_arg.str[1] = '\0';
+    reading = 1;
+    do {
+      curr = arg_str[read_pos++];
+      switch (curr) {
+      case '\0':
+      case '\n':
+        end = 1;
+      case ' ':
+        parser->argv[argc][pos] = '\0';
+        if (end) {
+          return 0;
         }
-        if (strchr(" \0", arg_str[read_pos]) == NULL) {
-          fprintf(stderr, "unexpected char %c (%d) during argv separation.\n",
-                  arg_str[read_pos], arg_str[read_pos]);
-          return 1;
-        }
-        read_pos++;
+        reading = 0;
+        break;
+      default:
+        parser->argv[argc][pos] = curr;
+        break;
       }
-    default:
-      while (arg_str[read_pos] != ' ') {
-        curr = arg_str[read_pos++];
-        if (curr == '\0') {
-          return status;
-        }
-        parser->token_buffer[argc].raw_arg.str[pos++] = curr;
-      }
-      parser->token_buffer[argc].raw_arg.str[pos] = '\0';
-      read_pos++;
-      break;
+    } while (++pos < RT_CMD_ARG_LEN_MAX && reading);
+    if (reading) {
+      sprintf(parser->error_msg_buffer, "Error: arg too long.\n");
+      return -5;
     }
-
     pos = 0;
     row_offset += RT_CMD_ARG_LEN_MAX;
   } while (++argc < RT_CMD_ARGC_MAX);
-  fprintf(stderr, "Arg string overflow.\n");
+  sprintf(parser->error_msg_buffer, "Arg string overflow.\n");
   return -2;
 }
 
@@ -145,17 +141,17 @@ void rt_parser_clear_buffer(rt_parser parser)
   memset(parser, 0, sizeof(rt_parser_t));
 }
 
-void rt_parse_and_execute(rt_params p, const char *arg_str)
+int rt_parse_and_execute(rt_params p, const char *arg_str)
 {
   int status = rt_parser_split_argv(&p->parser, arg_str);
   if (status) {
-    fprintf(stderr, "Error occured during argv split.\n");
-    exit(status);
+    sprintf(p->parser.error_msg_buffer, "Error occured during argv split.\n");
+    return status;
   }
   status = rt_parser_lex_args(&p->parser);
   if (status) {
-    fprintf(stderr, "Error occured during lexing.\n");
-    exit(status);
+    sprintf(p->parser.error_msg_buffer, "Error occured during lexing.\n");
+    return status;
   }
 
   rt_parser_clear_buffer(&p->parser);

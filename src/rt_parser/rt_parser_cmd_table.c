@@ -2,15 +2,15 @@
 
 const rt_command_table_t cmd_table = (rt_command_table_t){
     {{"gain",
-      {RT_INT_RANGE_ARG, RT_FLOAT_ARG},
-      {{'c', {RT_FLOAT_ARG, RT_FLOAT_ARG, RT_FLOAT_ARG}}}},
+      {RT_CMD_CHAN_RANGE_T, RT_CMD_FLOAT_T},
+      {{'c', {RT_CMD_FLOAT_T, RT_CMD_FLOAT_T, RT_CMD_FLOAT_T}}}},
      {"gate",
-      {RT_INT_RANGE_ARG, RT_FLOAT_ARG},
-      {{'c', {RT_FLOAT_ARG, RT_FLOAT_ARG, RT_FLOAT_ARG}}}},
+      {RT_CMD_CHAN_RANGE_T, RT_CMD_FLOAT_T},
+      {{'c', {RT_CMD_FLOAT_T, RT_CMD_FLOAT_T, RT_CMD_FLOAT_T}}}},
      {"limit",
-      {RT_INT_RANGE_ARG, RT_FLOAT_ARG},
-      {{'c', {RT_FLOAT_ARG, RT_FLOAT_ARG, RT_FLOAT_ARG}}}},
+      {RT_CMD_CHAN_RANGE_T, RT_CMD_FLOAT_T},
+      {{'c', {RT_CMD_FLOAT_T, RT_CMD_FLOAT_T, RT_CMD_FLOAT_T}}}},
      {"rebase", {}, {}},
      {"transpose",
-      {RT_INT_ARG},
-      {{'c', {RT_FLOAT_ARG}}, {'s', {RT_FLOAT_ARG}}, {}}}}};
+      {RT_CMD_INT_T},
+      {{'c', {RT_CMD_FLOAT_T}}, {'s', {RT_CMD_FLOAT_T}}, {}}}}};
