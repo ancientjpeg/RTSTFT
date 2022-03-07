@@ -49,7 +49,7 @@ void rt_manip_reset(rt_params p, rt_manip m)
     for (j = 0; j < rt_manip_len_max; j++) {
       rt_uint frame_index = rt_manip_index(p, i, j);
       switch (i) {
-      case RT_MANIP_LEVEL:
+      case RT_MANIP_GAIN:
         m->manips[frame_index] = 1.;
         break;
       case RT_MANIP_GATE:
@@ -136,8 +136,8 @@ void rt_manip_set_bins_curved(rt_params p, rt_chan c, rt_manip_type manip_type,
     this_mod     = ((rt_real)bin_curr - bin0) / range;
     this_curve   = fastPow(this_mod, curve_pow);
     rt_real lerp = (valueN - value0) * this_mod + value0;
-    c->manip->hold_manips[rt_manip_index(p, manip_type, bin0)] =
-        lerp * this_curve;
+    c->manip->hold_manips[rt_manip_index(p, manip_type, bin0)]
+        = lerp * this_curve;
   } while (++bin_curr <= binN);
   c->manip->manip_tracker |= (1UL << manip_type);
 }
@@ -164,14 +164,14 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
     exit(1);
   }
   rt_uint  manip_index, i;
-  rt_real *manips =
-      p->manip_multichannel ? c->manip->manips : p->chans[0]->manip->manips;
+  rt_real *manips
+      = p->manip_multichannel ? c->manip->manips : p->chans[0]->manip->manips;
   /**
    * @brief Level manip section
    *
    */
-  if (p->enabled_manips & RT_MANIP_LEVEL) {
-    manip_index = rt_manip_index(p, RT_MANIP_LEVEL, 0);
+  if (p->enabled_manips & RT_MANIP_GAIN) {
+    manip_index = rt_manip_index(p, RT_MANIP_GAIN, 0);
     for (i = 0; i < rt_manip_len - 1; i++) {
       frame_ptr[i * 2] *= manips[manip_index++];
     }

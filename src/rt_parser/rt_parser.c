@@ -1,6 +1,6 @@
 #include "../rtstft.h"
 
-int rt_parser_lex_numeric(rt_arg *arg)
+int rt_parser_lex_numeric(rt_lexed_arg_t *arg)
 {
   rt_uint num_start = 0;
   int     sign      = 1;
@@ -39,7 +39,7 @@ int rt_parser_lex_numeric(rt_arg *arg)
   return 0;
 }
 
-int rt_parser_lex_one(rt_arg *arg)
+int rt_parser_lex_one(rt_lexed_arg_t *arg)
 {
   switch (arg->arg_type) {
   case RT_COMMAND_ARG:
