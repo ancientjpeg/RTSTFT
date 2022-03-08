@@ -70,5 +70,6 @@ const extern rt_command_define_t cmd_table[];
 void                       rt_parser_clear_buffer(rt_parser parser);
 const rt_command_define_t *rt_parser_check_command_exists(rt_parser   parser,
                                                           const char *token);
+int                        rt_parser_lex_args(rt_parser parser);
 
 #endif
