@@ -32,7 +32,7 @@ typedef struct RTSTFT_Option_Define {
 } rt_option_define_t;
 typedef struct RTSTFT_Command_Define {
   const char name[RT_CMD_NAME_LEN];
-  int (*exec_func)(void *, void *);
+  int (*exec_func)(void *);
   const int                argc;
   const rt_token_flavor    cmd_argtypes[RT_CMD_COMMAND_ARGC_MAX];
   const int                optc;
@@ -81,10 +81,10 @@ int                        rt_parser_lex_args(rt_parser parser);
 int                        rt_parser_parse_in_place(rt_parser parser);
 
 /* ========      command exec functions      ======== */
-int rt_parser_execute_gain(void *params_ptr, void *parser_ptr);
-int rt_parser_execute_gate(void *params_ptr, void *parser_ptr);
-int rt_parser_execute_limit(void *params_ptr, void *parser_ptr);
-int rt_parser_execute_rebase(void *params_ptr, void *parser_ptr);
-int rt_parser_execute_transpose(void *params_ptr, void *parser_ptr);
+int rt_parser_execute_gain(void *params_ptr);
+int rt_parser_execute_gate(void *params_ptr);
+int rt_parser_execute_limit(void *params_ptr);
+int rt_parser_execute_rebase(void *params_ptr);
+int rt_parser_execute_transpose(void *params_ptr);
 
 #endif
