@@ -28,9 +28,29 @@ const rt_command_define_t *rt_parser_check_command_exists(rt_parser   parser,
     }
     else {
       sprintf(parser->error_msg_buffer,
-              "Unexpected error while searching for command by name.\n");
+              "Unexpected error while searching for command by name.");
       return NULL;
     }
   }
   return NULL;
+}
+
+int rt_parser_parse_in_place(rt_parser parser)
+{
+  rt_uint           token_index = 1;
+  char              in_cmd_args = 0, in_opt_args = 0;
+  const rt_token_t *token;
+  while ((token = parser->token_buffer + token_index)->token_flavor
+         != RT_CMD_UNDEFINED_T) {
+    if (token->token_flavor == RT_CMD_PARAM_T) {
+      if (in_cmd_args) {
+        sprintf(parser->error_msg_buffer,
+                "Encountered a flag while parsing command args.");
+        return 15;
+      }
+    }
+    else {
+      in_cmd_args = 1;
+    }
+  }
 }

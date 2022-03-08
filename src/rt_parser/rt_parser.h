@@ -46,11 +46,11 @@ typedef struct RTSTFT_Lexed_Token {
 
 /* ========      structs for parsed cmds      ======== */
 typedef struct RTSTFT_Parsed_Option {
-  char       flag;
+  char       flag, argc;
   rt_token_t opt_args[RT_CMD_OPT_ARGC_MAX];
 } rt_opt_t;
 typedef struct RTSTFT_Parsed_Command {
-  char       name[RT_CMD_NAME_LEN];
+  char       name[RT_CMD_NAME_LEN], argc;
   rt_token_t command_args[RT_CMD_COMMAND_ARGC_MAX];
   rt_opt_t   options[RT_CMD_MAX_OPTS];
 } rt_command_t;
