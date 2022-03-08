@@ -25,8 +25,8 @@ void  test_parse();
 
 int   main()
 {
-  // test_audio();
   test_parse();
+  test_audio();
   return 0;
 }
 
