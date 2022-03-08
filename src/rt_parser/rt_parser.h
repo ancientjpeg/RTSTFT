@@ -12,6 +12,13 @@
 #define RT_CMD_COMMAND_ARGC_MAX 3
 #define RT_CMD_ALL_COMMANDS_COUNT 5
 
+typedef enum RT_MANIP_FLAVORS {
+  RT_MANIP_GAIN,
+  RT_MANIP_GATE,
+  RT_MANIP_LIMIT,
+  RT_MANIP_FLAVOR_COUNT,
+  RT_MANIP_FLAVOR_UNDEFINED
+} rt_manip_flavor;
 typedef enum RT_TOKEN_FLAVORS {
   RT_CMD_UNDEFINED_T,
   RT_CMD_PARAM_T,
@@ -31,7 +38,8 @@ typedef struct RTSTFT_Option_Define {
   const rt_token_flavor opt_argtypes[RT_CMD_OPT_ARGC_MAX];
 } rt_option_define_t;
 typedef struct RTSTFT_Command_Define {
-  const char name[RT_CMD_NAME_LEN];
+  const char      name[RT_CMD_NAME_LEN];
+  rt_manip_flavor manip_flavor;
   int (*exec_func)(void *);
   const int                argc;
   const rt_token_flavor    cmd_argtypes[RT_CMD_COMMAND_ARGC_MAX];

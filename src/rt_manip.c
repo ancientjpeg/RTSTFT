@@ -45,7 +45,7 @@ void rt_manip_clean(rt_manip m)
 void rt_manip_reset(rt_params p, rt_manip m)
 {
   rt_uint i, j;
-  for (i = 0; i < RT_MANIP_TYPE_COUNT; i++) {
+  for (i = 0; i < RT_MANIP_FLAVOR_COUNT; i++) {
     for (j = 0; j < rt_manip_len_max; j++) {
       rt_uint frame_index = rt_manip_index(p, i, j);
       switch (i) {
@@ -81,7 +81,7 @@ void rt_manip_update(rt_params p, rt_chan c)
     rt_manip_framesize_changed(p, c);
   }
   else {
-    for (i = 0; i < RT_MANIP_TYPE_COUNT; i++) {
+    for (i = 0; i < RT_MANIP_FLAVOR_COUNT; i++) {
       if (m->manip_tracker & (1UL << i)) {
         memcpy(m->manips, m->hold_manips, p->fft_size);
       }
@@ -104,7 +104,7 @@ void rt_manip_framesize_changed(rt_params p, rt_chan c)
 {
   rt_uint  i, manip_index;
   rt_real *in, *out;
-  for (i = 0; i < RT_MANIP_TYPE_COUNT; i++) {
+  for (i = 0; i < RT_MANIP_FLAVOR_COUNT; i++) {
     manip_index = rt_manip_index(p, i, 0);
     in          = c->manip->manips + manip_index;
     out         = c->manip->manips + manip_index;
@@ -115,19 +115,20 @@ void rt_manip_framesize_changed(rt_params p, rt_chan c)
   c->manip->current_num_manips = p->fft_size;
 }
 
-void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_type manip_type,
+void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor manip_flavor,
                        rt_uint bin0, rt_uint binN, rt_real value)
 {
   do {
-    c->manip->hold_manips[rt_manip_index(p, manip_type, bin0)] = value;
+    c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin0)] = value;
   } while (++bin0 <= binN);
 
-  c->manip->manip_tracker |= (1UL << manip_type);
+  c->manip->manip_tracker |= (1UL << manip_flavor);
 }
 
-void rt_manip_set_bins_curved(rt_params p, rt_chan c, rt_manip_type manip_type,
-                              rt_uint bin0, rt_uint binN, rt_real value0,
-                              rt_real valueN, rt_real curve_pow)
+void rt_manip_set_bins_curved(rt_params p, rt_chan c,
+                              rt_manip_flavor manip_flavor, rt_uint bin0,
+                              rt_uint binN, rt_real value0, rt_real valueN,
+                              rt_real curve_pow)
 {
   /* curve pow should be 0-10 with 1. as midpoint */
   rt_real this_curve, this_mod;
@@ -136,10 +137,10 @@ void rt_manip_set_bins_curved(rt_params p, rt_chan c, rt_manip_type manip_type,
     this_mod     = ((rt_real)bin_curr - bin0) / range;
     this_curve   = fastPow(this_mod, curve_pow);
     rt_real lerp = (valueN - value0) * this_mod + value0;
-    c->manip->hold_manips[rt_manip_index(p, manip_type, bin0)]
+    c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin0)]
         = lerp * this_curve;
   } while (++bin_curr <= binN);
-  c->manip->manip_tracker |= (1UL << manip_type);
+  c->manip->manip_tracker |= (1UL << manip_flavor);
 }
 
 /**
@@ -215,8 +216,8 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
   }
 }
 
-rt_uint rt_manip_index(rt_params p, rt_manip_type manip_type,
+rt_uint rt_manip_index(rt_params p, rt_manip_flavor manip_flavor,
                        rt_uint frame_index)
 {
-  return manip_type * rt_manip_len_max + frame_index;
+  return manip_flavor * rt_manip_len_max + frame_index;
 }

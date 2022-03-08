@@ -24,13 +24,7 @@
 #define RT_MANIPS_CHANGED (1UL << 5)
 #define RT_NUM_PARAMS_TRACKED (6)
 
-typedef enum RT_MANIP_TYPES {
-  RT_MANIP_GAIN,
-  RT_MANIP_GATE,
-  RT_MANIP_LIMIT,
-  RT_MANIP_TYPE_COUNT
-} rt_manip_type;
-
+/* see rt_parser.h for manip_flavor define */
 typedef struct RTSTFT_Manip {
   rt_uint  manip_tracker, current_num_manips;
   rt_real *manips, *hold_manips;

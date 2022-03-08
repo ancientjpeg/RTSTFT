@@ -52,7 +52,7 @@ void rt_update_params(rt_params p)
   p->hop_a          = p->frame_size / p->overlap_factor;
   p->hop_s          = lround(p->hop_a * p->scale_factor);
   rt_uint i;
-  for (i = 1; i < RT_MANIP_TYPE_COUNT; i++) {
+  for (i = 1; i < RT_MANIP_FLAVOR_COUNT; i++) {
     p->enabled_manips
         |= 1 << i; /**< sets all manipulation ON, except multichannel */
   }
