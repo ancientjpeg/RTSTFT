@@ -28,6 +28,11 @@ int rt_parser_split_argv(rt_parser parser, const char *arg_str)
         reading = 0;
         break;
       default:
+        if (pos == RT_CMD_ARG_LEN_MAX - 1) {
+          sprintf(parser->error_msg_buffer,
+                  "Exceeded max length for an arg string.");
+          return 3;
+        }
         parser->argv[argc][pos] = curr;
         break;
       }
@@ -53,12 +58,14 @@ int rt_parse_and_execute(rt_params p, const char *arg_str)
 {
   int status = rt_parser_split_argv(&p->parser, arg_str);
   if (status) {
-    rt_parser_clear_buffer(&p->parser);
     return status;
   }
   status = rt_parser_lex_args(&p->parser);
   if (status) {
-    rt_parser_clear_buffer(&p->parser);
+    return status;
+  }
+  status = rt_parser_parse_in_place(&p->parser);
+  if (status) {
     return status;
   }
   rt_parser_clear_buffer(&p->parser);

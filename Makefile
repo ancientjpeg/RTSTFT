@@ -13,7 +13,7 @@ endif
 
 .PHONY: all release debug clean distclean run test
 all: release
-debug: CFLAGS = -Wall -g -O0
+debug: CFLAGS = -Wall -Wformat=0 -g -O0
 debug:  $(OBJ) | $(FFTW) $(BUILD)
 	$(LD) $(OBJ) -o $(EXE) $(LFLAGS)
 	dsymutil $(EXE)
@@ -31,6 +31,7 @@ distclean: clean
 run: 
 	$(EXE)
 test: debug run clean
+	@echo $(CFLAGS)
 echo_obj:
 	@echo $(SRC)
 	@echo $(OBJ)

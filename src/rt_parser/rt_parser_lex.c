@@ -22,6 +22,7 @@ int rt_parser_lex_command(rt_parser parser, rt_token_t *token,
   }
   token->token_flavor = RT_CMD_COMMAND_T;
   strcpy(token->raw_arg.str, raw_token);
+  parser->active_cmd_def = cmd;
   return 0;
 }
 
