@@ -25,9 +25,10 @@ void  test_parse();
 
 int   main()
 {
-  printf("test\n");
+  printf("testing:\n");
   test_parse();
-  // test_audio();
+  test_audio();
+  printf("tests complete.\n");
   return 0;
 }
 

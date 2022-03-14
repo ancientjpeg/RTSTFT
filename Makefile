@@ -24,23 +24,25 @@ $(BUILD):
 	-@mkdir -p $(BUILD)
 	-@mkdir -p $(BUILD)/lib
 	-@mkdir -p $(BUILD)/include
-	pwd
 	sh gen_header.sh	
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 .PHONY: clean
 clean: 
+	@echo CLEAN TIME
 	-@rm $(OBJ) 2>/dev/null || true
 distclean: clean
 	-@rm -rf build 2>/dev/null || true
 run-test:
 	@echo "test running below:\n"
-	@$(TEST_EXE)
+	-@$(TEST_EXE)
 build-test:
-	$(CC)  -Ibuild/include -Lbuild/lib -lrtstft src/tests.c -o build/test_main  
+	$(CC) -c -Ibuild/include -g src/tests.c -o $(BUILD)/tests.o  
+	$(LD) -o $(TEST_EXE) $(BUILD)/tests.o -Lbuild/lib -lrtstft 
+	@rm $(BUILD)/tests.o
 	dsymutil $(TEST_EXE)
-test: build-test clean run-test
-	-@echo $(CFLAGS) WERE THE CFLAGSSS
+test: build-test  run-test clean
+	-@echo $(CFLAGS)
 echo_obj:
 	@echo $(SRC)
 	@echo $(OBJ)
