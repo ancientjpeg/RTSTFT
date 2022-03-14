@@ -13,11 +13,6 @@
 
 #include "pffft/pffft.h"
 #include "rt_structs.h"
-#include <ctype.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #define rt_max(a, b) ((a) > (b) ? (a) : (b))
 #define rt_min(a, b) ((a) < (b) ? (a) : (b))

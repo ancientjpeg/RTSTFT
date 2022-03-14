@@ -25,8 +25,9 @@ void  test_parse();
 
 int   main()
 {
+  printf("test\n");
   test_parse();
-  test_audio();
+  // test_audio();
   return 0;
 }
 

@@ -10,7 +10,12 @@
  */
 #ifndef RT_GLOBALS_H
 #define RT_GLOBALS_H
+#include <ctype.h>
 #include <limits.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #ifdef RT_DOUBLE
 typedef double rt_real;
