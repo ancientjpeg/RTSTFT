@@ -22,6 +22,8 @@ release: $(OBJ) | $(FFTW) $(BUILD)
 	$(LD) $(LDLIBS)  $(OBJ) -o $(EXE) $(LFLAGS)
 $(BUILD):
 	-@mkdir -p $(BUILD)
+	-@mkdir -p $(BUILD)/lib
+	-@mkdir -p $(BUILD)/include
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 clean:
