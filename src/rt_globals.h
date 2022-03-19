@@ -63,4 +63,12 @@ typedef unsigned int rt_uint;
 #define RT_PAD_MAX 3
 #endif
 
+typedef enum RT_MANIP_FLAVORS {
+  RT_MANIP_GAIN,
+  RT_MANIP_GATE,
+  RT_MANIP_LIMIT,
+  RT_MANIP_FLAVOR_COUNT,
+  RT_MANIP_FLAVOR_UNDEFINED
+} rt_manip_flavor;
+
 #endif
