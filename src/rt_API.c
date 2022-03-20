@@ -62,6 +62,15 @@ void rt_update_params(rt_params p)
   p->hold->tracker = 0;
 }
 
+void rt_flush(rt_params p)
+{
+  rt_uint i;
+  for (i = 0; i < p->num_chans; i++) {
+    rt_fifo_flush(p->chans[i]->in);
+    rt_fifo_flush(p->chans[i]->out);
+    rt_framebuf_flush(p, p->chans[i]->framebuf);
+  }
+}
 rt_params rt_clean(rt_params p)
 {
   rt_uint i;

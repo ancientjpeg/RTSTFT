@@ -12,14 +12,10 @@
 
 rt_fifo rt_fifo_init(rt_uint len)
 {
-  rt_fifo fifo     = (rt_fifo)malloc(sizeof(rt_fifo_t));
-  fifo->head       = 0;
-  fifo->write_pos  = 0;
-  fifo->tail       = 0;
-  fifo->empty      = 1;
-  fifo->read_empty = 1;
-  fifo->len        = len;
-  fifo->queue      = (rt_real *)calloc(sizeof(rt_real), fifo->len);
+  rt_fifo fifo = (rt_fifo)malloc(sizeof(rt_fifo_t));
+  rt_fifo_flush(fifo);
+  fifo->len   = len;
+  fifo->queue = (rt_real *)calloc(sizeof(rt_real), fifo->len);
   return fifo;
 }
 void rt_fifo_enqueue(rt_fifo fifo, rt_real *data, int n)
@@ -154,6 +150,15 @@ rt_uint rt_fifo_readable(rt_fifo fifo)
     wpayload = fifo->len;
   }
   return wpayload;
+}
+
+void rt_fifo_flush(rt_fifo fifo)
+{
+  fifo->head       = 0;
+  fifo->write_pos  = 0;
+  fifo->tail       = 0;
+  fifo->empty      = 1;
+  fifo->read_empty = 1;
 }
 
 rt_fifo rt_fifo_destroy(rt_fifo fifo)

@@ -37,8 +37,8 @@ rt_framebuf rt_framebuf_init(rt_params p)
    *
    */
   rt_uint num_real_bins = p->fft_size / 2 + 1;
-  framebuf->phi_prev    = (rt_real *)calloc(num_real_bins, sizeof(rt_real));
-  framebuf->phi_cuml    = (rt_real *)calloc(num_real_bins, sizeof(rt_real));
+  framebuf->phi_prev    = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
+  framebuf->phi_cuml    = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
 
   /**< represents per-bin phase offset in rads/hop */
   framebuf->omega = (rt_real *)malloc(sizeof(rt_real) * (num_real_bins));
@@ -52,8 +52,8 @@ rt_framebuf rt_framebuf_init(rt_params p)
    * to prevent any need for reallocation during processing in the event of a
    * modification to the FFT size.
    */
-  framebuf->frame =
-      (rt_real *)pffft_aligned_malloc(2 * p->fft_max * sizeof(rt_real));
+  framebuf->frame
+      = (rt_real *)pffft_aligned_malloc(2 * p->fft_max * sizeof(rt_real));
   framebuf->work = framebuf->frame + p->fft_max;
 
   /**< setup allocation */
@@ -67,6 +67,12 @@ rt_framebuf rt_framebuf_init(rt_params p)
   }
 
   return framebuf;
+}
+
+void rt_framebuf_flush(rt_params p, rt_framebuf framebuf)
+{
+  rt_uint num_real_bins = p->fft_size / 2 + 1;
+  memset(framebuf->phi_cuml, 0, num_real_bins * sizeof(rt_real));
 }
 
 /**
