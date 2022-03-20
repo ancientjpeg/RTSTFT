@@ -39,6 +39,7 @@ rt_framebuf rt_framebuf_init(rt_params p)
   rt_uint num_real_bins = p->fft_size / 2 + 1;
   framebuf->phi_prev    = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
   framebuf->phi_cuml    = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
+  rt_framebuf_flush(p, framebuf);
 
   /**< represents per-bin phase offset in rads/hop */
   framebuf->omega = (rt_real *)malloc(sizeof(rt_real) * (num_real_bins));
@@ -97,7 +98,10 @@ rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf)
   return NULL;
 }
 
-#define wrap(phi) ((phi) - (round((phi)*M_1_PI * 0.5) * 2. * M_PI))
+#define wrap_old(phi) ((phi) - (round((phi)*M_1_PI * 0.5) * 2. * M_PI))
+rt_real wrap(rt_real phi) {
+  return (phi) - (round((phi)*M_1_PI * 0.5) * 2. * M_PI);
+}
 void rt_framebuf_digest_frame(rt_params p, rt_chan c)
 {
   /** variable declarations */
@@ -152,7 +156,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   pffft_transform_ordered(c->framebuf->setups[p->setup], frame_ptr, frame_ptr,
                           c->framebuf->work, PFFFT_BACKWARD);
   for (i = 0; i < p->fft_size; i++) {
-    frame_ptr[i] /= (rt_real)p->fft_size * p->scale_factor;
+    frame_ptr[i] /= (rt_real)p->fft_size;
   }
   /**
    * A note for the future:
