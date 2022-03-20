@@ -98,10 +98,7 @@ rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf)
   return NULL;
 }
 
-#define wrap_old(phi) ((phi) - (round((phi)*M_1_PI * 0.5) * 2. * M_PI))
-rt_real wrap(rt_real phi) {
-  return (phi) - (round((phi)*M_1_PI * 0.5) * 2. * M_PI);
-}
+#define wrap(phi) ((phi) - (round((phi)*M_1_PI * 0.5) * 2. * M_PI))
 void rt_framebuf_digest_frame(rt_params p, rt_chan c)
 {
   /** variable declarations */
