@@ -11,6 +11,10 @@
 #ifndef RTSTFT_H
 #define RTSTFT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "rt_internal_API.h"
 
 /* ========     setup    ======== */
@@ -39,5 +43,9 @@ int  rt_parse_and_execute(rt_params p, const char *arg_str);
 
 /* ========   MISC UTILS  ======== */
 rt_uint rt_check_pow_2(rt_uint num);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
