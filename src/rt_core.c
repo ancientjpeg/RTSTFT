@@ -57,7 +57,7 @@ void rt_digest_frame(rt_params p, rt_chan c)
   rt_uint i, x0, x1;
   rt_real mod, y0, y1, result;
   rt_fifo_enqueue_one(c->out, c->framebuf->frame[0]);
-  for (i = 0; i < output_size; i++) {
+  for (i = 0; i < output_size - 1; i++) {
     x0     = floor(pos);
     x1     = x0 + 1;
     mod    = pos - x0;
