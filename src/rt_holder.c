@@ -75,8 +75,14 @@ void rt_set_pad_factor(rt_params p, rt_uint pad_factor)
 
 void rt_set_scale_factor(rt_params p, rt_real scale_factor)
 {
-  if (scale_factor > p->scale_factor_max ||
-      scale_factor < p->scale_factor_min) {
+  if (p == NULL) {
+    return;
+  }
+  else if (!p->initialized) {
+    p->scale_factor = 1.f;
+  }
+  if (scale_factor > p->scale_factor_max
+      || scale_factor < p->scale_factor_min) {
     fprintf(stderr, "Scale factor must be in range %.1f-%.1f. Got value %.4f\n",
             p->scale_factor_max, p->scale_factor_min, scale_factor);
     exit(1);

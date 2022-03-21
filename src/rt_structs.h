@@ -40,7 +40,7 @@ typedef rt_holder_t *rt_holder;
 
 typedef struct RTSTFT_Channel {
   rt_framebuf framebuf;
-  rt_fifo     in, pre_lerp, out;
+  rt_fifo     in, out;
   rt_manip    manip;
   rt_uint     this_index;
 } rt_chan_t;

@@ -98,7 +98,7 @@ rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf)
   return NULL;
 }
 
-#define wrap(phi) ((phi) - (round((phi)*M_1_PI * 0.5) * 2. * M_PI))
+#define wrap(phi) ((phi) - (round((phi) * M_1_PI * 0.5) * 2. * M_PI))
 void rt_framebuf_digest_frame(rt_params p, rt_chan c)
 {
   /** variable declarations */
@@ -139,6 +139,8 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
 
     *phase_prev = *curr_phase_ptr;
     *curr_phase_ptr = wrap(phase_adj);
+    if (isnan(*curr_phase_ptr))
+      *curr_phase_ptr = 0;
     *phase_cuml     = *curr_phase_ptr;
     frame_phase_index += 2;
   }
@@ -153,7 +155,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   pffft_transform_ordered(c->framebuf->setups[p->setup], frame_ptr, frame_ptr,
                           c->framebuf->work, PFFFT_BACKWARD);
   for (i = 0; i < p->fft_size; i++) {
-    frame_ptr[i] /= (rt_real)p->fft_size;
+    frame_ptr[i] /= (rt_real)p->fft_size / p->scale_factor;
   }
   /**
    * A note for the future:

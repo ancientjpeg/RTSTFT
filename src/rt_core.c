@@ -46,7 +46,7 @@ void rt_digest_frame(rt_params p, rt_chan c)
   rt_framebuf_digest_frame(p, c);
 
   /** to lerp directly from framebuf to c->out, we do a slightly backwards
-   * lerp, i.e. we write to the next hop_a position but write N *
+   * lerp, i.e. we write to the next hop_a position but write N /
    * scale_factor samples.
    */
   rt_uint input_size    = p->frame_size;
@@ -56,41 +56,19 @@ void rt_digest_frame(rt_params p, rt_chan c)
   rt_uint out_pos_init = c->out->write_pos;
   rt_uint i, x0, x1;
   rt_real mod, y0, y1, result;
+  rt_fifo_enqueue_one(c->out, c->framebuf->frame[0]);
   for (i = 0; i < output_size; i++) {
-    x0     = (rt_uint)(i == output_size - 1 ? pos : round(pos));
+    x0     = floor(pos);
     x1     = x0 + 1;
     mod    = pos - x0;
     y0     = c->framebuf->frame[x0];
     y1     = c->framebuf->frame[x1];
     result = (y1 - y0) * mod + y0;
-
     rt_fifo_enqueue_one(c->out, result);
     pos += local_incr;
   }
+  rt_fifo_enqueue_one(c->out, c->framebuf->frame[input_size - 1]);
   c->out->write_pos = rt_fifo_new_pos(c->out, out_pos_init, p->hop_a);
-}
-
-void rt_lerp_read_out(rt_params p, rt_chan c, rt_uint num_hops)
-{
-  rt_uint input_size  = p->hop_s * num_hops;
-  rt_uint output_size = p->hop_a * num_hops;
-  rt_real local_incr  = (rt_real)(input_size - 1) / (output_size - 1);
-  rt_real pos         = 0.;
-  rt_uint i;
-  for (i = 0; i < output_size; i++) {
-    rt_uint x0       = (rt_uint)(i == output_size - 1 ? pos : round(pos));
-    rt_real mod      = pos - x0;
-    rt_uint x0_index = rt_fifo_new_pos(c->pre_lerp, c->pre_lerp->head, x0);
-    rt_uint x1_index = rt_fifo_new_pos(c->pre_lerp, c->pre_lerp->head, x0 + 1);
-    rt_real y0       = c->pre_lerp->queue[x0_index];
-    rt_real y1       = c->pre_lerp->queue[x1_index];
-    rt_real result   = (y1 - y0) * mod + y0;
-
-    rt_fifo_enqueue_one(c->out, result);
-    pos += local_incr;
-  }
-
-  rt_fifo_dequeue(c->pre_lerp, input_size);
 }
 
 void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
