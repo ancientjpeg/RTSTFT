@@ -50,6 +50,11 @@ typedef rt_chan_t *rt_chan;
 
 #define RT_IN_CYCLE (1 << 0)
 #define RT_AT_CYCLE_START (1 << 2)
+
+typedef struct RTSTFT_Params_Listener {
+  void *listener_obj;
+  void (*listener_callback)(void *);
+} rt_listener_t;
 /**
  * @brief The internal struct that rt_params represents.
  *
@@ -60,6 +65,7 @@ typedef struct RTSTFT_Params {
   rt_real       scale_factor, scale_factor_max, scale_factor_min, sample_rate;
   rt_real       retention_mod, phase_mod, phase_chaos;
   rt_chan      *chans;
+  rt_listener_t listener;
   rt_holder     hold;
   rt_parser_t   parser;
   rt_uint       enabled_manips;

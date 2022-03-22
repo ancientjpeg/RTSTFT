@@ -149,3 +149,10 @@ void rt_set_phase_chaos(rt_params p, rt_real val)
   p->hold->phase_chaos = val;
   p->hold->tracker |= RT_PHASE_PARAMS_CHANGED;
 }
+
+void rt_update_listener(rt_params p)
+{
+  if (p->listener.listener_obj != NULL) {
+    p->listener.listener_callback(p->listener.listener_obj);
+  }
+}
