@@ -98,7 +98,7 @@ rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf)
   return NULL;
 }
 
-#define wrap(phi) ((phi) - (round((phi) * M_1_PI * 0.5) * 2. * M_PI))
+#define wrap(phi) ((phi) - (round((phi)*M_1_PI * 0.5) * 2. * M_PI))
 void rt_framebuf_digest_frame(rt_params p, rt_chan c)
 {
   /** variable declarations */
@@ -135,13 +135,15 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
     freq_dev         = *curr_phase_ptr - *phase_prev - c->framebuf->omega[i];
     freq_dev_wrapped = wrap(freq_dev);
     freq_true        = freq_dev_wrapped + c->framebuf->omega[i];
-    phase_adj   = *phase_cuml + (freq_true * p->scale_factor * p->phase_modif);
+    rt_real phase_cuml_val = *phase_cuml * p->retention_mod;
+    rt_real phase_calc_final = freq_true * p->scale_factor * p->phase_mod;
+    phase_adj   = phase_cuml_val + phase_calc_final;
 
     *phase_prev = *curr_phase_ptr;
     *curr_phase_ptr = wrap(phase_adj);
     if (isnan(*curr_phase_ptr))
       *curr_phase_ptr = 0;
-    *phase_cuml     = *curr_phase_ptr;
+    *phase_cuml = *curr_phase_ptr;
     frame_phase_index += 2;
   }
 
@@ -149,6 +151,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   for (i = 2; i < p->fft_size; i += 2) {
     amp              = frame_ptr[i];
     phase            = frame_ptr[i + 1];
+    p->hold->amp_holder[i] = amp;
     frame_ptr[i]     = amp * cos(phase);
     frame_ptr[i + 1] = amp * sin(phase);
   }

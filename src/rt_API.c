@@ -24,7 +24,7 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
   rt_holder_init(p, num_channels, frame_size, buffer_size, overlap_factor,
                  pad_factor, sample_rate);
   rt_update_params(p);
-  p->phase_modif = 1.0;
+  p->phase_mod = 1.0;
   rt_parser_clear_buffer(&(p->parser));
   p->chans = malloc(p->num_chans * sizeof(rt_chan));
   rt_uint i;
@@ -44,9 +44,13 @@ void rt_update_params(rt_params p)
   p->overlap_factor = h->overlap_factor;
   p->pad_factor     = h->pad_factor;
   p->pad_offset     = (p->fft_size - p->frame_size) / 2;
-  p->scale_factor   = h->scale_factor;
   p->setup          = h->setup;
   p->sample_rate    = h->sample_rate;
+
+  p->scale_factor   = h->scale_factor;
+  p->retention_mod  = h->retention_mod;
+  p->phase_mod      = h->phase_mod;
+  p->phase_chaos    = h->phase_chaos;
 
   p->buffer_size    = h->buffer_size;
   p->hop_a          = p->frame_size / p->overlap_factor;
@@ -78,7 +82,7 @@ rt_params rt_clean(rt_params p)
     rt_chan_clean(p, p->chans[i]);
   }
   free(p->chans);
-  free(p->hold);
+  rt_holder_clean(p->hold);
   free(p);
   return (rt_params)NULL;
 }

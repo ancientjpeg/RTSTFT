@@ -19,12 +19,22 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
   rt_set_buffer_size(p, buffer_size);
   rt_set_overlap(p, overlap_factor);
   rt_set_pad_factor(p, pad_factor);
-  rt_set_scale_factor(p, 1.0);
-  p->hold->tracker = 0;
-  rt_uint i        = 0;
+  rt_set_scale_factor(p, 1.f);
+  rt_set_retention_mod(p, 1.f);
+  rt_set_phase_mod(p, 1.f);
+  rt_set_phase_chaos(p, 0.f);
+  p->hold->amp_holder = malloc(sizeof(rt_real) * (1UL << RT_FFT_MAX_POW));
+  p->hold->tracker    = 0;
+  rt_uint i           = 0;
   do {
     p->hold->tracker |= 1UL << i;
   } while (++i < RT_NUM_PARAMS_TRACKED);
+}
+
+void rt_holder_clean(rt_holder hold)
+{
+  free(hold->amp_holder);
+  free(hold);
 }
 
 void rt_update_manips(rt_params p)
@@ -120,4 +130,22 @@ void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint pad_factor)
   p->hold->fft_size   = fft_size;
   p->hold->setup      = fft_pow - RT_FFT_MIN_POW;
   p->hold->tracker |= RT_FFT_CHANGED;
+}
+
+void rt_set_retention_mod(rt_params p, rt_real val)
+{
+  p->hold->retention_mod = val;
+  p->hold->tracker |= RT_PHASE_PARAMS_CHANGED;
+}
+void rt_set_phase_mod(rt_params p, rt_real val)
+{
+
+  p->hold->phase_mod = val;
+  p->hold->tracker |= RT_PHASE_PARAMS_CHANGED;
+}
+void rt_set_phase_chaos(rt_params p, rt_real val)
+{
+
+  p->hold->phase_chaos = val;
+  p->hold->tracker |= RT_PHASE_PARAMS_CHANGED;
 }
