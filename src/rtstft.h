@@ -39,12 +39,9 @@ void rt_set_frame_size(rt_params p, rt_uint frame_size);
 void rt_set_buffer_size(rt_params p, rt_uint buffer_size);
 void rt_set_overlap(rt_params p, rt_uint overlap_factor);
 void rt_set_pad_factor(rt_params p, rt_uint pad_factor);
-void rt_set_scale_factor(rt_params p, rt_real scale_factor);
 void rt_set_sample_rate(rt_params p, rt_real sample_rate);
-void rt_set_retention_mod(rt_params p, rt_real val);
-void rt_set_phase_mod(rt_params p, rt_real val);
-void rt_set_phase_chaos(rt_params p, rt_real val);
-
+void rt_set_single_param(rt_params p, rt_param_flavor param_flavor,
+                         rt_real new_val);
 int  rt_parse_and_execute(rt_params p, const char *arg_str);
 
 /* ========   MISC UTILS  ======== */

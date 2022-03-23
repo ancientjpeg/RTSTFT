@@ -19,10 +19,10 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
   rt_set_buffer_size(p, buffer_size);
   rt_set_overlap(p, overlap_factor);
   rt_set_pad_factor(p, pad_factor);
-  rt_set_scale_factor(p, 1.f);
-  rt_set_retention_mod(p, 1.f);
-  rt_set_phase_mod(p, 1.f);
-  rt_set_phase_chaos(p, 0.f);
+  rt_set_single_param(p, RT_SCALE_FACTOR_MOD, 1.f);
+  rt_set_single_param(p, RT_RETENTION_MOD, 1.f);
+  rt_set_single_param(p, RT_PHASE_MOD, 1.f);
+  rt_set_single_param(p, RT_PHASE_CHAOS, 0.f);
   p->hold->amp_holder = malloc(sizeof(rt_real) * (1UL << RT_FFT_MAX_POW));
   p->hold->tracker    = 0;
   rt_uint i           = 0;
@@ -83,23 +83,24 @@ void rt_set_pad_factor(rt_params p, rt_uint pad_factor)
   rt_set_fft_size(p, p->hold->frame_size, pad_factor);
 }
 
-void rt_set_scale_factor(rt_params p, rt_real scale_factor)
-{
-  if (p == NULL) {
-    return;
-  }
-  else if (!p->initialized) {
-    p->scale_factor = 1.f;
-  }
-  if (scale_factor > p->scale_factor_max
-      || scale_factor < p->scale_factor_min) {
-    fprintf(stderr, "Scale factor must be in range %.1f-%.1f. Got value %.4f\n",
-            p->scale_factor_max, p->scale_factor_min, scale_factor);
-    exit(1);
-  }
-  p->hold->scale_factor = scale_factor;
-  p->hold->tracker |= RT_SCALE_CHANGED;
-}
+// void rt_set_scale_factor(rt_params p, rt_real scale_factor)
+// {
+//   if (p == NULL) {
+//     return;
+//   }
+//   else if (!p->initialized) {
+//     p->scale_factor = 1.f;
+//   }
+//   if (scale_factor > p->scale_factor_max
+//       || scale_factor < p->scale_factor_min) {
+//     fprintf(stderr, "Scale factor must be in range %.1f-%.1f. Got value
+//     %.4f\n",
+//             p->scale_factor_max, p->scale_factor_min, scale_factor);
+//     exit(1);
+//   }
+//   p->hold->scale_factor = scale_factor;
+//   p->hold->tracker |= RT_SCALE_CHANGED;
+// }
 
 void rt_set_sample_rate(rt_params p, rt_real sample_rate)
 {
@@ -132,27 +133,29 @@ void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint pad_factor)
   p->hold->tracker |= RT_FFT_CHANGED;
 }
 
-void rt_set_retention_mod(rt_params p, rt_real val)
-{
-  p->hold->retention_mod = val;
-  p->hold->tracker |= RT_PHASE_PARAMS_CHANGED;
-}
-void rt_set_phase_mod(rt_params p, rt_real val)
-{
-
-  p->hold->phase_mod = val;
-  p->hold->tracker |= RT_PHASE_PARAMS_CHANGED;
-}
-void rt_set_phase_chaos(rt_params p, rt_real val)
-{
-
-  p->hold->phase_chaos = val;
-  p->hold->tracker |= RT_PHASE_PARAMS_CHANGED;
-}
-
 void rt_update_listener(rt_params p)
 {
   if (p->listener.listener_obj != NULL) {
     p->listener.listener_callback(p->listener.listener_obj);
   }
+}
+
+void rt_set_single_param(rt_params p, rt_param_flavor param_flavor,
+                         rt_real new_val)
+{
+  switch (param_flavor) {
+  case RT_SCALE_FACTOR_MOD:
+    p->scale_factor = new_val;
+    break;
+  case RT_RETENTION_MOD:
+    p->retention_mod = new_val;
+    break;
+  case RT_PHASE_MOD:
+    p->phase_mod = new_val;
+    break;
+  case RT_PHASE_CHAOS:
+    p->phase_chaos = new_val;
+    break;
+  }
+  p->hold->tracker |= RT_PHASE_PARAMS_CHANGED;
 }

@@ -70,7 +70,8 @@ typedef enum RT_PARAM_FLAVORS {
   RT_PHASE_CHAOS,
   RT_PARAM_FLAVOR_COUNT,
   RT_PARAM_FLAVOR_UNDEFINED
-};
+} rt_param_flavor;
+
 typedef enum RT_MANIP_FLAVORS {
   RT_MANIP_GAIN,
   RT_MANIP_GATE,

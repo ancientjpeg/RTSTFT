@@ -19,11 +19,10 @@
 #define RT_FFT_CHANGED (1UL << 0)
 #define RT_BUFFER_CHANGED (1UL << 1)
 #define RT_OVERLAP_CHANGED (1UL << 2)
-#define RT_SCALE_CHANGED (1UL << 3)
-#define RT_SAMPLERATE_CHANGED (1UL << 4)
-#define RT_MANIPS_CHANGED (1UL << 5)
-#define RT_PHASE_PARAMS_CHANGED (1UL << 6)
-#define RT_NUM_PARAMS_TRACKED (7)
+#define RT_SAMPLERATE_CHANGED (1UL << 3)
+#define RT_MANIPS_CHANGED (1UL << 4)
+#define RT_PHASE_PARAMS_CHANGED (1UL << 5)
+#define RT_NUM_PARAMS_TRACKED (6)
 
 /* see rt_parser.h for manip_flavor define */
 typedef struct RTSTFT_Manip {
