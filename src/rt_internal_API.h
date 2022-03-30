@@ -41,13 +41,13 @@ void     rt_manip_reset(rt_params p, rt_manip m);
 void     rt_manip_update(rt_params p, rt_chan c);
 void     rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr);
 void     rt_manip_framesize_changed(rt_params p, rt_chan c);
-void     rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor manip_flavor,
+void     rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
                            rt_uint bin0, rt_uint binN, rt_real value);
 void     rt_manip_set_bins_curved(rt_params p, rt_chan c,
-                                  rt_manip_flavor manip_flavor, rt_uint bin0,
+                                  rt_manip_flavor_t manip_flavor, rt_uint bin0,
                                   rt_uint binN, rt_real value0, rt_real valueN,
                                   rt_real curve_pow);
-rt_uint  rt_manip_index(rt_params p, rt_manip_flavor manip_flavor,
+rt_uint  rt_manip_index(rt_params p, rt_manip_flavor_t manip_flavor,
                         rt_uint frame_index);
 
 /* ========    rt_fifo    ======== */

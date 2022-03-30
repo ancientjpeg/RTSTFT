@@ -15,14 +15,14 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
                     rt_uint pad_factor, rt_real sample_rate)
 {
   p->hold = (rt_holder)malloc(sizeof(rt_holder_t));
-  rt_set_fft_size(p, frame_size, pad_factor);
-  rt_set_buffer_size(p, buffer_size);
-  rt_set_overlap(p, overlap_factor);
-  rt_set_pad_factor(p, pad_factor);
   rt_set_single_param(p, RT_SCALE_FACTOR_MOD, 1.f);
   rt_set_single_param(p, RT_RETENTION_MOD, 1.f);
   rt_set_single_param(p, RT_PHASE_MOD, 1.f);
   rt_set_single_param(p, RT_PHASE_CHAOS, 0.f);
+  
+  rt_set_buffer_size(p, buffer_size);
+  rt_set_overlap(p, overlap_factor);
+  rt_set_fft_size(p, frame_size, pad_factor);
   p->hold->amp_holder = malloc(sizeof(rt_real) * (1UL << RT_FFT_MAX_POW));
   p->hold->tracker    = 0;
   rt_uint i           = 0;
@@ -133,28 +133,28 @@ void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint pad_factor)
   p->hold->tracker |= RT_FFT_CHANGED;
 }
 
-void rt_update_listener(rt_params p)
+void rt_update_listener(rt_params p, rt_param_flavor_t param_flavor, float new_val)
 {
   if (p->listener.listener_obj != NULL) {
-    p->listener.listener_callback(p->listener.listener_obj);
+    p->listener.listener_callback(p->listener.listener_obj, param_flavor, new_val);
   }
 }
 
-void rt_set_single_param(rt_params p, rt_param_flavor param_flavor,
+void rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,
                          rt_real new_val)
 {
   switch (param_flavor) {
   case RT_SCALE_FACTOR_MOD:
-    p->scale_factor = new_val;
+    p->hold->scale_factor = new_val;
     break;
   case RT_RETENTION_MOD:
-    p->retention_mod = new_val;
+    p->hold->retention_mod = new_val;
     break;
   case RT_PHASE_MOD:
-    p->phase_mod = new_val;
+    p->hold->phase_mod = new_val;
     break;
   case RT_PHASE_CHAOS:
-    p->phase_chaos = new_val;
+    p->hold->phase_chaos = new_val;
     break;
   }
   p->hold->tracker |= RT_PHASE_PARAMS_CHANGED;

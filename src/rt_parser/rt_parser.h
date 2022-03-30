@@ -32,7 +32,7 @@ typedef struct RTSTFT_Option_Define {
 } rt_option_define_t;
 typedef struct RTSTFT_Command_Define {
   const char      name[RT_CMD_NAME_LEN];
-  rt_manip_flavor manip_flavor;
+  rt_manip_flavor_t manip_flavor;
   int (*exec_func)(void *);
   const int                argc;
   const rt_token_flavor    cmd_argtypes[RT_CMD_COMMAND_ARGC_MAX];

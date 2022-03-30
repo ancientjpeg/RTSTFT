@@ -27,7 +27,7 @@ int rt_parser_execute_transpose(void *params_ptr)
 }
 int rt_parser_execute_gain_gate_limit(rt_params p)
 {
-  rt_manip_flavor m_flav = p->parser.active_cmd_def->manip_flavor;
+  rt_manip_flavor_t m_flav = p->parser.active_cmd_def->manip_flavor;
 
   return 1;
 }
