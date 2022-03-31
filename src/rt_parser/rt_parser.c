@@ -2,11 +2,11 @@
 
 int rt_parser_split_argv(rt_parser parser, const char *arg_str)
 {
-  if (parser->buffer_active) {
-    sprintf(parser->error_msg_buffer, "Tried to double-fill parser buffer.\n");
-    exit(-1);
-  }
-  rt_parser_clear_buffer(parser);
+//  if (parser->buffer_active) {
+//    sprintf(parser->error_msg_buffer, "Tried to double-fill parser buffer.\n");
+//    return -1;
+//  }
+//  rt_parser_clear_buffer(parser);
   parser->buffer_active = 1;
 
   char    curr, reading, end = 0;
@@ -56,6 +56,7 @@ void rt_parser_clear_buffer(rt_parser parser)
 
 int rt_parse_and_execute(rt_params p, const char *arg_str)
 {
+  rt_parser_clear_buffer(&p->parser);
   int status = rt_parser_split_argv(&p->parser, arg_str);
   if (status) {
     return status;
@@ -68,6 +69,5 @@ int rt_parse_and_execute(rt_params p, const char *arg_str)
   if (status) {
     return status;
   }
-  rt_parser_clear_buffer(&p->parser);
   return 0;
 }

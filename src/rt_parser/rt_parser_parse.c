@@ -4,26 +4,31 @@ const rt_command_define_t *rt_parser_check_command_exists(rt_parser   parser,
                                                           const char *token)
 {
   rt_uint search_pos = RT_CMD_ALL_COMMANDS_COUNT / 2, str_pos = 0, temp;
+  rt_uint depth = RT_CMD_MAX_SEARCH_DEPTH;
   char    token_char, cmd_char;
   /* because unsigned, also tests for below zero case */
-  while (search_pos < RT_CMD_ALL_COMMANDS_COUNT) {
+  while (search_pos < RT_CMD_ALL_COMMANDS_COUNT && depth >= 0) {
     cmd_char   = cmd_table[search_pos].name[str_pos];
     token_char = token[str_pos];
     if (cmd_char == '\0' && token_char == '\0') {
       return cmd_table + search_pos;
-    }
+    } 
     else if (cmd_char == token_char) {
       str_pos++;
+    }
+    else if (depth == 0) {
+      break;
     }
     else if (token_char < cmd_char) {
       search_pos /= 2;
       str_pos = 0;
+      depth--;
     }
     else if (token_char > cmd_char) {
-      temp       = search_pos / 2;
-      temp       = temp == 0 ? 1 : temp;
+      temp       = search_pos + (1 << (depth - 1));
       search_pos = search_pos + temp;
       str_pos    = 0;
+      depth--;
     }
     else {
       sprintf(parser->error_msg_buffer,
@@ -31,6 +36,8 @@ const rt_command_define_t *rt_parser_check_command_exists(rt_parser   parser,
       return NULL;
     }
   }
+  sprintf(parser->error_msg_buffer,
+          "Failed to find token %s.", token);
   return NULL;
 }
 
