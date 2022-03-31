@@ -52,7 +52,7 @@ typedef rt_chan_t *rt_chan;
 
 typedef struct RTSTFT_Params_Listener {
   void *listener_obj;
-  void (*listener_callback)(void *, RT_PARAM_FLAVOR, float);
+  void (*listener_callback)(void *, rt_param_flavor_t, float);
 } rt_listener_t;
 /**
  * @brief The internal struct that rt_params represents.
