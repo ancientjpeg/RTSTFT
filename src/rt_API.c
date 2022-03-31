@@ -36,37 +36,6 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
   return p;
 }
 
-void rt_update_params(rt_params p)
-{
-  const rt_holder h = p->hold;
-
-  p->frame_size     = h->frame_size;
-  p->fft_size       = h->fft_size;
-  p->overlap_factor = h->overlap_factor;
-  p->pad_factor     = h->pad_factor;
-  p->pad_offset     = (p->fft_size - p->frame_size) / 2;
-  p->setup          = h->setup;
-  p->sample_rate    = h->sample_rate;
-
-  p->scale_factor   = h->scale_factor;
-  p->retention_mod  = h->retention_mod;
-  p->phase_mod      = h->phase_mod;
-  p->phase_chaos    = h->phase_chaos;
-
-  p->buffer_size    = h->buffer_size;
-  p->hop_a          = p->frame_size / p->overlap_factor;
-  p->hop_s          = lround(p->hop_a * p->scale_factor);
-  rt_uint i;
-  for (i = 1; i < RT_MANIP_FLAVOR_COUNT; i++) {
-    p->enabled_manips
-        |= 1 << i; /**< sets all manipulation ON, except multichannel */
-  }
-  if ((p->hold->tracker & RT_MANIPS_CHANGED) && p->initialized) {
-    rt_update_manips(p);
-  }
-  p->hold->tracker = 0;
-}
-
 void rt_flush(rt_params p)
 {
   rt_uint i;

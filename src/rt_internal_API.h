@@ -33,7 +33,7 @@ void rt_params_check_mod(rt_params p);
 
 /* ========   rt_manip    ======== */
 #define rt_manip_len_max (p->fft_max / 2)
-#define rt_manip_len (p->frame_size / 2)
+#define rt_manip_len (p->fft_size / 2)
 #define rt_manip_block_len ((rt_manip_len_max)*RT_MANIP_FLAVOR_COUNT)
 rt_manip rt_manip_init(rt_params p);
 void     rt_manip_clean(rt_manip m);

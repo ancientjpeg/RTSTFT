@@ -51,8 +51,9 @@ int rt_parser_lex_numeric(rt_parser parser, rt_token_t *token,
     if (!isdigit(check)) {
       switch (check) {
       case '.':
-        if (token->token_flavor != RT_CMD_CHAN_RANGE_T) {
+        if (token->token_flavor == RT_CMD_CHAN_RANGE_T) {
           sprintf(parser->error_msg_buffer, "channel range must be int.");
+          return 25;
         }
         token->token_flavor = RT_CMD_FLOAT_T;
         break;

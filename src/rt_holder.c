@@ -19,7 +19,7 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
   rt_set_single_param(p, RT_RETENTION_MOD, 1.f);
   rt_set_single_param(p, RT_PHASE_MOD, 1.f);
   rt_set_single_param(p, RT_PHASE_CHAOS, 0.f);
-  
+
   rt_set_buffer_size(p, buffer_size);
   rt_set_overlap(p, overlap_factor);
   rt_set_fft_size(p, frame_size, pad_factor);
@@ -35,6 +35,37 @@ void rt_holder_clean(rt_holder hold)
 {
   free(hold->amp_holder);
   free(hold);
+}
+
+void rt_update_params(rt_params p)
+{
+  const rt_holder h = p->hold;
+
+  p->frame_size     = h->frame_size;
+  p->fft_size       = h->fft_size;
+  p->overlap_factor = h->overlap_factor;
+  p->pad_factor     = h->pad_factor;
+  p->pad_offset     = (p->fft_size - p->frame_size) / 2;
+  p->setup          = h->setup;
+  p->sample_rate    = h->sample_rate;
+
+  p->scale_factor   = h->scale_factor;
+  p->retention_mod  = h->retention_mod;
+  p->phase_mod      = h->phase_mod;
+  p->phase_chaos    = h->phase_chaos;
+
+  p->buffer_size    = h->buffer_size;
+  p->hop_a          = p->frame_size / p->overlap_factor;
+  p->hop_s          = lround(p->hop_a * p->scale_factor);
+  rt_uint i;
+  for (i = 0; i < RT_MANIP_FLAVOR_COUNT; i++) {
+    p->enabled_manips
+        |= 1 << i; /**< sets all manipulation ON, except multichannel */
+  }
+  if ((p->hold->tracker & RT_MANIPS_CHANGED) && p->initialized) {
+    rt_update_manips(p);
+  }
+  p->hold->tracker = 0;
 }
 
 void rt_update_manips(rt_params p)
@@ -133,10 +164,12 @@ void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint pad_factor)
   p->hold->tracker |= RT_FFT_CHANGED;
 }
 
-void rt_update_listener(rt_params p, rt_param_flavor_t param_flavor, float new_val)
+void rt_update_listener(rt_params p, rt_param_flavor_t param_flavor,
+                        float new_val)
 {
   if (p->listener.listener_obj != NULL) {
-    p->listener.listener_callback(p->listener.listener_obj, param_flavor, new_val);
+    p->listener.listener_callback(p->listener.listener_obj, param_flavor,
+                                  new_val);
   }
 }
 

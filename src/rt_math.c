@@ -10,6 +10,28 @@
  */
 #include "rtstft.h"
 
+/* credit:
+ * https://martin.ankerl.com/2007/10/04/optimized-pow-approximation-for-java-and-c-c/
+ * for the fast pow approx
+ */
+double fastPow(double a, double b)
+{
+  union {
+    double d;
+    int    x[2];
+  } u    = {a};
+  u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
+  u.x[0] = 0;
+  return u.d;
+}
+
+rt_real dbtoa(rt_real db_val) { return fastPow(10.f, (db_val) / 20.f); }
+int     atodb(rt_real amp_val)
+{
+  rt_real ret = 20.f * log10f(amp_val);
+  return amp_val > 0.f ? ret : INT_MIN;
+}
+
 void rt_hanning(rt_real *data, rt_uint len)
 {
   rt_uint n;
@@ -26,21 +48,6 @@ void rt_hamming(rt_real *data, rt_uint len)
     rt_real hamm = 0.54 - 0.46 * cos(2. * M_PI * n / (len - 1));
     data[n] *= hamm;
   }
-}
-
-/* credit:
- * https://martin.ankerl.com/2007/10/04/optimized-pow-approximation-for-java-and-c-c/
- * for the fast pow approx
- */
-double fastPow(double a, double b)
-{
-  union {
-    double d;
-    int    x[2];
-  } u    = {a};
-  u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
-  u.x[0] = 0;
-  return u.d;
 }
 
 void rt_lerp_samples(rt_real *in, rt_real *out, rt_uint len_I, rt_uint len_O)
