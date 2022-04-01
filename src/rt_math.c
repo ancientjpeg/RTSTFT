@@ -25,8 +25,8 @@ double fastPow(double a, double b)
   return u.d;
 }
 
-rt_real dbtoa(rt_real db_val) { return fastPow(10.f, (db_val) / 20.f); }
-int     atodb(rt_real amp_val)
+rt_real rt_dbtoa(rt_real db_val) { return fastPow(10.f, (db_val) / 20.f); }
+int     rt_atodb(rt_real amp_val)
 {
   rt_real ret = 20.f * log10f(amp_val);
   return amp_val > 0.f ? ret : INT_MIN;

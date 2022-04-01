@@ -78,15 +78,17 @@ void rt_manip_reset(rt_params p, rt_manip m)
  */
 void rt_manip_update(rt_params p, rt_chan c)
 {
-  rt_uint  i;
+  rt_uint  i, offset;
   rt_manip m = c->manip;
+  void *v;
   if (m->current_num_manips != p->fft_size) {
     rt_manip_framesize_changed(p, c);
   }
   else {
     for (i = 0; i < RT_MANIP_FLAVOR_COUNT; i++) {
       if (m->manip_tracker & (1UL << i)) {
-        memcpy(m->manips, m->hold_manips, rt_manip_len * sizeof(rt_real));
+        offset = rt_manip_index(p, i, 0);
+        v = memcpy(m->manips + offset, m->hold_manips + offset, rt_manip_len * sizeof(rt_real));
       }
     }
   }
@@ -126,9 +128,9 @@ void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
     exit(1);
   }
 
-  rt_uint bin_curr = bin0;
+  rt_uint bin_curr = bin0, manip_pos = rt_manip_index(p, manip_flavor, bin_curr);
   do {
-    c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin0)] = value;
+    c->manip->hold_manips[manip_pos++] = value;
   } while (++bin_curr <= binN);
 
   c->manip->manip_tracker |= (1UL << manip_flavor);
@@ -224,11 +226,11 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
     manip_index = rt_manip_index(p, RT_MANIP_LIMIT, 0);
     for (i = 0; i < rt_manip_len - 1; i++) {
       thresh_adj = (manips[manip_index++] * thresh_adj_factor);
-      if (fabs(frame_ptr[i]) > thresh_adj) {
+      if ((float)fabs(frame_ptr[i]) > thresh_adj) {
         frame_ptr[i] = 0.;
       }
     }
-    if (fabs(frame_ptr[1]) > (manips[manip_index] * thresh_adj_factor)) {
+    if ((float)fabs(frame_ptr[1]) > (manips[manip_index] * thresh_adj_factor)) {
       frame_ptr[1] *= manips[rt_manip_len - 1];
     }
   }

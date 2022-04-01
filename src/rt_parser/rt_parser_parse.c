@@ -52,7 +52,7 @@ int rt_parser_parse_opt(rt_parser parser, rt_uint *const token_index)
       opt_def = opd_temp;
       break;
     }
-  } while (++i < parser->active_cmd_def->optc);
+  } while (i++ < parser->active_cmd_def->optc);
 
   /* after loop, check that we found the flag */
   if (opt_def == NULL) {
@@ -93,7 +93,7 @@ int rt_parser_parse_opt(rt_parser parser, rt_uint *const token_index)
       return 1;
     }
     writeable_opt->opt_args[parsed_opt_args++] = *token_curr;
-    if (parsed_opt_args == RT_CMD_OPT_ARGC_MAX) {
+    if (parsed_opt_args == opt_def->argc) {
       ++*token_index;
       return 0;
     }
@@ -114,13 +114,18 @@ int rt_parser_parse_in_place(rt_parser parser)
     if (token->token_flavor == RT_CMD_PARAM_T) {
       if (parsed_cmd_args) {
         sprintf(parser->error_msg_buffer,
-                "Encountered an option flag while parsing command args.");
-        return 15;
+                "Encountered an option flag while parsing command args");
+        return 9;
       }
       status = rt_parser_parse_opt(parser, &token_index);
       if (status) {
         return status;
       }
+    }
+    else if (!(token->token_flavor & parser->active_cmd_def->cmd_argtypes[parsed_cmd_args])){
+      sprintf(parser->error_msg_buffer,
+              "Token type mismatch while parsing command args");
+      return 9;
     }
     else {
       parser->command.command_args[parsed_cmd_args++]

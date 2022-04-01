@@ -46,8 +46,8 @@ int  rt_parse_and_execute(rt_params p, const char *arg_str);
 
 /* ========   MISC UTILS  ======== */
 rt_uint rt_check_pow_2(rt_uint num);
-rt_real dbtoa(rt_real db_val);
-int     atodb(rt_real amp_val);
+rt_real rt_dbtoa(rt_real db_val);
+int     rt_atodb(rt_real amp_val);
 
 #ifdef __cplusplus
 }
