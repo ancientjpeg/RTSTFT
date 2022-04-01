@@ -80,4 +80,15 @@ typedef enum RT_MANIP_FLAVORS {
   RT_MANIP_FLAVOR_UNDEFINED
 } rt_manip_flavor_t;
 
+typedef struct RTSTFT_Params_Listener_Return_Data {
+  rt_param_flavor_t param_flavor;
+  rt_manip_flavor_t manip_flavor;
+  rt_real           param_value;
+} rt_listener_return_t;
+
+typedef struct RTSTFT_Params_Listener {
+  void *listener_obj;
+  void (*listener_callback)(void *, rt_listener_return_t);
+} rt_listener_t;
+
 #endif

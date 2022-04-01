@@ -151,7 +151,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   for (i = 2; i < p->fft_size; i += 2) {
     amp              = frame_ptr[i];
     phase            = frame_ptr[i + 1];
-    p->hold->amp_holder[i] = amp;
+    p->hold->amp_holder[i / 2] = amp;
     frame_ptr[i]     = amp * cos(phase);
     frame_ptr[i + 1] = amp * sin(phase);
   }

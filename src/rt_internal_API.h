@@ -32,23 +32,20 @@ void rt_update_manips(rt_params p);
 void rt_params_check_mod(rt_params p);
 
 /* ========   rt_manip    ======== */
-#define rt_manip_len_max (p->fft_max / 2)
-#define rt_manip_len (p->fft_size / 2)
-#define rt_manip_block_len ((rt_manip_len_max)*RT_MANIP_FLAVOR_COUNT)
 rt_manip rt_manip_init(rt_params p);
 void     rt_manip_clean(rt_manip m);
 void     rt_manip_reset(rt_params p, rt_manip m);
 void     rt_manip_update(rt_params p, rt_chan c);
 void     rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr);
 void     rt_manip_framesize_changed(rt_params p, rt_chan c);
-void     rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
-                           rt_uint bin0, rt_uint binN, rt_real value);
-void     rt_manip_set_bins_curved(rt_params p, rt_chan c,
-                                  rt_manip_flavor_t manip_flavor, rt_uint bin0,
-                                  rt_uint binN, rt_real value0, rt_real valueN,
-                                  rt_real curve_pow);
-rt_uint  rt_manip_index(rt_params p, rt_manip_flavor_t manip_flavor,
-                        rt_uint frame_index);
+void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
+                       rt_uint bin0, rt_uint binN, rt_real value);
+void rt_manip_set_bins_curved(rt_params p, rt_chan c,
+                              rt_manip_flavor_t manip_flavor, rt_uint bin0,
+                              rt_uint binN, rt_real value0, rt_real valueN,
+                              rt_real curve_pow);
+rt_uint rt_manip_index(rt_params p, rt_manip_flavor_t manip_flavor,
+                       rt_uint frame_index);
 
 /* ========    rt_fifo    ======== */
 rt_fifo rt_fifo_init(rt_uint len);

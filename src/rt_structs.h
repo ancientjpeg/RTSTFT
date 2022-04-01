@@ -50,10 +50,6 @@ typedef rt_chan_t *rt_chan;
 #define RT_IN_CYCLE (1 << 0)
 #define RT_AT_CYCLE_START (1 << 2)
 
-typedef struct RTSTFT_Params_Listener {
-  void *listener_obj;
-  void (*listener_callback)(void *, rt_param_flavor_t, float);
-} rt_listener_t;
 /**
  * @brief The internal struct that rt_params represents.
  *

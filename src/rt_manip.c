@@ -26,7 +26,7 @@
 rt_manip rt_manip_init(rt_params p)
 {
   rt_manip m            = (rt_manip)malloc(sizeof(rt_manip_t));
-  rt_uint  len          = rt_manip_block_len;
+  rt_uint  len          = rt_manip_block_len(p);
   m->manip_tracker      = 0;
   m->current_num_manips = p->fft_size;
   m->manips             = pffft_aligned_malloc(len * sizeof(rt_real));
@@ -46,7 +46,7 @@ void rt_manip_reset(rt_params p, rt_manip m)
 {
   rt_uint i, j;
   for (i = 0; i < RT_MANIP_FLAVOR_COUNT; i++) {
-    for (j = 0; j < rt_manip_len_max; j++) {
+    for (j = 0; j < rt_manip_len_max(p); j++) {
       rt_uint frame_index = rt_manip_index(p, i, j);
       switch (i) {
       case RT_MANIP_GAIN:
@@ -78,9 +78,9 @@ void rt_manip_reset(rt_params p, rt_manip m)
  */
 void rt_manip_update(rt_params p, rt_chan c)
 {
-  rt_uint  i, offset;
+  rt_uint  i, offset, len = rt_manip_len(p);
   rt_manip m = c->manip;
-  void *v;
+  void    *v;
   if (m->current_num_manips != p->fft_size) {
     rt_manip_framesize_changed(p, c);
   }
@@ -88,7 +88,8 @@ void rt_manip_update(rt_params p, rt_chan c)
     for (i = 0; i < RT_MANIP_FLAVOR_COUNT; i++) {
       if (m->manip_tracker & (1UL << i)) {
         offset = rt_manip_index(p, i, 0);
-        v = memcpy(m->manips + offset, m->hold_manips + offset, rt_manip_len * sizeof(rt_real));
+        v      = memcpy(m->manips + offset, m->hold_manips + offset,
+                        len * sizeof(rt_real));
       }
     }
   }
@@ -128,7 +129,8 @@ void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
     exit(1);
   }
 
-  rt_uint bin_curr = bin0, manip_pos = rt_manip_index(p, manip_flavor, bin_curr);
+  rt_uint bin_curr  = bin0,
+          manip_pos = rt_manip_index(p, manip_flavor, bin_curr);
   do {
     c->manip->hold_manips[manip_pos++] = value;
   } while (++bin_curr <= binN);
@@ -148,7 +150,8 @@ void rt_manip_set_bins_curved(rt_params p, rt_chan c,
   }
 
   /* curve pow should be -10 to 10 with 0. as midpoint */
-  curve_pow = fastPow(2, curve_pow);
+  /* it will be reversed, i.e. -10 makes a flattened curve */
+  curve_pow = fastPow(2, -curve_pow);
   rt_real this_curve, this_mod;
   rt_uint bin_curr = bin0, range = binN - bin0;
   do {
@@ -183,7 +186,7 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
             "Sorry! Zero-padding and bin manipulation not yet compatible.");
     exit(1);
   }
-  rt_uint  manip_index, i;
+  rt_uint  manip_index, i, manip_len = rt_manip_len(p);
   rt_real *manips
       = p->manip_multichannel ? c->manip->manips : p->chans[0]->manip->manips;
   /**
@@ -193,10 +196,10 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
   if (p->enabled_manips & (1 << RT_MANIP_GAIN)) {
 
     manip_index = rt_manip_index(p, RT_MANIP_GAIN, 0);
-    for (i = 0; i < rt_manip_len - 1; i++) {
+    for (i = 0; i < manip_len - 1; i++) {
       frame_ptr[i * 2] *= manips[manip_index++];
     }
-    frame_ptr[1] *= manips[rt_manip_len - 1];
+    frame_ptr[1] *= manips[manip_len - 1];
   }
 
   /**
@@ -207,14 +210,14 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
   rt_uint thresh_adj_factor = p->fft_size / 2;
   if (p->enabled_manips & (1 << RT_MANIP_GATE)) {
     manip_index = rt_manip_index(p, RT_MANIP_GATE, 0);
-    for (i = 0; i < rt_manip_len - 1; i++) {
+    for (i = 0; i < manip_len - 1; i++) {
       thresh_adj = (manips[manip_index++] * thresh_adj_factor);
       if (fabs(frame_ptr[i * 2]) < thresh_adj) {
         frame_ptr[i] = 0.;
       }
     }
     if (fabs(frame_ptr[1]) < (manips[manip_index] * thresh_adj_factor)) {
-      frame_ptr[1] *= manips[rt_manip_len - 1];
+      frame_ptr[1] *= manips[manip_len - 1];
     }
   }
 
@@ -231,7 +234,7 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
       }
     }
     if ((float)fabs(frame_ptr[1]) > (manips[manip_index] * thresh_adj_factor)) {
-      frame_ptr[1] *= manips[rt_manip_len - 1];
+      frame_ptr[1] *= manips[manip_len - 1];
     }
   }
 }
@@ -239,5 +242,18 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
 rt_uint rt_manip_index(rt_params p, rt_manip_flavor_t manip_flavor,
                        rt_uint frame_index)
 {
-  return manip_flavor * rt_manip_len_max + frame_index;
+  return manip_flavor * rt_manip_len_max(p) + frame_index;
+}
+
+const rt_real *rt_manip_read_buffer(rt_params p, rt_chan c,
+                                    rt_manip_flavor_t manip_flavor)
+{
+  return c->manip->hold_manips + rt_manip_index(p, manip_flavor, 0);
+}
+
+rt_uint rt_manip_len_max(rt_params p) { return p->fft_max / 2; }
+rt_uint rt_manip_len(rt_params p) { return p->fft_size / 2; }
+rt_uint rt_manip_block_len(rt_params p)
+{
+  return rt_manip_len_max(p) * RT_MANIP_FLAVOR_COUNT;
 }

@@ -10,6 +10,13 @@
  */
 #include "../rtstft.h"
 
+rt_real rt_float_from_any_numeric_token(rt_token_t *token) {
+  if (token->token_flavor == RT_CMD_INT_T) {
+    return (float) token->raw_arg.i;
+  }
+  return token->raw_arg.f;
+}
+
 int rt_parser_execute_gain_gate_limit(rt_params p);
 int rt_parser_execute_gain(void *params_ptr)
 {
@@ -50,6 +57,8 @@ int rt_parser_exec_check_level(rt_params p, rt_real val)
   return 0;
 }
 
+
+
 int rt_parser_execute_gain_gate_limit(rt_params p)
 {
   rt_command_t        *cmd         = &(p->parser.command);
@@ -71,17 +80,18 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
       break;
     case 'e':
       got_curve_opt = 0;
-      curve_pow     = cmd->options[i].opt_args[0].raw_arg.f;
+      curve_pow     = rt_float_from_any_numeric_token(&(cmd->options[i].opt_args[0]));
       if (curve_pow > 10.f || curve_pow < -10.f) {
         sprintf(p->parser.error_msg_buffer, "curve power %.2f is out of range",
                 curve_pow);
         return 17;
       }
+      
+      value0 = cmd->options[i].opt_args[1].raw_arg.f;
       if (values_in_db) {
-        value0 = rt_dbtoa(cmd->options[i].opt_args[1].raw_arg.i);
+        value0 = rt_dbtoa(value0);
         break;
       }
-      value0 = cmd->options[i].opt_args[1].raw_arg.f;
       break;
     default:
       break;
@@ -89,12 +99,10 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
   }
 
   /* get the command arg */
-  rt_real val, status;
+  rt_real val = rt_float_from_any_numeric_token(&(cmd->command_args[0]));
+  rt_uint status;
   if (values_in_db) {
-    val = rt_dbtoa(cmd->command_args[0].raw_arg.i);
-  }
-  else {
-    val = cmd->command_args[0].raw_arg.f;
+    val = rt_dbtoa(val);
   }
 
   if (got_curve_opt) {

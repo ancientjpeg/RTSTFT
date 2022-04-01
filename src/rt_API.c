@@ -117,3 +117,10 @@ rt_uint rt_check_pow_2(rt_uint num)
           num, 1UL << RT_FFT_MIN_POW);
   return RT_UINT_FALSE;
 }
+
+rt_listener_return_t rt_get_empty_listener_data()
+{
+  rt_listener_return_t ret = (rt_listener_return_t){
+      RT_PARAM_FLAVOR_UNDEFINED, RT_MANIP_FLAVOR_UNDEFINED, RT_REAL_ERR};
+  return ret;
+}
