@@ -45,16 +45,17 @@ void rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,
 int  rt_parse_and_execute(rt_params p, const char *arg_str);
 
 /* ========   MISC UTILS  ======== */
-rt_uint        rt_check_pow_2(rt_uint num);
-rt_real        rt_dbtoa(rt_real db_val);
-int            rt_atodb(rt_real amp_val);
+rt_uint              rt_check_pow_2(rt_uint num);
+rt_real              rt_dbtoa(rt_real db_val);
+int                  rt_atodb(rt_real amp_val);
 
-rt_uint        rt_manip_len(rt_params p);
-rt_uint        rt_manip_len_max(rt_params p);
-rt_uint        rt_manip_block_len(rt_params p);
+rt_uint              rt_manip_len(rt_params p);
+rt_uint              rt_manip_len_max(rt_params p);
+rt_uint              rt_manip_block_len(rt_params p);
 
-const rt_real *rt_manip_read_buffer(rt_params p, rt_chan c,
-                                    rt_manip_flavor_t manip_flavor);
+const rt_real       *rt_manip_read_buffer(rt_params p, rt_chan c,
+                                          rt_manip_flavor_t manip_flavor);
+rt_listener_return_t rt_get_empty_listener_data();
 
 #ifdef __cplusplus
 }

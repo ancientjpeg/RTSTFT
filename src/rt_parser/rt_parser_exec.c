@@ -10,9 +10,10 @@
  */
 #include "../rtstft.h"
 
-rt_real rt_float_from_any_numeric_token(rt_token_t *token) {
+rt_real rt_float_from_any_numeric_token(rt_token_t *token)
+{
   if (token->token_flavor == RT_CMD_INT_T) {
-    return (float) token->raw_arg.i;
+    return (float)token->raw_arg.i;
   }
   return token->raw_arg.f;
 }
@@ -57,15 +58,13 @@ int rt_parser_exec_check_level(rt_params p, rt_real val)
   return 0;
 }
 
-
-
 int rt_parser_execute_gain_gate_limit(rt_params p)
 {
-  rt_command_t        *cmd         = &(p->parser.command);
-  const rt_command_define_t *def         = &(p->parser.active_cmd_def);
-  rt_uint              bin0 = -1, binN = -1, i;
-  rt_real              value0 = -1.f, valueN = -1.f, curve_pow = -100.f;
-  unsigned char        values_in_db = 0, got_curve_opt = 0;
+  rt_command_t              *cmd  = &(p->parser.command);
+  const rt_command_define_t *def  = p->parser.active_cmd_def;
+  rt_uint                    bin0 = -1, binN = -1, i;
+  rt_real                    value0 = -1.f, valueN = -1.f, curve_pow = -100.f;
+  unsigned char              values_in_db = 0, got_curve_opt = 0;
   for (i = 0; i < RT_CMD_MAX_OPTS; i++) {
     switch (cmd->options[i].flag) {
     case '\0':
@@ -79,14 +78,15 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
       values_in_db = 1;
       break;
     case 'e':
-      got_curve_opt = 0;
-      curve_pow     = rt_float_from_any_numeric_token(&(cmd->options[i].opt_args[0]));
+      got_curve_opt = 1;
+      curve_pow
+          = rt_float_from_any_numeric_token(&(cmd->options[i].opt_args[0]));
       if (curve_pow > 10.f || curve_pow < -10.f) {
         sprintf(p->parser.error_msg_buffer, "curve power %.2f is out of range",
                 curve_pow);
         return 17;
       }
-      
+
       value0 = cmd->options[i].opt_args[1].raw_arg.f;
       if (values_in_db) {
         value0 = rt_dbtoa(value0);
@@ -108,19 +108,21 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
   if (got_curve_opt) {
     valueN = val;
     status = rt_parser_exec_check_level(p, valueN);
-    if (status) return status;
+    if (status)
+      return status;
   }
   else {
     value0 = val;
   }
   status = rt_parser_exec_check_level(p, value0);
-  if (status) return status;
+  if (status)
+    return status;
 
   bin0 = cmd->command_args[1].raw_arg.irange[0];
   binN = cmd->command_args[1].raw_arg.irange[1];
 
   /* begin range checks */
-  if (bin0 > rt_manip_len || binN > rt_manip_len || binN < bin0) {
+  if (bin0 > rt_manip_len(p) || binN > rt_manip_len(p) || binN < bin0) {
     /* bin0 < 0 for uint is just a big number */
     sprintf(p->parser.error_msg_buffer, "Improper bin range: %i-%i", bin0,
             binN);
@@ -129,7 +131,7 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
 
   /* only mono for now */
   if (curve_pow == -100.f) {
-    rt_manip_set_bins(p, p->chans[0], p->parser.active_cmd_def->manip_flavor,
+    rt_manip_set_bins(p, p->chans[0], def->manip_flavor,
                       bin0, binN, value0);
   }
   else {
@@ -138,5 +140,8 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
   }
   sprintf(p->parser.error_msg_buffer, "successful parse of a %s command",
           cmd->name);
+  rt_listener_return_t ret = rt_get_empty_listener_data();
+  ret.manip_flavor         = def->manip_flavor;
+  p->listener.listener_callback(p->listener.listener_obj, ret);
   return 0;
 }

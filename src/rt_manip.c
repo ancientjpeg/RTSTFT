@@ -153,12 +153,16 @@ void rt_manip_set_bins_curved(rt_params p, rt_chan c,
   /* it will be reversed, i.e. -10 makes a flattened curve */
   curve_pow = fastPow(2, -curve_pow);
   rt_real this_curve, this_mod;
-  rt_uint bin_curr = bin0, range = binN - bin0;
+  rt_real value_diff = valueN - value0;
+  rt_uint bin_curr = bin0, range = binN - bin0, lerp;
   do {
-    this_mod     = ((rt_real)bin_curr - bin0) / range;
-    this_curve   = fastPow(this_mod, curve_pow);
-    rt_real lerp = (valueN - value0) * this_mod + value0;
-    c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin0)]
+    this_mod   = bin_curr - bin0 / range;
+    lerp       = value_diff * this_mod + value0;
+
+    this_mod   = value_diff > 0 ? this_mod : 1.f - this_mod;
+    this_curve = fastPow(this_mod, curve_pow);
+
+    c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin_curr)]
         = lerp * this_curve;
   } while (++bin_curr <= binN);
   c->manip->manip_tracker |= (1UL << manip_flavor);
@@ -227,7 +231,7 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
    */
   if (p->enabled_manips & RT_MANIP_LIMIT) {
     manip_index = rt_manip_index(p, RT_MANIP_LIMIT, 0);
-    for (i = 0; i < rt_manip_len - 1; i++) {
+    for (i = 0; i < manip_len - 1; i++) {
       thresh_adj = (manips[manip_index++] * thresh_adj_factor);
       if ((float)fabs(frame_ptr[i]) > thresh_adj) {
         frame_ptr[i] = 0.;

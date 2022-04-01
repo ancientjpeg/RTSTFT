@@ -57,20 +57,25 @@ void rt_parser_clear_buffer(rt_parser parser)
 int rt_parse_and_execute(rt_params p, const char *arg_str)
 {
   rt_parser_clear_buffer(&p->parser);
-  int status = rt_parser_split_argv(&p->parser, arg_str);
+  int                  status    = rt_parser_split_argv(&p->parser, arg_str);
+  rt_listener_return_t error_ret = rt_get_empty_listener_data();
   if (status) {
+    p->listener.listener_callback(p->listener.listener_obj, error_ret);
     return status;
   }
   status = rt_parser_lex_args(&p->parser);
   if (status) {
+    p->listener.listener_callback(p->listener.listener_obj, error_ret);
     return status;
   }
   status = rt_parser_parse_in_place(&p->parser);
   if (status) {
+    p->listener.listener_callback(p->listener.listener_obj, error_ret);
     return status;
   }
   status = p->parser.active_cmd_def->exec_func((void *)p);
   if (status) {
+    p->listener.listener_callback(p->listener.listener_obj, error_ret);
     return status;
   }
   return 0;

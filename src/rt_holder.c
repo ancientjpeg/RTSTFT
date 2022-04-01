@@ -164,15 +164,6 @@ void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint pad_factor)
   p->hold->tracker |= RT_FFT_CHANGED;
 }
 
-void rt_update_listener(rt_params p, rt_param_flavor_t param_flavor,
-                        float new_val)
-{
-  if (p->listener.listener_obj != NULL) {
-    p->listener.listener_callback(p->listener.listener_obj, param_flavor,
-                                  new_val);
-  }
-}
-
 void rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,
                          rt_real new_val)
 {
