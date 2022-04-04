@@ -121,66 +121,16 @@ void rt_manip_framesize_changed(rt_params p, rt_chan c)
   c->manip->current_num_manips = p->fft_size;
 }
 
-void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
-                       rt_uint bin0, rt_uint binN, rt_real value)
-{
-  if (p->manip_multichannel == 0 && c != p->chans[0]) {
-    fprintf(stderr, "Cannot set stereo manips when multichannel is disabled");
-    exit(1);
-  }
-
-  rt_uint bin_curr  = bin0,
-          manip_pos = rt_manip_index(p, manip_flavor, bin_curr);
-  do {
-    c->manip->hold_manips[manip_pos++] = value;
-  } while (++bin_curr <= binN);
-
-  c->manip->manip_tracker |= (1UL << manip_flavor);
-  p->hold->tracker |= RT_MANIPS_CHANGED;
-}
-
-void rt_manip_set_bins_curved(rt_params p, rt_chan c,
-                              rt_manip_flavor_t manip_flavor, rt_uint bin0,
-                              rt_uint binN, rt_real value0, rt_real valueN,
-                              rt_real curve_pow)
-{
-  if (p->manip_multichannel == 0 && c != p->chans[0]) {
-    fprintf(stderr, "Cannot set stereo manips when multichannel is disabled");
-    exit(1);
-  }
-
-  /* curve pow should be -10 to 10 with 0. as midpoint */
-  /* it will be reversed, i.e. -10 makes a flattened curve */
-  curve_pow = fastPow(2, -curve_pow);
-  rt_real this_curve, this_mod;
-  rt_real value_diff = valueN - value0;
-  rt_uint bin_curr = bin0, range = binN - bin0, lerp;
-  do {
-    this_mod   = bin_curr - bin0 / range;
-    lerp       = value_diff * this_mod + value0;
-
-    this_mod   = value_diff > 0 ? this_mod : 1.f - this_mod;
-    this_curve = fastPow(this_mod, curve_pow);
-
-    c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin_curr)]
-        = lerp * this_curve;
-  } while (++bin_curr <= binN);
-  c->manip->manip_tracker |= (1UL << manip_flavor);
-  p->hold->tracker |= RT_MANIPS_CHANGED;
-}
-
 /**
  * @brief
  *
  * @param p An rt_params signifying the active instance of RTSTFT.
  * @param c An rt_chan signifying the active channel.
- * !!NOTE!! when not in multichannel, this param should always be channel 0 !!
  * @param frame_ptr Pointer to the frame currently being processed.
- * This should ALWAYS be the frame of the current channel, even if multichannel
- * is not enabled.
  *
- * Thresholds must be adjusted by fft size / 2 to bring the amplitudes to a
- * range of -1 to 1
+ * Please recall that the amplitudes come to us pre-adjusted, 0-1, from
+ * framebuf.
+ *
  */
 void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
 {
@@ -200,48 +150,116 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
   if (p->enabled_manips & (1 << RT_MANIP_GAIN)) {
 
     manip_index = rt_manip_index(p, RT_MANIP_GAIN, 0);
+    frame_ptr[1] *= manips[manip_index]; // assign N/2 bin
     for (i = 0; i < manip_len - 1; i++) {
       frame_ptr[i * 2] *= manips[manip_index++];
     }
-    frame_ptr[1] *= manips[manip_len - 1];
   }
 
   /**
-   * @brief Gate section - lo threshold
+   * @brief Gate section
    *
    */
   rt_real thresh_adj;
-  rt_uint thresh_adj_factor = p->fft_size / 2;
   if (p->enabled_manips & (1 << RT_MANIP_GATE)) {
     manip_index = rt_manip_index(p, RT_MANIP_GATE, 0);
-    for (i = 0; i < manip_len - 1; i++) {
-      thresh_adj = (manips[manip_index++] * thresh_adj_factor);
-      if (fabs(frame_ptr[i * 2]) < thresh_adj) {
-        frame_ptr[i] = 0.;
-      }
+    if (fabs(frame_ptr[1]) < manips[manip_index]) {
+      frame_ptr[1] = 0.f;
     }
-    if (fabs(frame_ptr[1]) < (manips[manip_index] * thresh_adj_factor)) {
-      frame_ptr[1] *= manips[manip_len - 1];
+    for (i = 0; i < manip_len - 1; i++) {
+      thresh_adj = manips[manip_index++];
+      if (fabs(frame_ptr[i * 2]) < thresh_adj) {
+        frame_ptr[i * 2] = 0.f;
+      }
     }
   }
 
   /**
-   * @brief Gate section - hi threshold
+   * @brief Limit section
    *
    */
   if (p->enabled_manips & RT_MANIP_LIMIT) {
     manip_index = rt_manip_index(p, RT_MANIP_LIMIT, 0);
-    for (i = 0; i < manip_len - 1; i++) {
-      thresh_adj = (manips[manip_index++] * thresh_adj_factor);
-      if ((float)fabs(frame_ptr[i]) > thresh_adj) {
-        frame_ptr[i] = 0.;
-      }
+    if (fabs(frame_ptr[1]) > manips[manip_index]) {
+      frame_ptr[1] = manips[manip_index];
     }
-    if ((float)fabs(frame_ptr[1]) > (manips[manip_index] * thresh_adj_factor)) {
-      frame_ptr[1] *= manips[manip_len - 1];
+    for (i = 0; i < manip_len - 1; i++) {
+      thresh_adj = manips[manip_index];
+      if (fabs(frame_ptr[i * 2]) > thresh_adj) {
+        frame_ptr[i * 2] = manips[manip_index];
+      }
+      manip_index++;
     }
   }
 }
+
+/* ==================================================================== */
+/* ========================     bin setting    ======================== */
+/* ==================================================================== */
+
+void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
+                       rt_uint bin0, rt_uint binN, rt_real value)
+{
+  if (p->manip_multichannel == 0 && c != p->chans[0]) {
+    fprintf(stderr, "Cannot set stereo manips when multichannel is disabled");
+    exit(1);
+  }
+
+  rt_uint bin_curr  = bin0,
+          manip_pos = rt_manip_index(p, manip_flavor, bin_curr);
+  do {
+    c->manip->hold_manips[manip_pos++] = value;
+  } while (++bin_curr <= binN);
+
+  c->manip->manip_tracker |= (1UL << manip_flavor);
+  p->hold->tracker |= RT_MANIPS_CHANGED;
+}
+void rt_manip_set_bin_single(rt_params p, rt_chan c,
+                             rt_manip_flavor_t manip_flavor, rt_uint bin,
+                             rt_real value)
+{
+  if (p->manip_multichannel == 0 && c != p->chans[0]) {
+    fprintf(stderr, "Cannot set stereo manips when multichannel is disabled");
+    exit(1);
+  }
+  c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin)] = value;
+  c->manip->manip_tracker |= (1UL << manip_flavor);
+  p->hold->tracker |= RT_MANIPS_CHANGED;
+}
+
+void rt_manip_set_bins_curved(rt_params p, rt_chan c,
+                              rt_manip_flavor_t manip_flavor, rt_uint bin0,
+                              rt_uint binN, rt_real value0, rt_real valueN,
+                              rt_real curve_pow)
+{
+  if (p->manip_multichannel == 0 && c != p->chans[0]) {
+    fprintf(stderr, "Cannot set stereo manips when multichannel is disabled");
+    exit(1);
+  }
+
+  /* curve pow should be -10 to 10 with 0. as midpoint */
+  /* it will be reversed, i.e. -10 makes a flattened curve */
+  curve_pow = powf(2, -curve_pow);
+  rt_real this_curve, this_mod, lerp;
+  rt_real value_diff = valueN - value0;
+  rt_uint bin_curr = bin0, range = binN - bin0;
+  c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin_curr++)] = value0;
+  c->manip->hold_manips[rt_manip_index(p, manip_flavor, binN)]       = valueN;
+  do {
+    this_mod   = (bin_curr - bin0) / (rt_real)range;
+    lerp       = value_diff * this_mod + value0;
+
+    this_mod   = value_diff > 0 ? this_mod : 1.f - this_mod;
+    this_curve = powf(this_mod, curve_pow);
+
+    c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin_curr)]
+        = lerp * this_curve;
+  } while (++bin_curr < binN);
+  c->manip->manip_tracker |= (1UL << manip_flavor);
+  p->hold->tracker |= RT_MANIPS_CHANGED;
+}
+
+/* ========================        utils       ======================== */
 
 rt_uint rt_manip_index(rt_params p, rt_manip_flavor_t manip_flavor,
                        rt_uint frame_index)

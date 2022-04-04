@@ -102,20 +102,27 @@ rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf)
 void rt_framebuf_digest_frame(rt_params p, rt_chan c)
 {
   /** variable declarations */
-  rt_real *frame_ptr = c->framebuf->frame;
-  rt_uint  i;
-  rt_real  real, imag, amp, phase;
-  rt_real  freq_dev, freq_dev_wrapped, freq_true, phase_adj;
-  rt_real *phase_prev, *phase_cuml, *curr_phase_ptr;
+  rt_real    *frame_ptr = c->framebuf->frame;
+  rt_uint     i;
+  rt_real     real, imag, amp, phase;
+  rt_real     freq_dev, freq_dev_wrapped, freq_true, phase_adj;
+  rt_real    *phase_prev, *phase_cuml, *curr_phase_ptr;
+  rt_real     amp_adj_rev = (rt_real)p->fft_size, amp_adj = 1.f / amp_adj_rev;
+  signed char bin0_sign, binN_2_sign;
 
   /** forward transform */
   rt_window(frame_ptr + p->pad_offset, p->frame_size);
   pffft_transform_ordered(c->framebuf->setups[p->setup], frame_ptr, frame_ptr,
                           c->framebuf->work, PFFFT_FORWARD);
+  /** convert complex to amps and phases*/
+  bin0_sign    = signbit(frame_ptr[0]);
+  binN_2_sign  = signbit(frame_ptr[1]);
+  frame_ptr[0] = (bin0_sign ? -frame_ptr[0] : frame_ptr[0]) * amp_adj;
+  frame_ptr[1] = (binN_2_sign ? -frame_ptr[1] : frame_ptr[1]) * amp_adj;
   for (i = 2; i < p->fft_size; i += 2) {
     real             = frame_ptr[i];
     imag             = frame_ptr[i + 1];
-    frame_ptr[i]     = sqrt(real * real + imag * imag);
+    frame_ptr[i]     = sqrt(real * real + imag * imag) * amp_adj;
     frame_ptr[i + 1] = atan2(imag, real);
   }
 
@@ -135,26 +142,30 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
     freq_dev         = *curr_phase_ptr - *phase_prev - c->framebuf->omega[i];
     freq_dev_wrapped = wrap(freq_dev);
     freq_true        = freq_dev_wrapped + c->framebuf->omega[i];
-    rt_real phase_cuml_val = *phase_cuml * p->retention_mod;
+    rt_real phase_cuml_val   = *phase_cuml * p->retention_mod;
     rt_real phase_calc_final = freq_true * p->scale_factor * p->phase_mod;
-    phase_adj   = phase_cuml_val + phase_calc_final;
+    phase_adj                = phase_cuml_val + phase_calc_final;
 
-    *phase_prev = *curr_phase_ptr;
-    *curr_phase_ptr = wrap(phase_adj);
+    *phase_prev              = *curr_phase_ptr;
+    *curr_phase_ptr          = wrap(phase_adj);
     if (isnan(*curr_phase_ptr))
       *curr_phase_ptr = 0;
     *phase_cuml = *curr_phase_ptr;
     frame_phase_index += 2;
   }
 
-  /** begin inversion */
+  /** revert amps and phases to complex */
+  frame_ptr[0] = (bin0_sign ? frame_ptr[0] : -frame_ptr[0]) * amp_adj_rev;
+  frame_ptr[1] = (binN_2_sign ? frame_ptr[1] : -frame_ptr[1]) * amp_adj_rev;
   for (i = 2; i < p->fft_size; i += 2) {
-    amp              = frame_ptr[i];
-    phase            = frame_ptr[i + 1];
+    amp                        = frame_ptr[i];
+    phase                      = frame_ptr[i + 1];
     p->hold->amp_holder[i / 2] = amp;
+    amp *= amp_adj_rev;
     frame_ptr[i]     = amp * cos(phase);
     frame_ptr[i + 1] = amp * sin(phase);
   }
+  /** inverse transform */
   pffft_transform_ordered(c->framebuf->setups[p->setup], frame_ptr, frame_ptr,
                           c->framebuf->work, PFFFT_BACKWARD);
   for (i = 0; i < p->fft_size; i++) {

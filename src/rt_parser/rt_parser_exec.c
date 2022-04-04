@@ -87,7 +87,7 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
         return 17;
       }
 
-      value0 = cmd->options[i].opt_args[1].raw_arg.f;
+      value0 = rt_float_from_any_numeric_token(&cmd->options[i].opt_args[1]);
       if (values_in_db) {
         value0 = rt_dbtoa(value0);
         break;
@@ -99,7 +99,7 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
   }
 
   /* get the command arg */
-  rt_real val = rt_float_from_any_numeric_token(&(cmd->command_args[0]));
+  rt_real val = rt_float_from_any_numeric_token(&cmd->command_args[0]);
   rt_uint status;
   if (values_in_db) {
     val = rt_dbtoa(val);
