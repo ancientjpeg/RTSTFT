@@ -279,3 +279,28 @@ rt_uint rt_manip_block_len(rt_params p)
 {
   return rt_manip_len_max(p) * RT_MANIP_FLAVOR_COUNT;
 }
+
+void rt_manip_copy_manips(rt_params p, rt_chan c, rt_real *dest, rt_uint len)
+{
+
+  rt_uint block_len = rt_manip_block_len(p);
+  if (len != block_len) {
+    fprintf(stderr, "improper count for manips overwrite");
+    return;
+  }
+  memcpy(dest, c->manip->hold_manips, block_len * sizeof(rt_real));
+}
+
+void rt_manip_overwrite_manips(rt_params p, rt_chan c, rt_real *new_manips,
+                               rt_uint len)
+{
+  rt_uint block_len = rt_manip_block_len(p);
+  if (len != block_len) {
+    fprintf(stderr, "improper count for manips overwrite");
+    return;
+  }
+  memcpy(c->manip->hold_manips, new_manips, block_len * sizeof(rt_real));
+  memcpy(c->manip->manips, new_manips, block_len * sizeof(rt_real));
+  c->manip->manip_tracker = 0;
+  p->hold->tracker &= ~RT_MANIPS_CHANGED;
+}
