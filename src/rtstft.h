@@ -43,6 +43,7 @@ void rt_set_sample_rate(rt_params p, rt_real sample_rate);
 void rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,
                          rt_real new_val);
 
+void rt_manip_copy_manips(rt_params p, rt_chan c, rt_real *dest, rt_uint len);
 void rt_manip_overwrite_manips(rt_params p, rt_chan c, rt_real *new_manips,
                                rt_uint len);
 
