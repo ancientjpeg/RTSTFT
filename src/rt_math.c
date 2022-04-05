@@ -69,3 +69,9 @@ void rt_lerp_samples(rt_real *in, rt_real *out, rt_uint len_I, rt_uint len_O)
     incr_curr += incr;
   }
 }
+
+rt_uint rt_log2_floor(rt_uint num) {
+  int power = 0;
+  while(num >> (power++) > 0);
+  return power;
+}

@@ -153,10 +153,14 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
     *phase_cuml = *curr_phase_ptr;
     frame_phase_index += 2;
   }
+  
+  
 
   /** revert amps and phases to complex */
-  frame_ptr[0] = (bin0_sign ? frame_ptr[0] : -frame_ptr[0]) * amp_adj_rev;
-  frame_ptr[1] = (binN_2_sign ? frame_ptr[1] : -frame_ptr[1]) * amp_adj_rev;
+  p->hold->amp_holder[0] = frame_ptr[0];
+  p->hold->amp_holder[p->fft_size / 2 - 1] = frame_ptr[1];
+  frame_ptr[0] *= bin0_sign * amp_adj_rev;
+  frame_ptr[1] *= binN_2_sign * amp_adj_rev;
   for (i = 2; i < p->fft_size; i += 2) {
     amp                        = frame_ptr[i];
     phase                      = frame_ptr[i + 1];
@@ -168,8 +172,10 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   /** inverse transform */
   pffft_transform_ordered(c->framebuf->setups[p->setup], frame_ptr, frame_ptr,
                           c->framebuf->work, PFFFT_BACKWARD);
+  rt_real overlap_adj = p->overlap_factor * 0.25f;
+  rt_real final_gain = p->scale_factor / (overlap_adj * p->fft_size);
   for (i = 0; i < p->fft_size; i++) {
-    frame_ptr[i] *= p->scale_factor / p->fft_size;
+    frame_ptr[i] *= final_gain;
   }
   /**
    * A note for the future:
