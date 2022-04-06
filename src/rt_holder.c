@@ -19,6 +19,9 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
   rt_set_single_param(p, RT_RETENTION_MOD, 1.f);
   rt_set_single_param(p, RT_PHASE_MOD, 1.f);
   rt_set_single_param(p, RT_PHASE_CHAOS, 0.f);
+  rt_set_single_param(p, RT_PARAM_GATE_MOD, 0.f);
+  rt_set_single_param(p, RT_PARAM_GAIN_MOD, 0.f);
+  rt_set_single_param(p, RT_PARAM_LIMIT_MOD, 0.f);
 
   rt_set_buffer_size(p, buffer_size);
   rt_set_overlap(p, overlap_factor);
@@ -53,6 +56,9 @@ void rt_update_params(rt_params p)
   p->retention_mod  = h->retention_mod;
   p->phase_mod      = h->phase_mod;
   p->phase_chaos    = h->phase_chaos;
+  p->gain_mod       = h->gain_mod;
+  p->gate_mod       = h->gate_mod;
+  p->limit_mod      = h->limit_mod;
 
   p->buffer_size    = h->buffer_size;
   p->hop_a          = p->frame_size / p->overlap_factor;
@@ -179,6 +185,17 @@ void rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,
     break;
   case RT_PHASE_CHAOS:
     p->hold->phase_chaos = new_val;
+    break;
+  case RT_PARAM_GAIN_MOD:
+    p->hold->gain_mod = new_val;
+    break;
+  case RT_PARAM_GATE_MOD:
+    p->hold->gate_mod = new_val;
+    break;
+  case RT_PARAM_LIMIT_MOD:
+    p->hold->limit_mod = new_val;
+    break;
+  default:
     break;
   }
   p->hold->tracker |= RT_PHASE_PARAMS_CHANGED;

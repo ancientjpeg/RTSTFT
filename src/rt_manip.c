@@ -150,10 +150,10 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
   if (p->enabled_manips & (1 << RT_MANIP_GAIN)) {
 
     manip_index = rt_manip_index(p, RT_MANIP_GAIN, 0);
-    frame_ptr[1] *= manips[manip_index]; // assign N/2 bin
     for (i = 0; i < manip_len - 1; i++) {
-      frame_ptr[i * 2] *= manips[manip_index++];
+      frame_ptr[i * 2] *= (manips[manip_index++] + p->gain_mod);
     }
+    frame_ptr[1] *= (manips[manip_index] + p->gain_mod); // assign N/2 bin
   }
 
   /**
@@ -163,14 +163,13 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
   rt_real thresh_adj;
   if (p->enabled_manips & (1 << RT_MANIP_GATE)) {
     manip_index = rt_manip_index(p, RT_MANIP_GATE, 0);
-    if (fabs(frame_ptr[1]) < manips[manip_index]) {
-      frame_ptr[1] = 0.f;
-    }
     for (i = 0; i < manip_len - 1; i++) {
-      thresh_adj = manips[manip_index++];
-      if (fabs(frame_ptr[i * 2]) < thresh_adj) {
+      if (fabs(frame_ptr[i * 2]) < manips[manip_index++] + p->gate_mod) {
         frame_ptr[i * 2] = 0.f;
       }
+    }
+    if (fabs(frame_ptr[1]) < manips[manip_index] + p->gate_mod) {
+      frame_ptr[1] = 0.f; // assign N/2 bin
     }
   }
 
@@ -180,15 +179,15 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
    */
   if (p->enabled_manips & RT_MANIP_LIMIT) {
     manip_index = rt_manip_index(p, RT_MANIP_LIMIT, 0);
-    if (fabs(frame_ptr[1]) > manips[manip_index]) {
-      frame_ptr[1] = manips[manip_index];
-    }
     for (i = 0; i < manip_len - 1; i++) {
-      thresh_adj = manips[manip_index];
+      thresh_adj = manips[manip_index++] + p->limit_mod;
       if (fabs(frame_ptr[i * 2]) > thresh_adj) {
-        frame_ptr[i * 2] = manips[manip_index];
+        frame_ptr[i * 2] = thresh_adj;
       }
-      manip_index++;
+    }
+    thresh_adj = manips[manip_index] + p->limit_mod;
+    if (fabs(frame_ptr[1]) > thresh_adj) {
+      frame_ptr[1] = thresh_adj; // assign N/2 bin
     }
   }
 }

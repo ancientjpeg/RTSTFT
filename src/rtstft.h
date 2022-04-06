@@ -61,7 +61,7 @@ rt_uint              rt_manip_block_len(rt_params p);
 
 const rt_real       *rt_manip_read_buffer(rt_params p, rt_chan c,
                                           rt_manip_flavor_t manip_flavor);
-rt_listener_return_t rt_get_empty_listener_data();
+rt_listener_return_t rt_get_empty_listener_data(void);
 
 #ifdef __cplusplus
 }
