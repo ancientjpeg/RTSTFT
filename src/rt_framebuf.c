@@ -108,7 +108,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   rt_real     real, imag, amp, phase;
   rt_real     freq_dev, freq_dev_wrapped, freq_true, phase_adj;
   rt_real    *phase_prev, *phase_cuml, *curr_phase_ptr;
-  rt_real     amp_adj_rev = (rt_real)p->fft_size, amp_adj = 1.f / amp_adj_rev;
+  rt_real     amp_adj_rev = (rt_real)rt_log2_floor(p->fft_size), amp_adj = 1.f / amp_adj_rev;
   signed char bin0_sign, binN_2_sign;
 
   /** forward transform */

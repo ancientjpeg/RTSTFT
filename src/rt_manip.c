@@ -180,14 +180,15 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
   if (p->enabled_manips & RT_MANIP_LIMIT) {
     manip_index = rt_manip_index(p, RT_MANIP_LIMIT, 0);
     for (i = 0; i < manip_len - 1; i++) {
-      thresh_adj = manips[manip_index++] + p->limit_mod;
+      thresh_adj = fmax(manips[manip_index++] + p->limit_mod, 0.f);
       if (fabs(frame_ptr[i * 2]) > thresh_adj) {
-        frame_ptr[i * 2] = thresh_adj;
+        frame_ptr[i * 2]
+            = copysign(thresh_adj, frame_ptr[i * 2]); // assign N/2 bin
       }
     }
     thresh_adj = manips[manip_index] + p->limit_mod;
     if (fabs(frame_ptr[1]) > thresh_adj) {
-      frame_ptr[1] = thresh_adj; // assign N/2 bin
+      frame_ptr[1] = copysign(thresh_adj, frame_ptr[1]); // assign N/2 bin
     }
   }
 }
