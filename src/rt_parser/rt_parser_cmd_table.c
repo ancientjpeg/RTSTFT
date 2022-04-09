@@ -23,6 +23,7 @@ const rt_command_define_t cmd_table[RT_CMD_ALL_COMMANDS_COUNT]
         1,
         {{'b'}, {'e', 2, {RT_CMD_FLOAT_T, RT_CMD_FLOAT_T}}}},
        {"rebase", RT_MANIP_FLAVOR_UNDEFINED, &rt_parser_execute_rebase},
+       {"reset", RT_MANIP_FLAVOR_UNDEFINED, &rt_parser_execute_reset},
        {"transpose",
         RT_MANIP_FLAVOR_UNDEFINED,
         &rt_parser_execute_transpose,

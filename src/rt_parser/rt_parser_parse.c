@@ -3,11 +3,11 @@
 const rt_command_define_t *rt_parser_check_command_exists(rt_parser   parser,
                                                           const char *token)
 {
-  rt_uint search_pos = RT_CMD_ALL_COMMANDS_COUNT / 2, str_pos = 0, temp;
+  rt_uint search_pos = (RT_CMD_ALL_COMMANDS_COUNT - 1) / 2, str_pos = 0;
   rt_uint depth = RT_CMD_MAX_SEARCH_DEPTH;
   char    token_char, cmd_char;
   /* because unsigned, also tests for below zero case */
-  while (search_pos < RT_CMD_ALL_COMMANDS_COUNT && depth >= 0) {
+  while (search_pos < RT_CMD_ALL_COMMANDS_COUNT) {
     cmd_char   = cmd_table[search_pos].name[str_pos];
     token_char = token[str_pos];
     if (cmd_char == '\0' && token_char == '\0') {
@@ -20,13 +20,12 @@ const rt_command_define_t *rt_parser_check_command_exists(rt_parser   parser,
       break;
     }
     else if (token_char < cmd_char) {
-      search_pos /= 2;
+      search_pos >>= 1;
       str_pos = 0;
       depth--;
     }
     else if (token_char > cmd_char) {
-      temp       = search_pos + (1 << (depth - 1));
-      search_pos = search_pos + temp;
+      search_pos += (search_pos >> 1);
       str_pos    = 0;
       depth--;
     }

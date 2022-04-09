@@ -32,6 +32,19 @@ int rt_parser_execute_limit(void *params_ptr)
   return rt_parser_execute_gain_gate_limit((rt_params)params_ptr);
 }
 
+int rt_parser_execute_reset(void *params_ptr) {
+  rt_params p = (rt_params)params_ptr;
+  rt_uint i;
+  for (i = 0; i < p->num_chans; i++) {
+    rt_manip_reset(p, p->chans[i]->manip);
+  }
+  sprintf(p->parser.error_msg_buffer, "Full reset of all mainps successful");
+  
+  return 0;
+  
+  
+}
+
 int rt_parser_execute_rebase(void *params_ptr)
 {
   rt_params p = (rt_params)params_ptr;
@@ -131,8 +144,7 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
 
   /* only mono for now */
   if (curve_pow == -100.f) {
-    rt_manip_set_bins(p, p->chans[0], def->manip_flavor,
-                      bin0, binN, value0);
+    rt_manip_set_bins(p, p->chans[0], def->manip_flavor, bin0, binN, value0);
   }
   else {
     rt_manip_set_bins_curved(p, p->chans[0], def->manip_flavor, bin0, binN,

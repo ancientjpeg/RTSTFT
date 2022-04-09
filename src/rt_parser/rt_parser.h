@@ -10,8 +10,9 @@
 #define RT_CMD_MAX_OPTS 4
 #define RT_CMD_OPT_ARGC_MAX 3
 #define RT_CMD_COMMAND_ARGC_MAX 3
-#define RT_CMD_ALL_COMMANDS_COUNT 5
-#define RT_CMD_MAX_SEARCH_DEPTH 2
+
+#define RT_CMD_ALL_COMMANDS_COUNT 6
+#define RT_CMD_MAX_SEARCH_DEPTH 3
 
 typedef enum RT_TOKEN_FLAVORS {
   RT_CMD_UNDEFINED_T,
@@ -32,7 +33,7 @@ typedef struct RTSTFT_Option_Define {
   const rt_token_flavor opt_argtypes[RT_CMD_OPT_ARGC_MAX];
 } rt_option_define_t;
 typedef struct RTSTFT_Command_Define {
-  const char      name[RT_CMD_NAME_LEN];
+  const char        name[RT_CMD_NAME_LEN];
   rt_manip_flavor_t manip_flavor;
   int (*exec_func)(void *);
   const int                argc;
@@ -87,6 +88,7 @@ int rt_parser_execute_gain(void *params_ptr);
 int rt_parser_execute_gate(void *params_ptr);
 int rt_parser_execute_limit(void *params_ptr);
 int rt_parser_execute_rebase(void *params_ptr);
+int rt_parser_execute_reset(void *params_ptr);
 int rt_parser_execute_transpose(void *params_ptr);
 
 #endif
