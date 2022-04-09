@@ -26,7 +26,7 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
   rt_set_buffer_size(p, buffer_size);
   rt_set_overlap(p, overlap_factor);
   rt_set_fft_size(p, frame_size, pad_factor);
-  p->hold->amp_holder = malloc(sizeof(rt_real) * (1UL << RT_FFT_MAX_POW));
+  p->hold->amp_holder = calloc((1UL << RT_FFT_MAX_POW), sizeof(rt_real));
   p->hold->tracker    = 0;
   rt_uint i           = 0;
   do {
@@ -82,23 +82,23 @@ void rt_update_manips(rt_params p)
   }
 }
 
+/**
+ * @brief THIS IS NOT THREADSAFE
+ *
+ * @param p
+ * @param frame_size
+ */
 void rt_set_frame_size(rt_params p, rt_uint frame_size)
 {
   rt_set_fft_size(p, frame_size, p->hold->pad_factor);
 }
 
-void rt_set_buffer_size(rt_params p, rt_uint buffer_size)
-{
-  rt_uint buffer_pow = rt_check_pow_2(buffer_size);
-  if (buffer_pow == RT_UINT_FALSE) {
-    fprintf(stderr, "%lu is an invalid buffer size: not a power of 2.\n",
-            buffer_size);
-    exit(1);
-  }
-  p->hold->buffer_size = buffer_size;
-  p->hold->tracker |= RT_BUFFER_CHANGED;
-}
-
+/**
+ * @brief THIS IS NOT THREADSAFE
+ *
+ * @param p
+ * @param frame_size
+ */
 void rt_set_overlap(rt_params p, rt_uint overlap_factor)
 {
   if (overlap_factor > RT_OVERLAP_MAX || overlap_factor < RT_OVERLAP_MIN) {
@@ -120,24 +120,17 @@ void rt_set_pad_factor(rt_params p, rt_uint pad_factor)
   rt_set_fft_size(p, p->hold->frame_size, pad_factor);
 }
 
-// void rt_set_scale_factor(rt_params p, rt_real scale_factor)
-// {
-//   if (p == NULL) {
-//     return;
-//   }
-//   else if (!p->initialized) {
-//     p->scale_factor = 1.f;
-//   }
-//   if (scale_factor > p->scale_factor_max
-//       || scale_factor < p->scale_factor_min) {
-//     fprintf(stderr, "Scale factor must be in range %.1f-%.1f. Got value
-//     %.4f\n",
-//             p->scale_factor_max, p->scale_factor_min, scale_factor);
-//     exit(1);
-//   }
-//   p->hold->scale_factor = scale_factor;
-//   p->hold->tracker |= RT_SCALE_CHANGED;
-// }
+void rt_set_buffer_size(rt_params p, rt_uint buffer_size)
+{
+  rt_uint buffer_pow = rt_check_pow_2(buffer_size);
+  if (buffer_pow == RT_UINT_FALSE) {
+    fprintf(stderr, "%lu is an invalid buffer size: not a power of 2.\n",
+            buffer_size);
+    exit(1);
+  }
+  p->hold->buffer_size = buffer_size;
+  p->hold->tracker |= RT_BUFFER_CHANGED;
+}
 
 void rt_set_sample_rate(rt_params p, rt_real sample_rate)
 {
@@ -145,6 +138,12 @@ void rt_set_sample_rate(rt_params p, rt_real sample_rate)
   p->hold->tracker |= RT_SAMPLERATE_CHANGED;
 }
 
+/**
+ * @brief THIS IS NOT THREADSAFE
+ *
+ * @param p
+ * @param frame_size
+ */
 void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint pad_factor)
 {
   rt_uint frame_pow = rt_check_pow_2(frame_size);
@@ -167,7 +166,15 @@ void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint pad_factor)
   p->hold->frame_size = frame_size;
   p->hold->fft_size   = fft_size;
   p->hold->setup      = fft_pow - RT_FFT_MIN_POW;
-  p->hold->tracker |= RT_FFT_CHANGED;
+  // p->hold->tracker |= RT_FFT_CHANGED;
+  if (p->initialized) {
+    rt_uint i;
+    rt_flush(p);
+    for (i = 0; i < p->num_chans; i++) {
+      rt_manip_framesize_changed(p, p->chans[i]);
+    }
+  }
+  rt_update_params(p);
 }
 
 void rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,

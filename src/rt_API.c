@@ -31,8 +31,8 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
   for (i = 0; i < p->num_chans; i++) {
     p->chans[i] = rt_chan_init(p);
   }
-  p->initialized = 1;
   p->listener    = (rt_listener_t){};
+  p->initialized = 1;
   return p;
 }
 

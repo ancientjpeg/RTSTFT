@@ -39,7 +39,6 @@ rt_framebuf rt_framebuf_init(rt_params p)
   rt_uint num_real_bins = p->fft_size / 2 + 1;
   framebuf->phi_prev    = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
   framebuf->phi_cuml    = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
-  rt_framebuf_flush(p, framebuf);
 
   /**< represents per-bin phase offset in rads/hop */
   framebuf->omega = (rt_real *)malloc(sizeof(rt_real) * (num_real_bins));
@@ -66,6 +65,8 @@ rt_framebuf rt_framebuf_init(rt_params p)
     curr                   = i - RT_FFT_MIN_POW;
     framebuf->setups[curr] = pffft_new_setup(N, PFFFT_REAL);
   }
+
+  rt_framebuf_flush(p, framebuf);
 
   return framebuf;
 }
@@ -144,20 +145,22 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
     freq_true        = freq_dev_wrapped + c->framebuf->omega[i];
     rt_real phase_cuml_val   = *phase_cuml * p->retention_mod;
     rt_real phase_calc_final = freq_true * p->scale_factor * p->phase_mod;
-    phase_adj                = phase_cuml_val + phase_calc_final;
+    if (p->phase_chaos > 0.f) { // test this if performance becomes an issue
+      phase_calc_final += (rand() - (RAND_MAX >> 1)) * p->phase_chaos / RAND_MAX
+                          * 2.f * M_PI;
+    }
+    phase_adj       = phase_cuml_val + phase_calc_final;
 
-    *phase_prev              = *curr_phase_ptr;
-    *curr_phase_ptr          = wrap(phase_adj);
+    *phase_prev     = *curr_phase_ptr;
+    *curr_phase_ptr = wrap(phase_adj);
     if (isnan(*curr_phase_ptr))
       *curr_phase_ptr = 0;
     *phase_cuml = *curr_phase_ptr;
     frame_phase_index += 2;
   }
-  
-  
 
   /** revert amps and phases to complex */
-  p->hold->amp_holder[0] = frame_ptr[0];
+  p->hold->amp_holder[0]                   = frame_ptr[0];
   p->hold->amp_holder[p->fft_size / 2 - 1] = frame_ptr[1];
   frame_ptr[0] *= bin0_sign * amp_adj_rev;
   frame_ptr[1] *= binN_2_sign * amp_adj_rev;
@@ -173,7 +176,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   pffft_transform_ordered(c->framebuf->setups[p->setup], frame_ptr, frame_ptr,
                           c->framebuf->work, PFFFT_BACKWARD);
   rt_real overlap_adj = p->overlap_factor * 0.25f;
-  rt_real final_gain = p->scale_factor / (overlap_adj * p->fft_size);
+  rt_real final_gain  = p->scale_factor / (overlap_adj * p->fft_size);
   for (i = 0; i < p->fft_size; i++) {
     frame_ptr[i] *= final_gain;
   }
