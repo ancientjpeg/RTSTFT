@@ -239,21 +239,20 @@ void rt_manip_set_bins_curved(rt_params p, rt_chan c,
 
   /* curve pow should be -10 to 10 with 0. as midpoint */
   /* it will be reversed, i.e. -10 makes a flattened curve */
-  curve_pow = powf(2, -curve_pow);
+  
   rt_real this_curve, this_mod, lerp;
   rt_real value_diff = valueN - value0;
+  curve_pow = value_diff >= 0 ? -curve_pow : curve_pow;
+  curve_pow = powf(2, curve_pow);
   rt_uint bin_curr = bin0, range = binN - bin0;
   c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin_curr++)] = value0;
   c->manip->hold_manips[rt_manip_index(p, manip_flavor, binN)]       = valueN;
   do {
     this_mod   = (bin_curr - bin0) / (rt_real)range;
-    lerp       = value_diff * this_mod + value0;
-
-    this_mod   = value_diff > 0 ? this_mod : 1.f - this_mod;
     this_curve = powf(this_mod, curve_pow);
 
     c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin_curr)]
-        = lerp * this_curve;
+    = value_diff * this_curve + value0;
   } while (++bin_curr < binN);
   c->manip->manip_tracker |= (1UL << manip_flavor);
   p->hold->tracker |= RT_MANIPS_CHANGED;
