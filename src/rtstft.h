@@ -35,13 +35,15 @@ void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
                    rt_uint buffer_len);
 
 /* ========     modify    ======== */
-void rt_set_frame_size(rt_params p, rt_uint frame_size);
-void rt_set_buffer_size(rt_params p, rt_uint buffer_size);
-void rt_set_overlap(rt_params p, rt_uint overlap_factor);
-void rt_set_pad_factor(rt_params p, rt_uint pad_factor);
-void rt_set_sample_rate(rt_params p, rt_real sample_rate);
-void rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,
-                         rt_real new_val);
+void    rt_set_frame_size(rt_params p, rt_uint frame_size);
+void    rt_set_buffer_size(rt_params p, rt_uint buffer_size);
+void    rt_set_overlap(rt_params p, rt_uint overlap_factor);
+void    rt_set_pad_factor(rt_params p, rt_uint pad_factor);
+void    rt_set_sample_rate(rt_params p, rt_real sample_rate);
+void    rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,
+                            rt_real new_val);
+rt_real rt_get_param_val(rt_params p, rt_param_flavor_t param_flavor);
+rt_real rt_get_manip_val(rt_params p, rt_manip_flavor_t manip_flavor);
 
 void rt_manip_copy_manips(rt_params p, rt_chan c, rt_real *dest, rt_uint len);
 void rt_manip_overwrite_manips(rt_params p, rt_chan c, rt_real *new_manips,

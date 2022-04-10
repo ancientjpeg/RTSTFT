@@ -205,3 +205,41 @@ void rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,
   }
   p->hold->tracker |= RT_PHASE_PARAMS_CHANGED;
 }
+
+rt_real rt_get_param_val(rt_params p, rt_param_flavor_t param_flavor)
+{
+
+  switch (param_flavor) {
+  case RT_SCALE_FACTOR_MOD:
+    return p->hold->scale_factor;
+  case RT_RETENTION_MOD:
+    return p->hold->retention_mod;
+  case RT_PHASE_MOD:
+    return p->hold->phase_mod;
+  case RT_PHASE_CHAOS:
+    return p->hold->phase_chaos;
+  case RT_PARAM_GAIN_MOD:
+    return p->hold->gain_mod;
+  case RT_PARAM_GATE_MOD:
+    return p->hold->gate_mod;
+  case RT_PARAM_LIMIT_MOD:
+    return p->hold->limit_mod;
+  default:
+    return RT_REAL_ERR;
+  }
+}
+
+rt_real rt_get_manip_val(rt_params p, rt_manip_flavor_t manip_flavor)
+{
+  switch (manip_flavor) {
+
+  case RT_MANIP_GAIN:
+    return p->hold->gain_mod;
+  case RT_MANIP_GATE:
+    return p->hold->gate_mod;
+  case RT_MANIP_LIMIT:
+    return p->hold->limit_mod;
+  default:
+    return RT_REAL_ERR;
+  }
+}

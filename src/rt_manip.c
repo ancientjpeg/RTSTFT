@@ -240,7 +240,7 @@ void rt_manip_set_bins_curved(rt_params p, rt_chan c,
   /* curve pow should be -10 to 10 with 0. as midpoint */
   /* it will be reversed, i.e. -10 makes a flattened curve */
   
-  rt_real this_curve, this_mod, lerp;
+  rt_real this_curve, this_mod;
   rt_real value_diff = valueN - value0;
   curve_pow = value_diff >= 0 ? -curve_pow : curve_pow;
   curve_pow = powf(2, curve_pow);
