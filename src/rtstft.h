@@ -46,6 +46,9 @@ void rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,
 void rt_manip_copy_manips(rt_params p, rt_chan c, rt_real *dest, rt_uint len);
 void rt_manip_overwrite_manips(rt_params p, rt_chan c, rt_real *new_manips,
                                rt_uint len);
+void rt_manip_set_bin_single(rt_params p, rt_chan c,
+                             rt_manip_flavor_t manip_flavor, rt_uint bin,
+                             rt_real value);
 
 int  rt_parse_and_execute(rt_params p, const char *arg_str);
 

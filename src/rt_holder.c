@@ -32,6 +32,10 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
   do {
     p->hold->tracker |= 1UL << i;
   } while (++i < RT_NUM_PARAMS_TRACKED);
+  for (i = 0; i < RT_MANIP_FLAVOR_COUNT; i++) {
+    p->enabled_manips
+        |= 1 << i; /**< sets all manipulation ON, except multichannel */
+  }
 }
 
 void rt_holder_clean(rt_holder hold)
@@ -44,6 +48,9 @@ void rt_update_params(rt_params p)
 {
   const rt_holder h = p->hold;
 
+  if ((p->hold->tracker & RT_MANIPS_CHANGED) && p->initialized) {
+    rt_update_manips(p);
+  }
   p->frame_size     = h->frame_size;
   p->fft_size       = h->fft_size;
   p->overlap_factor = h->overlap_factor;
@@ -64,12 +71,11 @@ void rt_update_params(rt_params p)
   p->hop_a          = p->frame_size / p->overlap_factor;
   p->hop_s          = lround(p->hop_a * p->scale_factor);
   rt_uint i;
-  for (i = 0; i < RT_MANIP_FLAVOR_COUNT; i++) {
-    p->enabled_manips
-        |= 1 << i; /**< sets all manipulation ON, except multichannel */
-  }
-  if ((p->hold->tracker & RT_MANIPS_CHANGED) && p->initialized) {
-    rt_update_manips(p);
+  if (p->hold->tracker & RT_FFT_CHANGED && p->initialized) {
+    rt_flush(p);
+    for (i = 0; i < p->num_chans; i++) {
+      rt_manip_framesize_changed(p, p->chans[i]);
+    }
   }
   p->hold->tracker = 0;
 }
@@ -166,15 +172,7 @@ void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint pad_factor)
   p->hold->frame_size = frame_size;
   p->hold->fft_size   = fft_size;
   p->hold->setup      = fft_pow - RT_FFT_MIN_POW;
-  // p->hold->tracker |= RT_FFT_CHANGED;
-  if (p->initialized) {
-    rt_uint i;
-    rt_flush(p);
-    for (i = 0; i < p->num_chans; i++) {
-      rt_manip_framesize_changed(p, p->chans[i]);
-    }
-  }
-  rt_update_params(p);
+  p->hold->tracker |= RT_FFT_CHANGED;
 }
 
 void rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,
