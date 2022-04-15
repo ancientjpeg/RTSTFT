@@ -76,22 +76,17 @@ void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
 {
   rt_chan c = p->chans[channel_index];
   while (buffer_len > 0) {
-    if (!p->initialized) {
-      *buffer = 0.f;
+    rt_fifo_enqueue_one(c->in, *buffer);
+    if (rt_fifo_payload(c->in) >= p->frame_size && c->fft_ready) {
+      rt_digest_frame(p, c);
+      c->fft_ready = 0;
+    }
+
+    if (rt_fifo_readable(c->out)) {
+      rt_fifo_dequeue_one(c->out, buffer);
     }
     else {
-      rt_fifo_enqueue_one(c->in, *buffer);
-      if (rt_fifo_payload(c->in) >= p->frame_size) {
-        rt_params_check_mod(p);
-        rt_digest_frame(p, c);
-      }
-
-      if (rt_fifo_readable(c->out)) {
-        rt_fifo_dequeue_one(c->out, buffer);
-      }
-      else {
-        *buffer = 0.;
-      }
+      *buffer = 0.;
     }
     ++buffer;
     --buffer_len;

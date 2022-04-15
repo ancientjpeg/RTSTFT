@@ -16,13 +16,12 @@
 #include "rt_globals.h"
 #include "rt_parser/rt_parser.h"
 
-#define RT_FFT_CHANGED (1UL << 0)
-#define RT_BUFFER_CHANGED (1UL << 1)
-#define RT_OVERLAP_CHANGED (1UL << 2)
-#define RT_SAMPLERATE_CHANGED (1UL << 3)
-#define RT_MANIPS_CHANGED (1UL << 4)
-#define RT_PHASE_PARAMS_CHANGED (1UL << 5)
-#define RT_NUM_PARAMS_TRACKED (6)
+#define RT_BUFFER_CHANGED (1UL << 0)
+#define RT_OVERLAP_CHANGED (1UL << 1)
+#define RT_SAMPLERATE_CHANGED (1UL << 2)
+#define RT_MANIPS_CHANGED (1UL << 3)
+#define RT_PHASE_PARAMS_CHANGED (1UL << 4)
+#define RT_NUM_PARAMS_TRACKED (5)
 
 /* see rt_parser.h for manip_flavor define */
 typedef struct RTSTFT_Manip {
@@ -44,7 +43,7 @@ typedef struct RTSTFT_Channel {
   rt_framebuf framebuf;
   rt_fifo     in, out;
   rt_manip    manip;
-  rt_uint     this_index;
+  rt_uint     this_index, fft_ready;
 } rt_chan_t;
 typedef rt_chan_t *rt_chan;
 
@@ -61,8 +60,8 @@ typedef struct RTSTFT_Params {
   rt_listener_t listener;
   rt_holder     hold;
   rt_parser_t   parser;
-  rt_uint       enabled_manips;
-  unsigned char manip_multichannel, initialized, cycle_lock;
+  rt_uint       enabled_manips, cycle_lock, samples_ingested;
+  unsigned char manip_multichannel, initialized;
 } rt_params_t;
 typedef rt_params_t *rt_params;
 

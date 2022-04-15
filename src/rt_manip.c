@@ -111,14 +111,17 @@ void rt_manip_framesize_changed(rt_params p, rt_chan c)
 {
   rt_uint  i, manip_index;
   rt_real *in, *out;
+  rt_real *temp = pffft_aligned_malloc(rt_manip_block_len(p) * sizeof(rt_real));
   for (i = 0; i < RT_MANIP_FLAVOR_COUNT; i++) {
     manip_index = rt_manip_index(p, i, 0);
     in          = c->manip->manips + manip_index;
-    out         = c->manip->manips + manip_index;
+    out         = temp + manip_index;
     rt_lerp_samples(in, out, c->manip->current_num_manips, p->fft_size);
     /* because help manips still need to mirror real manips */
     memcpy(in, out, p->fft_size * sizeof(rt_real));
   }
+  pffft_aligned_free(c->manip->manips);
+  c->manip->manips             = temp;
   c->manip->current_num_manips = p->fft_size;
 }
 
@@ -313,4 +316,13 @@ void rt_manip_overwrite_manips(rt_params p, rt_chan c, rt_real *new_manips,
   memcpy(c->manip->manips, new_manips, block_len * sizeof(rt_real));
   c->manip->manip_tracker = 0;
   p->hold->tracker &= ~RT_MANIPS_CHANGED;
+}
+
+rt_uint rt_manip_obtain_manip_lock(rt_manip m)
+{
+  return rt_obtain_lock(&m->manip_write_lock, 10000, 1);
+}
+void rt_manip_release_manip_lock(rt_manip m)
+{
+  rt_release_lock(&m->manip_write_lock);
 }

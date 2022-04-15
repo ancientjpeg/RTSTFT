@@ -100,34 +100,33 @@ int     rt_atodb(rt_real amp_val)
 }
 
 /**
- * @brief Waits for an rt_uint to become 0.
+ * @brief Generic function to wait for a "lock"
  *
- * @param val         Pointer to the value being waited on
- * @param timeout_us Timeout in microseconds
- * @param refresh_us Refresh rate in microseconds
- * @return rt_uint if 0, function returned because of a timeout. Else,
- * returned because the value became 0.
+ * @details In RTSTFT, a "lock" is just a boolean stored as an rt_uint, which is
+ * "locked" whenever it is nonzero. Any call to rt_obtain_lock or any of its
+ * derived functions necessitates a call to their corresponding rt_release_lock
+ * function - no destructors here!
+ *
+ * @param lock
+ * @param timeout_us
+ * @param refresh_us
+ * @return rt_uint
+ *
+ *
  */
-rt_uint rt_await_zero_val(const rt_uint *val, rt_uint timeout_us,
-                          rt_uint refresh_us)
+rt_uint rt_obtain_lock(rt_uint *lock, rt_uint timeout_us, rt_uint refresh_us)
 {
-  if (*val == 0) {
+  if (*lock == 0) {
     return RU(1);
   }
   rt_uint timeout_count = timeout_us / refresh_us;
-  while (*val != 0 && timeout_count-- > 0) {
+  while (*lock != 0 && timeout_count-- > 0) {
     rt_usleep(refresh_us);
   }
-  return timeout_count;
-}
-
-rt_uint rt_obtain_lock(rt_uint *lock)
-{
-  rt_uint got_cycle_lock = rt_await_zero_val(lock, 50000, 50);
-  if (got_cycle_lock) {
+  if (timeout_count) {
     *lock = 1;
     return RU(1);
   }
   return RU(0);
 }
-void rt_release_lock(rt_params p, rt_uint *lock) { *lock = 0; }
+void rt_release_lock(rt_uint *lock) { *lock = 0; }

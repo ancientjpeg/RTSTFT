@@ -44,9 +44,9 @@ void rt_holder_clean(rt_holder hold)
   free(hold);
 }
 
-void rt_update_fft_size(rt_params p, const rt_holder h)
+void rt_update_fft_size(rt_params p)
 {
-  rt_uint i;
+  const rt_holder h = p->hold;
   p->frame_size     = h->frame_size;
   p->fft_size       = h->fft_size;
   p->overlap_factor = h->overlap_factor;
@@ -56,13 +56,16 @@ void rt_update_fft_size(rt_params p, const rt_holder h)
   p->hop_a          = p->frame_size / p->overlap_factor;
   p->hop_s          = lround(p->hop_a * p->scale_factor);
 
-  if (p->hold->tracker & RT_FFT_CHANGED && p->initialized) {
-    p->initialized = 0;
+  rt_uint i;
+  if (p->initialized) {
+    rt_obtain_cycle_lock(p);
     for (i = 0; i < p->num_chans; i++) {
+      rt_manip_obtain_manip_lock(p->chans[i]->manip);
       rt_manip_framesize_changed(p, p->chans[i]);
+      rt_manip_release_manip_lock(p->chans[i]->manip);
     }
     rt_flush(p);
-    p->initialized = 1;
+    rt_release_cycle_lock(p);
   }
 }
 void rt_update_manips(rt_params p)
@@ -109,7 +112,7 @@ void rt_update_params(rt_params p)
   p->gate_mod      = h->gate_mod;
   p->limit_mod     = h->limit_mod;
 
-  p->hold->tracker &= (RT_FFT_CHANGED | RT_MANIPS_CHANGED);
+  p->hold->tracker = 0;
 }
 
 /**
@@ -196,7 +199,6 @@ void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint pad_factor)
   p->hold->frame_size = frame_size;
   p->hold->fft_size   = fft_size;
   p->hold->setup      = fft_pow - RT_FFT_MIN_POW;
-  p->hold->tracker |= RT_FFT_CHANGED;
 }
 
 void rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,

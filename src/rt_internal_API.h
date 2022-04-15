@@ -91,7 +91,7 @@ void   rt_hamming(rt_real *data, rt_uint len);
 #define rt_sleep(s) sleep((s))
 #endif
 
-rt_uint rt_obtain_lock(rt_uint *lock);
+rt_uint rt_obtain_lock(rt_uint *lock, rt_uint timeout_us, rt_uint refresh_us);
 void    rt_release_lock(rt_uint *lock);
 
 #endif

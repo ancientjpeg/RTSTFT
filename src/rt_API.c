@@ -23,6 +23,7 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
   p->num_chans          = num_channels;
   rt_holder_init(p, num_channels, frame_size, buffer_size, overlap_factor,
                  pad_factor, sample_rate);
+  rt_update_fft_size(p);
   rt_update_params(p);
   p->phase_mod = 1.0;
   rt_parser_clear_buffer(&(p->parser));
@@ -31,8 +32,9 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
   for (i = 0; i < p->num_chans; i++) {
     p->chans[i] = rt_chan_init(p);
   }
-  p->listener    = (rt_listener_t){};
-  p->initialized = 1;
+  p->listener         = (rt_listener_t){};
+  p->samples_ingested = 0;
+  p->initialized      = 1;
   return p;
 }
 
@@ -44,6 +46,7 @@ void rt_flush(rt_params p)
     rt_fifo_flush(p->chans[i]->out);
     rt_framebuf_flush(p, p->chans[i]->framebuf);
   }
+  p->samples_ingested = 0;
 }
 rt_params rt_clean(rt_params p)
 {
@@ -57,11 +60,6 @@ rt_params rt_clean(rt_params p)
   return (rt_params)NULL;
 }
 
-void rt_cycle_single(rt_params p, rt_real *buffer, rt_uint buffer_len)
-{
-  rt_cycle_offset(p, &buffer, 1, buffer_len, 0);
-}
-
 /**
  * @brief The simplest interface for cycling RTSTFT over a set of input buffers.
  *
@@ -71,34 +69,52 @@ void rt_cycle_single(rt_params p, rt_real *buffer, rt_uint buffer_len)
  * @param buffer_len The length of the supplied buffers.
  *
  * Do note: rt_cycle and rt_cycle_offset are the only API cycling functions that
- * will call rt_obtain_lock() and rt_release_lock() for you. When
- * using all other cycling functions, these must be called manually.
+ * will call rt_obtain_lock(), rt_release_lock(), and rt_count_samples() for
+ * you. When using all other cycling functions, these must be called manually.
  */
 void rt_cycle(rt_params p, rt_real **buffers, rt_uint buffer_len)
 {
-  if (!rt_obtain_lock(p)) {
-    return;
-  }
   rt_cycle_offset(p, buffers, p->num_chans, buffer_len, 0);
-  rt_release_lock(p);
+}
+
+void rt_cycle_single(rt_params p, rt_real *buffer, rt_uint buffer_len)
+{
+  rt_cycle_offset(p, &buffer, 1, buffer_len, 0);
 }
 
 void rt_cycle_offset(rt_params p, rt_real **buffers, rt_uint num_buffers,
                      rt_uint buffer_len, rt_uint sample_offset)
 {
-  if (!rt_obtain_lock(p)) {
+  if (!rt_obtain_cycle_lock(p)) {
     return;
+  }
+  if (rt_count_samples(p, buffer_len) && p->hold->tracker) {
+    rt_update_params(p);
   }
   rt_uint i;
   for (i = 0; i < num_buffers; i++) {
     rt_cycle_chan(p, i, buffers[i] + sample_offset, buffer_len);
   }
-  rt_release_lock(p);
+  rt_release_cycle_lock(p);
+}
+
+rt_uint rt_count_samples(rt_params p, rt_uint new_samples_to_count)
+{
+  p->samples_ingested += new_samples_to_count;
+  if (p->samples_ingested > p->fft_size) {
+    p->samples_ingested %= p->fft_size;
+    rt_uint i;
+    for (i = 0; i < p->num_chans; i++) {
+      p->chans[i]->fft_ready = 1;
+    }
+    return RU(1);
+  }
+  return RU(0);
 }
 
 rt_uint rt_obtain_cycle_lock(rt_params p)
 {
-  return rt_obtain_lock(&p->cycle_lock);
+  return rt_obtain_lock(&p->cycle_lock, 50000, 50);
 }
 void rt_release_cycle_lock(rt_params p) { rt_release_lock(&p->cycle_lock); }
 
