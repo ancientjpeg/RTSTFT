@@ -28,6 +28,7 @@ rt_manip rt_manip_init(rt_params p)
   rt_manip m            = (rt_manip)malloc(sizeof(rt_manip_t));
   rt_uint  len          = rt_manip_block_len(p);
   m->manip_tracker      = 0;
+  m->manip_write_lock   = 0;
   m->current_num_manips = p->fft_size;
   m->manips             = pffft_aligned_malloc(len * sizeof(rt_real));
   m->hold_manips        = pffft_aligned_malloc(len * sizeof(rt_real));
@@ -153,7 +154,8 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
     for (i = 0; i < manip_len - 1; i++) {
       frame_ptr[i * 2] *= fmax(manips[manip_index++] + p->gain_mod, 0.f);
     }
-    frame_ptr[1] *= fmax(manips[manip_index] + p->gain_mod, 0.f); // assign N/2 bin
+    frame_ptr[1]
+        *= fmax(manips[manip_index] + p->gain_mod, 0.f); // assign N/2 bin
   }
 
   /**
@@ -200,6 +202,9 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
 void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
                        rt_uint bin0, rt_uint binN, rt_real value)
 {
+  if (c->manip->manip_write_lock) {
+    return;
+  }
   if (p->manip_multichannel == 0 && c != p->chans[0]) {
     fprintf(stderr, "Cannot set stereo manips when multichannel is disabled");
     exit(1);
@@ -218,6 +223,9 @@ void rt_manip_set_bin_single(rt_params p, rt_chan c,
                              rt_manip_flavor_t manip_flavor, rt_uint bin,
                              rt_real value)
 {
+  if (c->manip->manip_write_lock) {
+    return;
+  }
   if (p->manip_multichannel == 0 && c != p->chans[0]) {
     fprintf(stderr, "Cannot set stereo manips when multichannel is disabled");
     exit(1);
@@ -232,6 +240,9 @@ void rt_manip_set_bins_curved(rt_params p, rt_chan c,
                               rt_uint binN, rt_real value0, rt_real valueN,
                               rt_real curve_pow)
 {
+  if (c->manip->manip_write_lock) {
+    return;
+  }
   if (p->manip_multichannel == 0 && c != p->chans[0]) {
     fprintf(stderr, "Cannot set stereo manips when multichannel is disabled");
     exit(1);
@@ -239,11 +250,11 @@ void rt_manip_set_bins_curved(rt_params p, rt_chan c,
 
   /* curve pow should be -10 to 10 with 0. as midpoint */
   /* it will be reversed, i.e. -10 makes a flattened curve */
-  
+
   rt_real this_curve, this_mod;
   rt_real value_diff = valueN - value0;
-  curve_pow = value_diff >= 0 ? -curve_pow : curve_pow;
-  curve_pow = powf(2, curve_pow);
+  curve_pow          = value_diff >= 0 ? -curve_pow : curve_pow;
+  curve_pow          = powf(2, curve_pow);
   rt_uint bin_curr = bin0, range = binN - bin0;
   c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin_curr++)] = value0;
   c->manip->hold_manips[rt_manip_index(p, manip_flavor, binN)]       = valueN;
@@ -252,7 +263,7 @@ void rt_manip_set_bins_curved(rt_params p, rt_chan c,
     this_curve = powf(this_mod, curve_pow);
 
     c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin_curr)]
-    = value_diff * this_curve + value0;
+        = value_diff * this_curve + value0;
   } while (++bin_curr < binN);
   c->manip->manip_tracker |= (1UL << manip_flavor);
   p->hold->tracker |= RT_MANIPS_CHANGED;

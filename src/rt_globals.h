@@ -25,8 +25,12 @@ typedef float        rt_real;
 
 #if UINT_MAX < 4294967295
 typedef unsigned long rt_uint;
+#define RU(literal) (literal##UL)
+#define ru "%lu"
 #else
 typedef unsigned int rt_uint;
+#define RU(literal) (literal##U)
+#define ru "%u"
 #endif
 
 #define RT_UINT_FALSE ((rt_uint)-1)

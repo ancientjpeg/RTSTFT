@@ -25,13 +25,6 @@ double fastPow(double a, double b)
   return u.d;
 }
 
-rt_real rt_dbtoa(rt_real db_val) { return fastPow(10.f, (db_val) / 20.f); }
-int     rt_atodb(rt_real amp_val)
-{
-  rt_real ret = 20.f * log10f(amp_val);
-  return amp_val > 0.f ? ret : INT_MIN;
-}
-
 void rt_hanning(rt_real *data, rt_uint len)
 {
   rt_uint n;
@@ -70,8 +63,71 @@ void rt_lerp_samples(rt_real *in, rt_real *out, rt_uint len_I, rt_uint len_O)
   }
 }
 
-rt_uint rt_log2_floor(rt_uint num) {
+rt_uint rt_log2_floor(rt_uint num)
+{
   int power = 0;
-  while(num >> (power++) > 0);
+  while (num >> (power++) > 0)
+    ;
   return power;
 }
+
+rt_uint rt_check_pow_2(rt_uint num)
+{
+  rt_uint i = 0, check;
+  do {
+    check = RU(1) << i;
+    if (check & num) {
+      if (~check & num) {
+        fprintf(stderr,
+                "FFT size must be a power of two. Supplied value: " ru "\n",
+                num);
+        return RT_UINT_FALSE;
+      }
+      return i;
+    }
+  } while (i++ < RT_FFT_MAX_POW);
+
+  fprintf(stderr, "%lu is an invalid frame size. Must be greater than %lu.\n",
+          num, 1UL << RT_FFT_MIN_POW);
+  return RT_UINT_FALSE;
+}
+
+rt_real rt_dbtoa(rt_real db_val) { return fastPow(10.f, (db_val) / 20.f); }
+int     rt_atodb(rt_real amp_val)
+{
+  rt_real ret = 20.f * log10f(amp_val);
+  return amp_val > 0.f ? ret : INT_MIN;
+}
+
+/**
+ * @brief Waits for an rt_uint to become 0.
+ *
+ * @param val         Pointer to the value being waited on
+ * @param timeout_us Timeout in microseconds
+ * @param refresh_us Refresh rate in microseconds
+ * @return rt_uint if 0, function returned because of a timeout. Else,
+ * returned because the value became 0.
+ */
+rt_uint rt_await_zero_val(const rt_uint *val, rt_uint timeout_us,
+                          rt_uint refresh_us)
+{
+  if (*val == 0) {
+    return RU(1);
+  }
+  rt_uint timeout_count = timeout_us / refresh_us;
+  while (*val != 0 && timeout_count-- > 0) {
+    rt_usleep(refresh_us);
+  }
+  return timeout_count;
+}
+
+rt_uint rt_obtain_lock(rt_uint *lock)
+{
+  rt_uint got_cycle_lock = rt_await_zero_val(lock, 50000, 50);
+  if (got_cycle_lock) {
+    *lock = 1;
+    return RU(1);
+  }
+  return RU(0);
+}
+void rt_release_lock(rt_params p, rt_uint *lock) { *lock = 0; }

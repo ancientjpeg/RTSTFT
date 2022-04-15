@@ -57,14 +57,6 @@ rt_params rt_clean(rt_params p)
   return (rt_params)NULL;
 }
 
-void rt_start_cycle(rt_params p)
-{
-  p->cycle_info |= RT_IN_CYCLE;
-  p->cycle_info |= RT_AT_CYCLE_START;
-  rt_update_params(p);
-}
-void rt_end_cycle(rt_params p) { p->cycle_info = 0; }
-
 void rt_cycle_single(rt_params p, rt_real *buffer, rt_uint buffer_len)
 {
   rt_cycle_offset(p, &buffer, 1, buffer_len, 0);
@@ -78,45 +70,37 @@ void rt_cycle_single(rt_params p, rt_real *buffer, rt_uint buffer_len)
  * RTSTFT has channels.
  * @param buffer_len The length of the supplied buffers.
  *
- * Do note: rt_cycle is the only API cycling function that will call
- * rt_start_cycle() and rt_end_cycle() for you. When using all other cycling
- * functions, these must be called manually.
+ * Do note: rt_cycle and rt_cycle_offset are the only API cycling functions that
+ * will call rt_obtain_lock() and rt_release_lock() for you. When
+ * using all other cycling functions, these must be called manually.
  */
 void rt_cycle(rt_params p, rt_real **buffers, rt_uint buffer_len)
 {
-  rt_start_cycle(p);
+  if (!rt_obtain_lock(p)) {
+    return;
+  }
   rt_cycle_offset(p, buffers, p->num_chans, buffer_len, 0);
-  rt_end_cycle(p);
+  rt_release_lock(p);
 }
 
 void rt_cycle_offset(rt_params p, rt_real **buffers, rt_uint num_buffers,
                      rt_uint buffer_len, rt_uint sample_offset)
 {
+  if (!rt_obtain_lock(p)) {
+    return;
+  }
   rt_uint i;
   for (i = 0; i < num_buffers; i++) {
     rt_cycle_chan(p, i, buffers[i] + sample_offset, buffer_len);
   }
+  rt_release_lock(p);
 }
 
-rt_uint rt_check_pow_2(rt_uint num)
+rt_uint rt_obtain_cycle_lock(rt_params p)
 {
-  rt_uint i = 0, check;
-  do {
-    check = 1UL << i;
-    if (check & num) {
-      if (~check & num) {
-        fprintf(stderr,
-                "FFT size must be a power of two. Supplied value: %lu\n", num);
-        return RT_UINT_FALSE;
-      }
-      return i;
-    }
-  } while (i++ < RT_FFT_MAX_POW);
-
-  fprintf(stderr, "%lu is an invalid frame size. Must be greater than %lu.\n",
-          num, 1UL << RT_FFT_MIN_POW);
-  return RT_UINT_FALSE;
+  return rt_obtain_lock(&p->cycle_lock);
 }
+void rt_release_cycle_lock(rt_params p) { rt_release_lock(&p->cycle_lock); }
 
 rt_listener_return_t rt_get_empty_listener_data()
 {

@@ -77,5 +77,21 @@ void   rt_hamming(rt_real *data, rt_uint len);
 #define rt_window rt_hanning
 
 /* ======== MISC UTILS ======== */
+// https://stackoverflow.com/questions/14818084/what-is-the-proper-include-for-the-function-sleep
+
+#ifdef _WIN32
+#include <Windows.h>
+#define rt_usleep(us) Sleep((us) / 1000)
+#define rt_msleep(ms) Sleep((ms))
+#define rt_sleep(s) Sleep((s)*1000)
+#else
+#include <unistd.h>
+#define rt_usleep(us) usleep((us))
+#define rt_msleep(ms) usleep((ms)*1000)
+#define rt_sleep(s) sleep((s))
+#endif
+
+rt_uint rt_obtain_lock(rt_uint *lock);
+void    rt_release_lock(rt_uint *lock);
 
 #endif

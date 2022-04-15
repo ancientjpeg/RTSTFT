@@ -102,6 +102,5 @@ void rt_params_check_mod(rt_params p)
 {
   if (p->hold->tracker) {
     rt_update_params(p);
-    p->cycle_info &= ~RT_AT_CYCLE_START;
   }
 }

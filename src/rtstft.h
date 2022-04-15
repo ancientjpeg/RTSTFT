@@ -25,14 +25,14 @@ void      rt_flush(rt_params p);
 rt_params rt_clean(rt_params p);
 
 /* ========     cycle    ======== */
-void rt_start_cycle(rt_params p);
-void rt_end_cycle(rt_params p);
-void rt_cycle(rt_params p, rt_real **buffers, rt_uint buffer_len);
-void rt_cycle_single(rt_params p, rt_real *buffer, rt_uint buffer_len);
-void rt_cycle_offset(rt_params p, rt_real **buffers, rt_uint num_buffers,
-                     rt_uint buffer_len, rt_uint sample_offset);
-void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
-                   rt_uint buffer_len);
+rt_uint rt_obtain_cycle_lock(rt_params p);
+void    rt_release_cycle_lock(rt_params p);
+void    rt_cycle(rt_params p, rt_real **buffers, rt_uint buffer_len);
+void    rt_cycle_single(rt_params p, rt_real *buffer, rt_uint buffer_len);
+void    rt_cycle_offset(rt_params p, rt_real **buffers, rt_uint num_buffers,
+                        rt_uint buffer_len, rt_uint sample_offset);
+void    rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
+                      rt_uint buffer_len);
 
 /* ========     modify    ======== */
 void    rt_set_frame_size(rt_params p, rt_uint frame_size);
