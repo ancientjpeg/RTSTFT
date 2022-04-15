@@ -44,9 +44,26 @@ void rt_holder_clean(rt_holder hold)
   free(hold);
 }
 
+/**
+ * @brief A function called before every FFT block is processed to update
+ * parameters, used to ensure threadsafety.
+ *
+ * @details This function is integral the the thread-safe functionality of
+ * RTSTFT. First, rt_manips are updated; this ensures that, if the FFT size has
+ * also changed, that the manips will first be written, *then* scaled.
+ *
+ * Note that you can also call this function manually. How that might work, for
+ * instance, would be disabling your host program's audio processing, editing
+ * the internals of your rt_params, and then running rt_update_params(p). This
+ * is useful for things like copying in whole blocks of manips, which might take
+ * a bit too long to execute in a realtime audio plugin.
+ *
+ * @param p The active rt_params instance
+ */
 void rt_update_params(rt_params p)
 {
   const rt_holder h = p->hold;
+  rt_uint         i;
 
   if ((p->hold->tracker & RT_MANIPS_CHANGED) && p->initialized) {
     rt_update_manips(p);
@@ -58,25 +75,27 @@ void rt_update_params(rt_params p)
   p->pad_offset     = (p->fft_size - p->frame_size) / 2;
   p->setup          = h->setup;
   p->sample_rate    = h->sample_rate;
-
-  p->scale_factor   = h->scale_factor;
-  p->retention_mod  = h->retention_mod;
-  p->phase_mod      = h->phase_mod;
-  p->phase_chaos    = h->phase_chaos;
-  p->gain_mod       = h->gain_mod;
-  p->gate_mod       = h->gate_mod;
-  p->limit_mod      = h->limit_mod;
-
   p->buffer_size    = h->buffer_size;
   p->hop_a          = p->frame_size / p->overlap_factor;
   p->hop_s          = lround(p->hop_a * p->scale_factor);
-  rt_uint i;
+
   if (p->hold->tracker & RT_FFT_CHANGED && p->initialized) {
-    rt_flush(p);
+    p->initialized = 0;
     for (i = 0; i < p->num_chans; i++) {
       rt_manip_framesize_changed(p, p->chans[i]);
     }
+    rt_flush(p);
+    p->initialized = 1;
   }
+
+  p->scale_factor  = h->scale_factor;
+  p->retention_mod = h->retention_mod;
+  p->phase_mod     = h->phase_mod;
+  p->phase_chaos   = h->phase_chaos;
+  p->gain_mod      = h->gain_mod;
+  p->gate_mod      = h->gate_mod;
+  p->limit_mod     = h->limit_mod;
+
   p->hold->tracker = 0;
 }
 
