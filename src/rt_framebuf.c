@@ -22,9 +22,10 @@
  * frequencies of each FFT bin, or more accurately, the calculated phase offset
  * of a certain bin after hop_a samples. This is measured in radians.
  *
- * phi_prev is the analyzed frequencies from the previous frame. phi_cuml is the
- * current, calculated phase offset at each bin-this parameter is incremented by
- * the current calculated phase offset, and then wrapped, for each frame.
+ * phi_a_prev is the analyzed frequencies from the previous frame. phi_s_cuml is
+ * the current, calculated phase offset at each bin-this parameter is
+ * incremented by the current calculated phase offset, and then wrapped, for
+ * each frame.
  *
  */
 rt_framebuf rt_framebuf_init(rt_params p)
@@ -36,15 +37,18 @@ rt_framebuf rt_framebuf_init(rt_params p)
    * unneeded for phase vocoder, but keeping for posterity
    *
    */
-  rt_uint num_real_bins = p->fft_max / 2 + 1;
-  framebuf->phi_prev    = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
-  framebuf->phi_cuml    = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
+  rt_uint num_real_bins    = p->fft_max / 2 + 1;
+  framebuf->phi_a_prev     = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
+  framebuf->delta_phi_prev = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
+  framebuf->phi_s_cuml     = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
 
   /**< represents per-bin phase offset in rads/hop */
   framebuf->omega = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
   rt_uint i;
   for (i = 0; i < num_real_bins; i++) {
-    framebuf->omega[i] = ((rt_real)i / p->fft_size) * 2 * M_PI * p->hop_a;
+    /** get angular frequency as w = 2pi * i * hop_a / N, which simplifies to
+     * 2pi * i / overlap_factor */
+    framebuf->omega[i] = ((rt_real)i / p->overlap_factor) * 2 * M_PI;
   }
 
   /**
@@ -74,7 +78,9 @@ rt_framebuf rt_framebuf_init(rt_params p)
 void rt_framebuf_flush(rt_params p, rt_framebuf framebuf)
 {
   rt_uint num_real_bins = p->fft_max / 2 + 1;
-  memset(framebuf->phi_cuml, 0, num_real_bins * sizeof(rt_real));
+  memset(framebuf->phi_a_prev, 0, num_real_bins * sizeof(rt_real));
+  memset(framebuf->delta_phi_prev, 0, num_real_bins * sizeof(rt_real));
+  memset(framebuf->phi_s_cuml, 0, num_real_bins * sizeof(rt_real));
 }
 
 /**
@@ -92,8 +98,9 @@ rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf)
     rt_uint curr = i - RT_FFT_MIN_POW;
     pffft_destroy_setup(framebuf->setups[curr]);
   }
-  free(framebuf->phi_prev);
-  free(framebuf->phi_cuml);
+  free(framebuf->phi_a_prev);
+  free(framebuf->phi_s_cuml);
+  free(framebuf->delta_phi_prev);
   free(framebuf->omega);
   free(framebuf);
   return NULL;
@@ -106,8 +113,9 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   rt_real *frame_ptr = c->framebuf->frame;
   rt_uint  i;
   rt_real  real, imag, amp, phase;
-  rt_real  freq_dev, freq_dev_wrapped, freq_true, phase_adj;
-  rt_real *phase_prev, *phase_cuml, *curr_phase_ptr;
+  rt_real  delta_phi, phase_adj, phase_cuml_val, phase_calc_final,
+      phase_chaos_curr = 1.f;
+  rt_real *phi_a_prev, *delta_phi_prev, *phi_s_cuml, *curr_phase_ptr;
   rt_real  amp_adj_rev = (rt_real)rt_log2_floor(p->fft_size),
           amp_adj      = 1.f / amp_adj_rev;
   signed char bin0_sign, binN_2_sign;
@@ -137,26 +145,33 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   /** phase adjustment */
   rt_uint frame_phase_index = 3;
   for (i = 1; i < p->fft_size / 2; i++) {
-    phase_prev       = c->framebuf->phi_prev + i;
-    phase_cuml       = c->framebuf->phi_cuml + i;
-    curr_phase_ptr   = frame_ptr + (frame_phase_index);
+    phi_a_prev     = c->framebuf->phi_a_prev + i;
+    delta_phi_prev = c->framebuf->delta_phi_prev + i;
+    phi_s_cuml     = c->framebuf->phi_s_cuml + i;
+    curr_phase_ptr = frame_ptr + (frame_phase_index);
 
-    freq_dev         = *curr_phase_ptr - *phase_prev - c->framebuf->omega[i];
-    freq_dev_wrapped = wrap(freq_dev);
-    freq_true        = freq_dev_wrapped + c->framebuf->omega[i];
-    rt_real phase_cuml_val   = *phase_cuml * p->retention_mod;
-    rt_real phase_calc_final = freq_true * p->scale_factor * p->phase_mod;
-    if (p->phase_chaos > 0.f) { // test this if performance becomes an issue
-      phase_calc_final += (rand() - (RAND_MAX >> 1)) * p->phase_chaos / RAND_MAX
-                          * 2.f * M_PI;
+    delta_phi      = *curr_phase_ptr - *phi_a_prev - c->framebuf->omega[i];
+    delta_phi      = c->framebuf->omega[i] + wrap(delta_phi);
+
+    /** save the correct, pitch-accurate phase */
+    phase_adj = *phi_s_cuml * p->retention_mod
+                + *delta_phi_prev * p->scale_factor * p->phase_mod;
+    if (isnan(phase_adj)) {
+      phase_adj = 0;
     }
-    phase_adj       = phase_cuml_val + phase_calc_final;
+    if (p->phase_chaos > 0.f) {
+      phase_adj += (rand() - (float)(RAND_MAX >> 1)) / RAND_MAX * p->phase_chaos
+                   * 2 * M_PI;
+    }
 
-    *phase_prev     = *curr_phase_ptr;
-    *curr_phase_ptr = wrap(phase_adj);
-    if (isnan(*curr_phase_ptr))
-      *curr_phase_ptr = 0;
-    *phase_cuml = *curr_phase_ptr;
+    *delta_phi_prev = delta_phi;
+    *phi_s_cuml     = wrap(phase_adj);
+
+    *phi_a_prev     = *curr_phase_ptr;
+    *curr_phase_ptr = *phi_s_cuml;
+    if (isnan(*curr_phase_ptr)) {
+      exit(57); // TEST
+    }
     frame_phase_index += 2;
   }
 

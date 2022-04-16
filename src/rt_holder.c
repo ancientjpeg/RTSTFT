@@ -49,9 +49,11 @@ void rt_update_fft_size(rt_params p)
     exit(72);
   };
   rt_uint i;
-  for (i = 0; i < p->num_chans; i++) {
-    if (!rt_manip_obtain_manip_lock(p->chans[i]->manip)) {
-      exit(72);
+  if (p->initialized) {
+    for (i = 0; i < p->num_chans; i++) {
+      if (!rt_manip_obtain_manip_lock(p->chans[i]->manip)) {
+        exit(72);
+      }
     }
   }
   const rt_holder h = p->hold;
@@ -68,9 +70,9 @@ void rt_update_fft_size(rt_params p)
       rt_manip_framesize_changed(p, p->chans[i]);
     }
     rt_flush(p);
-  }
-  for (i = 0; i < p->num_chans; i++) {
-    rt_manip_release_manip_lock(p->chans[i]->manip);
+    for (i = 0; i < p->num_chans;
+         rt_manip_release_manip_lock(p->chans[i++]->manip))
+      ;
   }
   rt_release_cycle_lock(p);
 }
