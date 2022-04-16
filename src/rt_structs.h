@@ -43,7 +43,7 @@ typedef struct RTSTFT_Channel {
   rt_framebuf framebuf;
   rt_fifo     in, out;
   rt_manip    manip;
-  rt_uint     this_index, frames_ready;
+  rt_uint     frames_ready;
 } rt_chan_t;
 typedef rt_chan_t *rt_chan;
 
