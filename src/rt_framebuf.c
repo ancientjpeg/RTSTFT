@@ -36,12 +36,12 @@ rt_framebuf rt_framebuf_init(rt_params p)
    * unneeded for phase vocoder, but keeping for posterity
    *
    */
-  rt_uint num_real_bins = p->fft_size / 2 + 1;
+  rt_uint num_real_bins = p->fft_max / 2 + 1;
   framebuf->phi_prev    = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
   framebuf->phi_cuml    = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
 
   /**< represents per-bin phase offset in rads/hop */
-  framebuf->omega = (rt_real *)malloc(sizeof(rt_real) * (num_real_bins));
+  framebuf->omega = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
   rt_uint i;
   for (i = 0; i < num_real_bins; i++) {
     framebuf->omega[i] = ((rt_real)i / p->fft_size) * 2 * M_PI * p->hop_a;
@@ -73,7 +73,7 @@ rt_framebuf rt_framebuf_init(rt_params p)
 
 void rt_framebuf_flush(rt_params p, rt_framebuf framebuf)
 {
-  rt_uint num_real_bins = p->fft_size / 2 + 1;
+  rt_uint num_real_bins = p->fft_max / 2 + 1;
   memset(framebuf->phi_cuml, 0, num_real_bins * sizeof(rt_real));
 }
 

@@ -45,9 +45,6 @@ void rt_holder_clean(rt_holder hold)
 
 void rt_update_fft_size(rt_params p)
 {
-  if (p->initialized) {
-    return;
-  }
   if (!rt_obtain_cycle_lock(p)) {
     exit(72);
   };
@@ -59,7 +56,6 @@ void rt_update_fft_size(rt_params p)
   p->pad_offset     = (p->fft_size - p->frame_size) / 2;
   p->setup          = h->setup;
   p->hop_a          = p->frame_size / p->overlap_factor;
-  p->hop_s          = (rt_uint)lround(p->hop_a * p->scale_factor);
 
   rt_uint i;
   if (p->initialized) {
@@ -115,6 +111,8 @@ void rt_update_params(rt_params p)
   p->gain_mod      = h->gain_mod;
   p->gate_mod      = h->gate_mod;
   p->limit_mod     = h->limit_mod;
+  
+  p->hop_s          = (rt_uint)lround(p->hop_a * p->scale_factor);
 
   p->hold->tracker = 0;
 }

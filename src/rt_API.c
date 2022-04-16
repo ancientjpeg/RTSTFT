@@ -105,7 +105,7 @@ rt_uint rt_count_samples(rt_params p, rt_uint new_samples_to_count)
     p->samples_ingested -= p->fft_size;
     for (i = 0; i < p->num_chans; ++p->chans[i++]->frames_ready);
   }
-  return p->samples_ingested > 0;
+  return i > 0;
 }
 
 rt_uint rt_obtain_cycle_lock(rt_params p)
