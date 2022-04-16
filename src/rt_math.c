@@ -117,6 +117,7 @@ int     rt_atodb(rt_real amp_val)
 rt_uint rt_obtain_lock(rt_uint *lock, rt_uint timeout_us, rt_uint refresh_us)
 {
   if (*lock == 0) {
+    *lock = 1;
     return RU(1);
   }
   rt_uint timeout_count = timeout_us / refresh_us;

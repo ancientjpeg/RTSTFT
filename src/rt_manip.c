@@ -28,7 +28,7 @@ rt_manip rt_manip_init(rt_params p)
   rt_manip m            = (rt_manip)malloc(sizeof(rt_manip_t));
   rt_uint  len          = rt_manip_block_len(p);
   m->manip_tracker      = 0;
-  m->manip_write_lock   = 0;
+  m->manip_lock         = 0;
   m->current_num_manips = p->fft_size;
   m->manips             = pffft_aligned_malloc(len * sizeof(rt_real));
   m->hold_manips        = pffft_aligned_malloc(len * sizeof(rt_real));
@@ -205,7 +205,7 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
 void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
                        rt_uint bin0, rt_uint binN, rt_real value)
 {
-  if (c->manip->manip_write_lock) {
+  if (!rt_manip_obtain_manip_lock(c->manip)) {
     return;
   }
   if (p->manip_multichannel == 0 && c != p->chans[0]) {
@@ -221,12 +221,13 @@ void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
 
   c->manip->manip_tracker |= (1UL << manip_flavor);
   p->hold->tracker |= RT_MANIPS_CHANGED;
+  rt_manip_release_manip_lock(c->manip);
 }
 void rt_manip_set_bin_single(rt_params p, rt_chan c,
                              rt_manip_flavor_t manip_flavor, rt_uint bin,
                              rt_real value)
 {
-  if (c->manip->manip_write_lock) {
+  if (!rt_manip_obtain_manip_lock(c->manip)) {
     return;
   }
   if (p->manip_multichannel == 0 && c != p->chans[0]) {
@@ -236,6 +237,7 @@ void rt_manip_set_bin_single(rt_params p, rt_chan c,
   c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin)] = value;
   c->manip->manip_tracker |= (1UL << manip_flavor);
   p->hold->tracker |= RT_MANIPS_CHANGED;
+  rt_manip_release_manip_lock(c->manip);
 }
 
 void rt_manip_set_bins_curved(rt_params p, rt_chan c,
@@ -243,7 +245,7 @@ void rt_manip_set_bins_curved(rt_params p, rt_chan c,
                               rt_uint binN, rt_real value0, rt_real valueN,
                               rt_real curve_pow)
 {
-  if (c->manip->manip_write_lock) {
+  if (!rt_manip_obtain_manip_lock(c->manip)) {
     return;
   }
   if (p->manip_multichannel == 0 && c != p->chans[0]) {
@@ -270,6 +272,7 @@ void rt_manip_set_bins_curved(rt_params p, rt_chan c,
   } while (++bin_curr < binN);
   c->manip->manip_tracker |= (1UL << manip_flavor);
   p->hold->tracker |= RT_MANIPS_CHANGED;
+  rt_manip_release_manip_lock(c->manip);
 }
 
 /* ========================        utils       ======================== */
@@ -320,9 +323,9 @@ void rt_manip_overwrite_manips(rt_params p, rt_chan c, rt_real *new_manips,
 
 rt_uint rt_manip_obtain_manip_lock(rt_manip m)
 {
-  return rt_obtain_lock(&m->manip_write_lock, 10000, 1);
+  return rt_obtain_lock(&m->manip_lock, 10000, 1);
 }
 void rt_manip_release_manip_lock(rt_manip m)
 {
-  rt_release_lock(&m->manip_write_lock);
+  rt_release_lock(&m->manip_lock);
 }

@@ -25,7 +25,7 @@
 
 /* see rt_parser.h for manip_flavor define */
 typedef struct RTSTFT_Manip {
-  rt_uint  manip_tracker, current_num_manips, manip_write_lock;
+  rt_uint  manip_tracker, current_num_manips, manip_lock;
   rt_real *manips, *hold_manips;
 } rt_manip_t;
 typedef rt_manip_t *rt_manip;
@@ -43,7 +43,7 @@ typedef struct RTSTFT_Channel {
   rt_framebuf framebuf;
   rt_fifo     in, out;
   rt_manip    manip;
-  rt_uint     this_index, fft_ready;
+  rt_uint     this_index, frames_ready;
 } rt_chan_t;
 typedef rt_chan_t *rt_chan;
 

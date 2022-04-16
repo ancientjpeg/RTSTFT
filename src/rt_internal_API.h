@@ -26,7 +26,6 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
                     rt_uint buffer_size, rt_uint overlap_factor,
                     rt_uint pad_factor, rt_real sample_rate);
 void rt_holder_clean(rt_holder hold);
-void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint pad_factor);
 void rt_update_params(rt_params p);
 void rt_update_manips(rt_params p);
 void rt_params_check_mod(rt_params p);

@@ -25,7 +25,6 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
                  pad_factor, sample_rate);
   rt_update_fft_size(p);
   rt_update_params(p);
-  p->phase_mod = 1.0;
   rt_parser_clear_buffer(&(p->parser));
   p->chans = malloc(p->num_chans * sizeof(rt_chan));
   rt_uint i;
@@ -100,16 +99,13 @@ void rt_cycle_offset(rt_params p, rt_real **buffers, rt_uint num_buffers,
 
 rt_uint rt_count_samples(rt_params p, rt_uint new_samples_to_count)
 {
+  rt_uint i;
   p->samples_ingested += new_samples_to_count;
-  if (p->samples_ingested > p->fft_size) {
-    p->samples_ingested %= p->fft_size;
-    rt_uint i;
-    for (i = 0; i < p->num_chans; i++) {
-      p->chans[i]->fft_ready = 1;
-    }
-    return RU(1);
+  while (p->samples_ingested >= p->fft_size) {
+    p->samples_ingested -= p->fft_size;
+    for (i = 0; i < p->num_chans; ++p->chans[i++]->frames_ready);
   }
-  return RU(0);
+  return p->samples_ingested > 0;
 }
 
 rt_uint rt_obtain_cycle_lock(rt_params p)

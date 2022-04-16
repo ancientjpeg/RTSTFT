@@ -24,8 +24,7 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
   rt_set_single_param(p, RT_PARAM_LIMIT_MOD, 0.f);
 
   rt_set_buffer_size(p, buffer_size);
-  rt_set_overlap(p, overlap_factor);
-  rt_set_fft_size(p, frame_size, pad_factor);
+  rt_set_fft_size(p, frame_size, overlap_factor, pad_factor);
   p->hold->amp_holder = calloc((1UL << RT_FFT_MAX_POW), sizeof(rt_real));
   p->hold->tracker    = 0;
   rt_uint i           = 0;
@@ -46,6 +45,12 @@ void rt_holder_clean(rt_holder hold)
 
 void rt_update_fft_size(rt_params p)
 {
+  if (p->initialized) {
+    return;
+  }
+  if (!rt_obtain_cycle_lock(p)) {
+    exit(72);
+  };
   const rt_holder h = p->hold;
   p->frame_size     = h->frame_size;
   p->fft_size       = h->fft_size;
@@ -54,19 +59,18 @@ void rt_update_fft_size(rt_params p)
   p->pad_offset     = (p->fft_size - p->frame_size) / 2;
   p->setup          = h->setup;
   p->hop_a          = p->frame_size / p->overlap_factor;
-  p->hop_s          = lround(p->hop_a * p->scale_factor);
+  p->hop_s          = (rt_uint)lround(p->hop_a * p->scale_factor);
 
   rt_uint i;
   if (p->initialized) {
-    rt_obtain_cycle_lock(p);
     for (i = 0; i < p->num_chans; i++) {
       rt_manip_obtain_manip_lock(p->chans[i]->manip);
       rt_manip_framesize_changed(p, p->chans[i]);
       rt_manip_release_manip_lock(p->chans[i]->manip);
     }
     rt_flush(p);
-    rt_release_cycle_lock(p);
   }
+  rt_release_cycle_lock(p);
 }
 void rt_update_manips(rt_params p)
 {
@@ -123,7 +127,7 @@ void rt_update_params(rt_params p)
  */
 void rt_set_frame_size(rt_params p, rt_uint frame_size)
 {
-  rt_set_fft_size(p, frame_size, p->hold->pad_factor);
+  rt_set_fft_size(p, frame_size, p->hold->overlap_factor, p->hold->pad_factor);
 }
 
 /**
@@ -139,8 +143,7 @@ void rt_set_overlap(rt_params p, rt_uint overlap_factor)
             RT_OVERLAP_MIN, RT_OVERLAP_MAX, overlap_factor);
     exit(1);
   }
-  p->hold->overlap_factor = overlap_factor;
-  p->hold->tracker |= RT_OVERLAP_CHANGED;
+  rt_set_fft_size(p, p->hold->frame_size, overlap_factor, p->hold->pad_factor);
 }
 
 void rt_set_pad_factor(rt_params p, rt_uint pad_factor)
@@ -150,7 +153,7 @@ void rt_set_pad_factor(rt_params p, rt_uint pad_factor)
             pad_factor);
     exit(1);
   }
-  rt_set_fft_size(p, p->hold->frame_size, pad_factor);
+  rt_set_fft_size(p, p->hold->frame_size, p->hold->overlap_factor, pad_factor);
 }
 
 void rt_set_buffer_size(rt_params p, rt_uint buffer_size)
@@ -177,8 +180,13 @@ void rt_set_sample_rate(rt_params p, rt_real sample_rate)
  * @param p
  * @param frame_size
  */
-void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint pad_factor)
+void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint overlap_factor,
+                     rt_uint pad_factor)
 {
+
+  p->hold->overlap_factor = overlap_factor;
+  p->hold->tracker |= RT_OVERLAP_CHANGED;
+
   rt_uint frame_pow = rt_check_pow_2(frame_size);
   if (frame_pow == RT_UINT_FALSE) {
     fprintf(stderr, "%lu is an invalid frame size: not a power of 2.\n",
