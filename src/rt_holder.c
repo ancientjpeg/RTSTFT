@@ -48,6 +48,12 @@ void rt_update_fft_size(rt_params p)
   if (!rt_obtain_cycle_lock(p)) {
     exit(72);
   };
+  rt_uint i;
+  for (i = 0; i < p->num_chans; i++) {
+    if (!rt_manip_obtain_manip_lock(p->chans[i]->manip)) {
+      exit(72);
+    }
+  }
   const rt_holder h = p->hold;
   p->frame_size     = h->frame_size;
   p->fft_size       = h->fft_size;
@@ -57,14 +63,14 @@ void rt_update_fft_size(rt_params p)
   p->setup          = h->setup;
   p->hop_a          = p->frame_size / p->overlap_factor;
 
-  rt_uint i;
   if (p->initialized) {
     for (i = 0; i < p->num_chans; i++) {
-      rt_manip_obtain_manip_lock(p->chans[i]->manip);
       rt_manip_framesize_changed(p, p->chans[i]);
-      rt_manip_release_manip_lock(p->chans[i]->manip);
     }
     rt_flush(p);
+  }
+  for (i = 0; i < p->num_chans; i++) {
+    rt_manip_release_manip_lock(p->chans[i]->manip);
   }
   rt_release_cycle_lock(p);
 }
@@ -111,8 +117,8 @@ void rt_update_params(rt_params p)
   p->gain_mod      = h->gain_mod;
   p->gate_mod      = h->gate_mod;
   p->limit_mod     = h->limit_mod;
-  
-  p->hop_s          = (rt_uint)lround(p->hop_a * p->scale_factor);
+
+  p->hop_s         = (rt_uint)lround(p->hop_a * p->scale_factor);
 
   p->hold->tracker = 0;
 }
