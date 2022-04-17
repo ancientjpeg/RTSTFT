@@ -46,13 +46,13 @@ void rt_hamming(rt_real *data, rt_uint len)
 void rt_lerp_samples(rt_real *in, rt_real *out, rt_uint len_I, rt_uint len_O)
 {
   rt_uint len_I_adj = len_I - 1, len_O_adj = len_O - 1;
-  rt_real incr      = (len_I_adj) / (len_O_adj);
+  rt_real incr      = (rt_real)(len_I_adj) / (len_O_adj);
   rt_real incr_curr = incr;
   rt_uint i, x0, x1;
   rt_real mod, y0, y1;
   out[0]         = in[0];
   out[len_O_adj] = in[len_I_adj];
-  for (i = 1; i < len_O - 1; i++) {
+  for (i = 1; i < len_O_adj; i++) {
     x0     = (rt_uint)incr_curr;
     x1     = x0 + 1;
     mod    = incr_curr - (rt_real)x0;
@@ -66,9 +66,8 @@ void rt_lerp_samples(rt_real *in, rt_real *out, rt_uint len_I, rt_uint len_O)
 rt_uint rt_log2_floor(rt_uint num)
 {
   int power = 0;
-  while (num >> (power++) > 0)
-    ;
-  return power;
+  while (num >> (power) > 0) power++;
+  return power == 0 ? 0 : power - 1;
 }
 
 rt_uint rt_check_pow_2(rt_uint num)

@@ -74,6 +74,7 @@ void rt_update_fft_size(rt_params p)
          rt_manip_release_manip_lock(p->chans[i++]->manip))
       ;
   }
+  rt_update_params(p);
   rt_release_cycle_lock(p);
 }
 void rt_update_manips(rt_params p)

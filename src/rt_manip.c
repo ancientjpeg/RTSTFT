@@ -111,17 +111,14 @@ void rt_manip_framesize_changed(rt_params p, rt_chan c)
 {
   rt_uint  i, manip_index;
   rt_real *in, *out;
-  rt_real *temp = pffft_aligned_malloc(rt_manip_block_len(p) * sizeof(rt_real));
   for (i = 0; i < RT_MANIP_FLAVOR_COUNT; i++) {
     manip_index = rt_manip_index(p, i, 0);
-    in          = c->manip->manips + manip_index;
-    out         = temp + manip_index;
+    in          = c->manip->hold_manips + manip_index;
+    out         = c->manip->manips + manip_index;
     rt_lerp_samples(in, out, c->manip->current_num_manips, p->fft_size);
-    /* because help manips still need to mirror real manips */
+    /* because held manips still need to mirror real manips */
     memcpy(in, out, p->fft_size * sizeof(rt_real));
   }
-  pffft_aligned_free(c->manip->manips);
-  c->manip->manips             = temp;
   c->manip->current_num_manips = p->fft_size;
 }
 
