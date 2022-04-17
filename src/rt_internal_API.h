@@ -72,8 +72,11 @@ void        rt_framebuf_digest_frame(rt_params p, rt_chan c);
 double fastPow(double a, double b);
 void   rt_lerp_samples(rt_real *in, rt_real *out, rt_uint len_I, rt_uint len_O);
 void   rt_hanning(rt_real *data, rt_uint len);
+void   rt_fill_hanning(rt_real *data, rt_uint len);
 void   rt_hamming(rt_real *data, rt_uint len);
+void   rt_fill_hamming(rt_real *data, rt_uint len);
 #define rt_window rt_hanning
+#define rt_fill_window rt_fill_hanning
 
 /* ======== MISC UTILS ======== */
 // https://stackoverflow.com/questions/14818084/what-is-the-proper-include-for-the-function-sleep
@@ -90,7 +93,8 @@ void   rt_hamming(rt_real *data, rt_uint len);
 #define rt_sleep(s) sleep((s))
 #endif
 
-rt_uint rt_obtain_lock(rt_uint *lock, rt_uint timeout_us, rt_uint refresh_us);
-void    rt_release_lock(rt_uint *lock);
+    rt_uint
+    rt_obtain_lock(rt_uint *lock, rt_uint timeout_us, rt_uint refresh_us);
+void rt_release_lock(rt_uint *lock);
 
 #endif

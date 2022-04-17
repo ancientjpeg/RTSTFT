@@ -57,8 +57,9 @@ rt_framebuf rt_framebuf_init(rt_params p)
    * modification to the FFT size.
    */
   framebuf->frame
-      = (rt_real *)pffft_aligned_malloc(2 * p->fft_max * sizeof(rt_real));
-  framebuf->work = framebuf->frame + p->fft_max;
+      = (rt_real *)pffft_aligned_malloc(3 * p->fft_max * sizeof(rt_real));
+  framebuf->work   = framebuf->frame + p->fft_max;
+  framebuf->window = framebuf->frame + 2 * p->fft_max;
 
   /**< setup allocation */
   rt_uint num_setups = p->fft_max - p->fft_min + 1;
@@ -81,6 +82,7 @@ void rt_framebuf_flush(rt_params p, rt_framebuf framebuf)
   memset(framebuf->phi_a_prev, 0, num_real_bins * sizeof(rt_real));
   memset(framebuf->delta_phi_prev, 0, num_real_bins * sizeof(rt_real));
   memset(framebuf->phi_s_cuml, 0, num_real_bins * sizeof(rt_real));
+  rt_fill_window(framebuf->window, p->frame_size);
 }
 
 /**
@@ -106,6 +108,30 @@ rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf)
   return NULL;
 }
 
+/**
+ * @brief Apply the window stored in the framebuf (excellent candidate for
+ * vectorization).
+ *
+ * @details Note that ignore_padding does not window the entire fft frame;
+ * instead, it applies the window starting at sample 0, which is useful as this
+ * will still represent the phase-aligned signal. See the comment at the end of
+ * rt_framebuf_digest_frame() for more details.
+ *
+ * @param p
+ * @param c
+ */
+void rt_framebuf_apply_window(rt_params p, rt_chan c, rt_uint ignore_padding)
+{
+  rt_uint  i;
+  rt_real *frame = c->framebuf->frame;
+  if (!ignore_padding) {
+    frame += p->pad_offset;
+  }
+  for (i = 0; i < p->fft_size; i++) {
+    frame[i] *= c->framebuf->window[i];
+  }
+}
+
 #define wrap(phi) ((phi) - (round((phi)*M_1_PI * 0.5) * 2. * M_PI))
 void rt_framebuf_digest_frame(rt_params p, rt_chan c)
 {
@@ -121,7 +147,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   signed char bin0_sign, binN_2_sign;
 
   /** forward transform */
-  rt_window(frame_ptr + p->pad_offset, p->frame_size);
+  rt_framebuf_apply_window(p, c, 0);
   pffft_transform_ordered(c->framebuf->setups[p->setup], frame_ptr, frame_ptr,
                           c->framebuf->work, PFFFT_FORWARD);
   /** convert complex to amps and phases*/
@@ -133,7 +159,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
     real             = frame_ptr[i];
     imag             = frame_ptr[i + 1];
     frame_ptr[i]     = sqrt(real * real + imag * imag) * amp_adj;
-    frame_ptr[i + 1] = atan2(imag, real);
+    frame_ptr[i + 1] = atan2f(imag, real);
   }
 
   /** manipulate */
@@ -218,7 +244,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
    * !!I may be wrong about this!!, but I don't think I am...
    *
    */
-  rt_window(frame_ptr, p->frame_size);
+  rt_framebuf_apply_window(p, c, 1);
 
   /** immediately lerp to c->out */
 }
