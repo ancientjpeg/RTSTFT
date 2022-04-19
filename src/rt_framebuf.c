@@ -142,7 +142,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   rt_real  delta_phi, phase_adj, phase_cuml_val, phase_calc_final,
       phase_chaos_curr = 1.f;
   rt_real *phi_a_prev, *delta_phi_prev, *phi_s_cuml, *curr_phase_ptr;
-  rt_real  amp_adj_rev = (rt_real)rt_log2_floor(p->fft_size),
+  rt_real  amp_adj_rev = p->fft_size,//(rt_real)(rt_log2_floor(p->fft_size) + 1),
           amp_adj      = 1.f / amp_adj_rev;
   signed char bin0_sign, binN_2_sign;
 
@@ -195,9 +195,6 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
 
     *phi_a_prev     = *curr_phase_ptr;
     *curr_phase_ptr = *phi_s_cuml;
-    if (isnan(*curr_phase_ptr)) {
-      exit(57); // TEST
-    }
     frame_phase_index += 2;
   }
 
