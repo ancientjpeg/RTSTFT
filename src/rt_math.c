@@ -105,12 +105,12 @@ rt_uint rt_check_pow_2(rt_uint num)
     }
   } while (i++ < RT_FFT_MAX_POW);
 
-  fprintf(stderr, "%lu is an invalid frame size. Must be greater than %lu.\n",
-          num, 1UL << RT_FFT_MIN_POW);
+  fprintf(stderr, ru " is an invalid frame size. Must be greater than " ru "\n",
+          num, RU(1) << RT_FFT_MIN_POW);
   return RT_UINT_FALSE;
 }
 
-rt_real rt_dbtoa(rt_real db_val) { return fastPow(10.f, (db_val) / 20.f); }
+rt_real rt_dbtoa(rt_real db_val) { return powf(10.f, (db_val) / 20.f); }
 int     rt_atodb(rt_real amp_val)
 {
   rt_real ret = 20.f * log10f(amp_val);

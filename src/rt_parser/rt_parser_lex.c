@@ -91,7 +91,7 @@ int rt_parser_lex_numeric(rt_parser parser, rt_token_t *token,
   }
   else {
     char *end_ptr    = NULL;
-    token->raw_arg.i = strtol(token_raw, &end_ptr, 10);
+    token->raw_arg.i = (rt_uint)strtol(token_raw, &end_ptr, 10);
     if (end_ptr == NULL) {
       /* don't crash the program */
     }

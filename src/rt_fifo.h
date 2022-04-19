@@ -16,7 +16,7 @@
 #define rt_fifo_head_ptr(f) ((f)->queue + (f)->head)
 #define rt_fifo_write_ptr(f) ((f)->queue + (f)->head)
 #define rt_fifo_tail_ptr(f) ((f)->queue + (f)->tail)
-#define rt_fifo_new_pos(f, i, n) ((ldiv(((i) + (n)), (f)->len)).rem)
+#define rt_fifo_new_pos(f, i, n) ((rt_uint)((ldiv(((i) + (n)), (f)->len)).rem))
 #define rt_fifo_get_diff(f, start, end)                                        \
   ((start) <= (end) ? (end) - (start) : (f)->len - ((start) - (end)))
 
