@@ -11,6 +11,7 @@
 #ifndef RT_GLOBALS_H
 #define RT_GLOBALS_H
 #include <ctype.h>
+#include <float.h>
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>

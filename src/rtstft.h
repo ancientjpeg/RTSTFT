@@ -65,7 +65,7 @@ int  rt_parse_and_execute(rt_params p, const char *arg_str);
 rt_uint              rt_check_pow_2(rt_uint num);
 rt_uint              rt_log2_floor(rt_uint num);
 rt_real              rt_dbtoa(rt_real db_val);
-int                  rt_atodb(rt_real amp_val);
+rt_real              rt_atodb(rt_real amp_val);
 
 rt_uint              rt_manip_len(rt_params p);
 rt_uint              rt_manip_len_max(rt_params p);
