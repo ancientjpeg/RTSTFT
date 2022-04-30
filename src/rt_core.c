@@ -75,15 +75,19 @@ void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
                    rt_uint buffer_len)
 {
   rt_chan c = p->chans[channel_index];
+  rt_real wet, dry, dry_wet_inv = 1. - p->dry_wet;
   while (buffer_len > 0) {
     rt_fifo_enqueue_one(c->in, *buffer);
+    rt_fifo_enqueue_one(c->dry, *buffer);
     if (rt_fifo_payload(c->in) >= p->frame_size && c->frames_ready) {
       rt_digest_frame(p, c);
       ++c->frames_ready;
     }
 
     if (rt_fifo_readable(c->out)) {
-      rt_fifo_dequeue_one(c->out, buffer);
+      rt_fifo_dequeue_one(c->out, &wet);
+      rt_fifo_dequeue_one(c->dry, &dry);
+      *buffer = p->dry_wet * wet + dry_wet_inv * dry;
     }
     else {
       *buffer = 0.;

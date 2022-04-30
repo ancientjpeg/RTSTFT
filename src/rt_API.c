@@ -42,6 +42,7 @@ void rt_flush(rt_params p)
   rt_uint i;
   for (i = 0; i < p->num_chans; i++) {
     rt_fifo_flush(p->chans[i]->in);
+    rt_fifo_flush(p->chans[i]->dry);
     rt_fifo_flush(p->chans[i]->out);
     rt_framebuf_flush(p, p->chans[i]->framebuf);
   }
@@ -103,7 +104,8 @@ rt_uint rt_count_samples(rt_params p, rt_uint new_samples_to_count)
   p->samples_ingested += new_samples_to_count;
   while (p->samples_ingested >= p->fft_size) {
     p->samples_ingested -= p->fft_size;
-    for (i = 0; i < p->num_chans; ++p->chans[i++]->frames_ready);
+    for (i = 0; i < p->num_chans; ++p->chans[i++]->frames_ready)
+      ;
   }
   return i > 0;
 }

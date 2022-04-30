@@ -103,6 +103,27 @@ void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n)
   }
 }
 
+void rt_fifo_dequeue_one(rt_fifo fifo, rt_real *dest)
+{
+  if (fifo->empty) {
+    fprintf(stderr, "Error: Nothing to dequeue.");
+    exit(1);
+  }
+  if (dest != NULL) {
+    if (fifo->read_empty) {
+      fprintf(stderr, "Error: Nothing to read. ");
+      exit(1);
+    }
+    *dest = fifo->queue[fifo->head];
+  }
+  fifo->queue[fifo->head] = 0.;
+  fifo->head              = rt_fifo_new_pos(fifo, fifo->head, 1);
+  if (fifo->head == fifo->write_pos) {
+    fifo->read_empty = 1;
+    fifo->empty      = fifo->head == fifo->tail ? 1 : 0;
+  }
+}
+
 void rt_fifo_dequeue(rt_fifo fifo, int n)
 {
   if (fifo->empty) {
@@ -122,27 +143,6 @@ void rt_fifo_dequeue(rt_fifo fifo, int n)
   while (fifo->head != target) {
     fifo->queue[fifo->head] = 0.;
     fifo->head              = rt_fifo_new_pos(fifo, fifo->head, 1);
-  }
-}
-
-void rt_fifo_dequeue_one(rt_fifo fifo, rt_real *dest)
-{
-  if (fifo->empty) {
-    fprintf(stderr, "Error: Nothing to dequeue.");
-    exit(1);
-  }
-  if (dest != NULL) {
-    if (fifo->read_empty) {
-      fprintf(stderr, "Error: Nothing to read. ");
-      exit(1);
-    }
-    *dest = fifo->queue[fifo->head];
-  }
-  fifo->queue[fifo->head] = 0.;
-  fifo->head              = rt_fifo_new_pos(fifo, fifo->head, 1);
-  if (fifo->head == fifo->write_pos) {
-    fifo->read_empty = 1;
-    fifo->empty      = fifo->head == fifo->tail ? 1 : 0;
   }
 }
 

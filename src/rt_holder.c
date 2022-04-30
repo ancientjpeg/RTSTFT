@@ -22,7 +22,7 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
   rt_set_single_param(p, RT_PARAM_GATE_MOD, 0.f);
   rt_set_single_param(p, RT_PARAM_GAIN_MOD, 0.f);
   rt_set_single_param(p, RT_PARAM_LIMIT_MOD, 0.f);
-
+  rt_set_single_param(p, RT_DRY_WET, 1.f);
   rt_set_buffer_size(p, buffer_size);
   rt_set_fft_size(p, frame_size, overlap_factor, pad_factor);
   p->hold->amp_holder = calloc((1UL << RT_FFT_MAX_POW), sizeof(rt_real));
@@ -120,6 +120,7 @@ void rt_update_params(rt_params p)
   p->gain_mod      = h->gain_mod;
   p->gate_mod      = h->gate_mod;
   p->limit_mod     = h->limit_mod;
+  p->dry_wet       = h->dry_wet;
 
   p->hop_s         = (rt_uint)lround(p->hop_a * p->scale_factor);
 
@@ -240,6 +241,9 @@ void rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,
     break;
   case RT_PARAM_LIMIT_MOD:
     p->hold->limit_mod = new_val;
+    break;
+  case RT_DRY_WET:
+    p->hold->dry_wet = new_val;
     break;
   default:
     break;
