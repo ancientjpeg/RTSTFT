@@ -46,6 +46,7 @@ void    rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,
 void    rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint overlap_factor,
                         rt_uint pad_factor);
 void    rt_update_fft_size(rt_params p);
+void    rt_set_multichannel(rt_params p, rt_uint new_multichannel_mode);
 
 rt_real rt_get_param_val(rt_params p, rt_param_flavor_t param_flavor);
 rt_real rt_get_manip_val(rt_params p, rt_manip_flavor_t manip_flavor);

@@ -112,7 +112,7 @@ rt_uint rt_count_samples(rt_params p, rt_uint new_samples_to_count)
 
 rt_uint rt_obtain_cycle_lock(rt_params p)
 {
-  return rt_obtain_lock(&p->cycle_lock, 50000, 50);
+  return rt_obtain_lock(&p->cycle_lock, 500000, 50);
 }
 void rt_release_cycle_lock(rt_params p) { rt_release_lock(&p->cycle_lock); }
 

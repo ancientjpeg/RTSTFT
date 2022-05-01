@@ -43,6 +43,10 @@ void rt_manip_clean(rt_manip m)
   free(m);
 }
 
+/* ==================================================================== */
+/* ========================  parameter change  ======================== */
+/* ==================================================================== */
+
 void rt_manip_reset(rt_params p, rt_manip m)
 {
   rt_uint i, j;
@@ -122,79 +126,6 @@ void rt_manip_framesize_changed(rt_params p, rt_chan c)
   c->manip->current_num_manips = p->fft_size;
 }
 
-/**
- * @brief
- *
- * @param p An rt_params signifying the active instance of RTSTFT.
- * @param c An rt_chan signifying the active channel.
- * @param frame_ptr Pointer to the frame currently being processed.
- *
- * Please recall that the amplitudes come to us pre-adjusted, 0-1, from
- * framebuf.
- *
- */
-void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
-{
-
-  if (p->frame_size != p->fft_size) {
-    fprintf(stderr,
-            "Sorry! Zero-padding and bin manipulation not yet compatible.");
-    exit(1);
-  }
-  rt_uint  manip_index, i, manip_len = rt_manip_len(p);
-  rt_real *manips
-      = p->manip_multichannel ? c->manip->manips : p->chans[0]->manip->manips;
-  /**
-   * @brief Level manip section
-   *
-   */
-  if (p->enabled_manips & (1 << RT_MANIP_GAIN)) {
-
-    manip_index = rt_manip_index(p, RT_MANIP_GAIN, 0);
-    for (i = 0; i < manip_len - 1; i++) {
-      frame_ptr[i * 2] *= fmax(manips[manip_index++] + p->gain_mod, 0.f);
-    }
-    frame_ptr[1]
-        *= fmax(manips[manip_index] + p->gain_mod, 0.f); // assign N/2 bin
-  }
-
-  /**
-   * @brief Gate section
-   *
-   */
-  rt_real thresh_adj;
-  if (p->enabled_manips & (1 << RT_MANIP_GATE)) {
-    manip_index = rt_manip_index(p, RT_MANIP_GATE, 0);
-    for (i = 0; i < manip_len - 1; i++) {
-      if (fabs(frame_ptr[i * 2]) < manips[manip_index++] + p->gate_mod) {
-        frame_ptr[i * 2] = 0.f;
-      }
-    }
-    if (fabs(frame_ptr[1]) < manips[manip_index] + p->gate_mod) {
-      frame_ptr[1] = 0.f; // assign N/2 bin
-    }
-  }
-
-  /**
-   * @brief Limit section
-   *
-   */
-  if (p->enabled_manips & RT_MANIP_LIMIT) {
-    manip_index = rt_manip_index(p, RT_MANIP_LIMIT, 0);
-    for (i = 0; i < manip_len - 1; i++) {
-      thresh_adj = fmax(manips[manip_index++] + p->limit_mod, 0.f);
-      if (fabs(frame_ptr[i * 2]) > thresh_adj) {
-        frame_ptr[i * 2]
-            = copysign(thresh_adj, frame_ptr[i * 2]); // assign N/2 bin
-      }
-    }
-    thresh_adj = fmax(manips[manip_index] + p->limit_mod, 0.f);
-    if (fabs(frame_ptr[1]) > thresh_adj) {
-      frame_ptr[1] = copysign(thresh_adj, frame_ptr[1]); // assign N/2 bin
-    }
-  }
-}
-
 /* ==================================================================== */
 /* ========================     bin setting    ======================== */
 /* ==================================================================== */
@@ -272,6 +203,83 @@ void rt_manip_set_bins_curved(rt_params p, rt_chan c,
   rt_manip_release_manip_lock(c->manip);
 }
 
+/* ==================================================================== */
+/* ========================     processing     ======================== */
+/* ==================================================================== */
+
+/**
+ * @brief
+ *
+ * @param p An rt_params signifying the active instance of RTSTFT.
+ * @param c An rt_chan signifying the active channel.
+ * @param frame_ptr Pointer to the frame currently being processed.
+ *
+ * Please recall that the amplitudes come to us pre-adjusted, 0-1, from
+ * framebuf.
+ *
+ */
+void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
+{
+
+  if (p->frame_size != p->fft_size) {
+    fprintf(stderr,
+            "Sorry! Zero-padding and bin manipulation not yet compatible.");
+    exit(1);
+  }
+  rt_uint  manip_index, i, manip_len = rt_manip_len(p);
+  rt_real *manips
+      = p->manip_multichannel ? c->manip->manips : p->chans[0]->manip->manips;
+  /**
+   * @brief Level manip section
+   *
+   */
+  if (p->enabled_manips & (1 << RT_MANIP_GAIN)) {
+
+    manip_index = rt_manip_index(p, RT_MANIP_GAIN, 0);
+    for (i = 0; i < manip_len - 1; i++) {
+      frame_ptr[i * 2] *= fmax(manips[manip_index++] + p->gain_mod, 0.f);
+    }
+    frame_ptr[1]
+        *= fmax(manips[manip_index] + p->gain_mod, 0.f); // assign N/2 bin
+  }
+
+  /**
+   * @brief Gate section
+   *
+   */
+  rt_real thresh_adj;
+  if (p->enabled_manips & (1 << RT_MANIP_GATE)) {
+    manip_index = rt_manip_index(p, RT_MANIP_GATE, 0);
+    for (i = 0; i < manip_len - 1; i++) {
+      if (fabs(frame_ptr[i * 2]) < manips[manip_index++] + p->gate_mod) {
+        frame_ptr[i * 2] = 0.f;
+      }
+    }
+    if (fabs(frame_ptr[1]) < manips[manip_index] + p->gate_mod) {
+      frame_ptr[1] = 0.f; // assign N/2 bin
+    }
+  }
+
+  /**
+   * @brief Limit section
+   *
+   */
+  if (p->enabled_manips & RT_MANIP_LIMIT) {
+    manip_index = rt_manip_index(p, RT_MANIP_LIMIT, 0);
+    for (i = 0; i < manip_len - 1; i++) {
+      thresh_adj = fmax(manips[manip_index++] + p->limit_mod, 0.f);
+      if (fabs(frame_ptr[i * 2]) > thresh_adj) {
+        frame_ptr[i * 2]
+            = copysign(thresh_adj, frame_ptr[i * 2]); // assign N/2 bin
+      }
+    }
+    thresh_adj = fmax(manips[manip_index] + p->limit_mod, 0.f);
+    if (fabs(frame_ptr[1]) > thresh_adj) {
+      frame_ptr[1] = copysign(thresh_adj, frame_ptr[1]); // assign N/2 bin
+    }
+  }
+}
+
 /* ========================        utils       ======================== */
 
 rt_uint rt_manip_index(rt_params p, rt_manip_flavor_t manip_flavor,
@@ -320,7 +328,7 @@ void rt_manip_overwrite_manips(rt_params p, rt_chan c, rt_real *new_manips,
 
 rt_uint rt_manip_obtain_manip_lock(rt_manip m)
 {
-  return rt_obtain_lock(&m->manip_lock, 10000, 1);
+  return rt_obtain_lock(&m->manip_lock, 100000, 1);
 }
 void rt_manip_release_manip_lock(rt_manip m)
 {

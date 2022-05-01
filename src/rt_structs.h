@@ -16,12 +16,13 @@
 #include "rt_globals.h"
 #include "rt_parser/rt_parser.h"
 
-#define RT_BUFFER_CHANGED (1UL << 0)
-#define RT_OVERLAP_CHANGED (1UL << 1)
-#define RT_SAMPLERATE_CHANGED (1UL << 2)
-#define RT_MANIPS_CHANGED (1UL << 3)
-#define RT_PHASE_PARAMS_CHANGED (1UL << 4)
-#define RT_NUM_PARAMS_TRACKED (5)
+#define RT_BUFFER_CHANGED ((RU(1)) << 0)
+#define RT_OVERLAP_CHANGED ((RU(1)) << 1)
+#define RT_SAMPLERATE_CHANGED ((RU(1)) << 2)
+#define RT_MANIPS_CHANGED ((RU(1)) << 3)
+#define RT_PHASE_PARAMS_CHANGED ((RU(1)) << 4)
+#define RT_MULTICHANNEL_CHANGED ((RU(1)) << 5)
+#define RT_NUM_PARAMS_TRACKED (6)
 
 /* see rt_parser.h for manip_flavor define */
 typedef struct RTSTFT_Manip {
@@ -32,7 +33,7 @@ typedef rt_manip_t *rt_manip;
 
 typedef struct RTSTFT_Holder {
   rt_uint frame_size, buffer_size, overlap_factor, pad_factor, fft_size, setup,
-      tracker;
+      tracker, manip_multichannel;
   rt_real scale_factor, sample_rate;
   rt_real retention_mod, phase_mod, phase_chaos, gain_mod, gate_mod, limit_mod,
       dry_wet;
@@ -62,8 +63,8 @@ typedef struct RTSTFT_Params {
   rt_listener_t listener;
   rt_holder     hold;
   rt_parser_t   parser;
-  rt_uint       enabled_manips, cycle_lock, samples_ingested;
-  unsigned char manip_multichannel, initialized;
+  rt_uint enabled_manips, cycle_lock, samples_ingested, manip_multichannel,
+      initialized;
 } rt_params_t;
 typedef rt_params_t *rt_params;
 

@@ -288,3 +288,54 @@ rt_real rt_get_manip_val(rt_params p, rt_manip_flavor_t manip_flavor)
     return RT_REAL_ERR;
   }
 }
+
+void rt_on_multichannel_change(rt_params p)
+{
+  if (!(p->hold->tracker & RT_MULTICHANNEL_CHANGED)) {
+    return;
+  }
+  rt_chan chan0 = p->chans[0];
+  if (!rt_manip_obtain_manip_lock(chan0->manip)) {
+    exit(77);
+  }
+  rt_uint i, c, m, m_ind;
+  rt_real mean, *c0_ptr;
+  if (!rt_obtain_cycle_lock(p)) {
+    exit(76);
+  }
+  p->manip_multichannel = p->hold->manip_multichannel;
+  p->hold->tracker &= ~RT_MULTICHANNEL_CHANGED;
+  for (i = 0; i < p->fft_size; i++) {
+    for (m = 0; m < RT_MANIP_FLAVOR_COUNT; m++) {
+      m_ind  = rt_manip_index(p, m, i);
+      c0_ptr = chan0->manip->manips + m_ind;
+      if (p->manip_multichannel) {
+        /* copy chan0 to all other chans */
+        for (c = 1; c < p->num_chans; c++) {
+          p->chans[c]->manip->manips[m_ind] = *c0_ptr;
+        }
+      }
+      else {
+        /* average all chans into chan0 */
+        mean = 0.;
+        for (c = 0; c < p->num_chans; c++) {
+          mean += p->chans[c]->manip->manips[m_ind];
+        }
+        *c0_ptr = mean / p->num_chans;
+      }
+    }
+  }
+  rt_flush(p);
+  rt_release_cycle_lock(p);
+  rt_manip_release_manip_lock(chan0->manip);
+}
+
+void rt_set_multichannel(rt_params p, rt_uint new_multichannel_mode)
+{
+  new_multichannel_mode = new_multichannel_mode > 0 ? 1 : 0;
+  if (p->manip_multichannel ^ new_multichannel_mode) {
+    p->hold->tracker |= RT_MULTICHANNEL_CHANGED;
+  }
+  p->hold->manip_multichannel = new_multichannel_mode;
+  rt_on_multichannel_change(p);
+}
