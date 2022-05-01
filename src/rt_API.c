@@ -13,14 +13,13 @@
 rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
                   rt_uint overlap_factor, rt_uint pad_factor, float sample_rate)
 {
-  rt_params p           = malloc(sizeof(rt_params_t));
-  p->initialized        = 0;
-  p->fft_min            = 1UL << RT_FFT_MIN_POW; /** 2 * SIMD_SZ ^ 2 */
-  p->fft_max            = 1UL << RT_FFT_MAX_POW;
-  p->scale_factor_max   = 2.0;
-  p->scale_factor_min   = 1. / p->scale_factor_max;
-  p->manip_multichannel = 0; /* implement multichannel manip later plz */
-  p->num_chans          = num_channels;
+  rt_params p         = malloc(sizeof(rt_params_t));
+  p->initialized      = 0;
+  p->fft_min          = 1UL << RT_FFT_MIN_POW; /** 2 * SIMD_SZ ^ 2 */
+  p->fft_max          = 1UL << RT_FFT_MAX_POW;
+  p->scale_factor_max = 2.0;
+  p->scale_factor_min = 1. / p->scale_factor_max;
+  p->num_chans        = num_channels;
   rt_holder_init(p, num_channels, frame_size, buffer_size, overlap_factor,
                  pad_factor, sample_rate);
   rt_update_fft_size(p);
@@ -31,6 +30,7 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
   for (i = 0; i < p->num_chans; i++) {
     p->chans[i] = rt_chan_init(p);
   }
+  rt_set_multichannel(p, 0);
   p->listener         = (rt_listener_t){};
   p->samples_ingested = 0;
   p->initialized      = 1;
