@@ -41,6 +41,7 @@ rt_framebuf rt_framebuf_init(rt_params p)
   framebuf->phi_a_prev     = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
   framebuf->delta_phi_prev = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
   framebuf->phi_s_cuml     = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
+  framebuf->amp_holder     = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
 
   /**< represents per-bin phase offset in rads/hop */
   framebuf->omega = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
@@ -100,10 +101,11 @@ rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf)
     rt_uint curr = i - RT_FFT_MIN_POW;
     pffft_destroy_setup(framebuf->setups[curr]);
   }
+  free(framebuf->omega);
+  free(framebuf->delta_phi_prev);
   free(framebuf->phi_a_prev);
   free(framebuf->phi_s_cuml);
-  free(framebuf->delta_phi_prev);
-  free(framebuf->omega);
+  free(framebuf->amp_holder);
   free(framebuf);
   return NULL;
 }
@@ -201,14 +203,14 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   }
 
   /** revert amps and phases to complex */
-  p->hold->amp_holder[0]                   = frame_ptr[0];
-  p->hold->amp_holder[p->fft_size / 2 - 1] = frame_ptr[1];
+  c->framebuf->amp_holder[0]                   = frame_ptr[0];
+  c->framebuf->amp_holder[p->fft_size / 2 - 1] = frame_ptr[1];
   frame_ptr[0] *= bin0_sign * amp_adj_rev;
   frame_ptr[1] *= binN_2_sign * amp_adj_rev;
   for (i = 2; i < p->fft_size; i += 2) {
-    amp                        = frame_ptr[i];
-    phase                      = frame_ptr[i + 1];
-    p->hold->amp_holder[i / 2] = amp;
+    amp                            = frame_ptr[i];
+    phase                          = frame_ptr[i + 1];
+    c->framebuf->amp_holder[i / 2] = amp;
     amp *= amp_adj_rev;
     frame_ptr[i]     = amp * cos(phase);
     frame_ptr[i + 1] = amp * sin(phase);

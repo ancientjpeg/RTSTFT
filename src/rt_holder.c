@@ -25,9 +25,8 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
   rt_set_single_param(p, RT_DRY_WET, 1.f);
   rt_set_buffer_size(p, buffer_size);
   rt_set_fft_size(p, frame_size, overlap_factor, pad_factor);
-  p->hold->amp_holder = calloc((1UL << RT_FFT_MAX_POW), sizeof(rt_real));
-  p->hold->tracker    = 0;
-  rt_uint i           = 0;
+  p->hold->tracker = 0;
+  rt_uint i        = 0;
   do {
     p->hold->tracker |= 1UL << i;
   } while (++i < RT_NUM_PARAMS_TRACKED);
@@ -37,11 +36,7 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
   }
 }
 
-void rt_holder_clean(rt_holder hold)
-{
-  free(hold->amp_holder);
-  free(hold);
-}
+void rt_holder_clean(rt_holder hold) { free(hold); }
 
 void rt_update_fft_size(rt_params p)
 {

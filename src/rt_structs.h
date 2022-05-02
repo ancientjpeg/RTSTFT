@@ -37,7 +37,6 @@ typedef struct RTSTFT_Holder {
   rt_real scale_factor, sample_rate;
   rt_real retention_mod, phase_mod, phase_chaos, gain_mod, gate_mod, limit_mod,
       dry_wet;
-  rt_real *amp_holder;
 } rt_holder_t;
 typedef rt_holder_t *rt_holder;
 
