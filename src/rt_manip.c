@@ -29,7 +29,7 @@ rt_manip rt_manip_init(rt_params p)
   rt_uint  len          = rt_manip_block_len(p);
   m->manip_tracker      = 0;
   m->manip_lock         = 0;
-  m->current_num_manips = p->fft_size;
+  m->current_num_manips = rt_manip_len(p);
   m->manips             = pffft_aligned_malloc(len * sizeof(rt_real));
   m->hold_manips        = pffft_aligned_malloc(len * sizeof(rt_real));
   rt_manip_reset(p, m);
@@ -119,11 +119,11 @@ void rt_manip_framesize_changed(rt_params p, rt_chan c)
     manip_index = rt_manip_index(p, i, 0);
     in          = c->manip->hold_manips + manip_index;
     out         = c->manip->manips + manip_index;
-    rt_lerp_samples(in, out, c->manip->current_num_manips, p->fft_size);
+    rt_lerp_samples(in, out, c->manip->current_num_manips, rt_manip_len(p));
     /* because held manips still need to mirror real manips */
-    memcpy(in, out, p->fft_size * sizeof(rt_real));
+    memcpy(in, out, rt_manip_len(p) * sizeof(rt_real));
   }
-  c->manip->current_num_manips = p->fft_size;
+  c->manip->current_num_manips = rt_manip_len(p);
 }
 
 /* ==================================================================== */

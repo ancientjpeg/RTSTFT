@@ -302,7 +302,7 @@ void rt_on_multichannel_change(rt_params p)
   p->manip_multichannel = p->hold->manip_multichannel;
   p->hold->tracker &= ~RT_MULTICHANNEL_CHANGED;
   for (m = 0; m < RT_MANIP_FLAVOR_COUNT; m++) {
-    for (i = 0; i < p->fft_size; i++) {
+    for (i = 0; i < rt_manip_len(p); i++) {
       m_ind  = rt_manip_index(p, m, i);
       c0_ptr = chan0->manip->hold_manips + m_ind;
       if (p->manip_multichannel) {
