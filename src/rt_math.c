@@ -110,6 +110,8 @@ rt_uint rt_check_pow_2(rt_uint num)
   return RT_UINT_FALSE;
 }
 
+rt_real rt_ptocen(rt_real pitch_ratio) { return log2f(pitch_ratio) * 1200.f; }
+rt_real rt_centop(rt_real cents) { return exp2f(cents / 1200.f); }
 rt_real rt_dbtoa(rt_real db_val) { return powf(10.f, (db_val) / 20.f); }
 rt_real rt_atodb(rt_real amp_val)
 {

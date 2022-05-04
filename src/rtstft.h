@@ -67,6 +67,8 @@ rt_uint              rt_check_pow_2(rt_uint num);
 rt_uint              rt_log2_floor(rt_uint num);
 rt_real              rt_dbtoa(rt_real db_val);
 rt_real              rt_atodb(rt_real amp_val);
+rt_real              rt_ptocen(rt_real pitch_ratio);
+rt_real              rt_centop(rt_real cents);
 
 rt_uint              rt_manip_len(rt_params p);
 rt_uint              rt_manip_len_max(rt_params p);
