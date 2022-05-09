@@ -44,8 +44,9 @@
 ## Implementation
 ### Overview
 ![image](implementation.png)
+
 ### Mathematics
-#### Definitions 
+##### Definitions 
 Starting with a chosen FFT frame size $N$,  take the following definitions:
 $$\text{frame size} = N\hspace{5mm}\text{frame count}=m $$
 $$\text{overlap factor}=F_{overlap} \hspace{5mm} \text{scaling ratio}=S$$

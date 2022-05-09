@@ -8,3 +8,5 @@ fftw*
 out.json
 lerp.py
 src/pffft/*
+docs/*.pdf
+docs/window.png
