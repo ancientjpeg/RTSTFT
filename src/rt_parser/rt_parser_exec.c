@@ -18,6 +18,20 @@ rt_real rt_float_from_any_numeric_token(rt_token_t *token)
   return token->raw_arg.f;
 }
 
+int rt_parser_execute_flush(void *params_ptr)
+{
+  rt_params p = (rt_params)params_ptr;
+  if (!rt_obtain_cycle_lock(p)) {
+    sprintf(p->parser.error_msg_buffer,
+            "Failed to execute a flush (!!THIS INDICATES A MAJOR BUG!!)");
+    return 101;
+  }
+  rt_flush(p);
+  rt_release_cycle_lock(p);
+  sprintf(p->parser.error_msg_buffer, "rtstft DSP flush successful");
+  return 0;
+}
+
 int rt_parser_execute_gain_gate_limit(rt_params p);
 int rt_parser_execute_gain(void *params_ptr)
 {
@@ -32,17 +46,16 @@ int rt_parser_execute_limit(void *params_ptr)
   return rt_parser_execute_gain_gate_limit((rt_params)params_ptr);
 }
 
-int rt_parser_execute_reset(void *params_ptr) {
+int rt_parser_execute_reset(void *params_ptr)
+{
   rt_params p = (rt_params)params_ptr;
-  rt_uint i;
+  rt_uint   i;
   for (i = 0; i < p->num_chans; i++) {
     rt_manip_reset(p, p->chans[i]->manip);
   }
   sprintf(p->parser.error_msg_buffer, "Full reset of all mainps successful");
-  
+
   return 0;
-  
-  
 }
 
 int rt_parser_execute_rebase(void *params_ptr)

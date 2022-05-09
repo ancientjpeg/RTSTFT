@@ -1,7 +1,14 @@
 #include "../rtstft.h"
 
 const rt_command_define_t cmd_table[RT_CMD_ALL_COMMANDS_COUNT]
-    = {{"gain",
+    = {{"flush",
+        RT_MANIP_FLAVOR_UNDEFINED,
+        &rt_parser_execute_flush,
+        0,
+        {},
+        0,
+        {}},
+       {"gain",
         RT_MANIP_GAIN,
         &rt_parser_execute_gain,
         2,

@@ -11,8 +11,8 @@
 #define RT_CMD_OPT_ARGC_MAX 3
 #define RT_CMD_COMMAND_ARGC_MAX 3
 
-#define RT_CMD_ALL_COMMANDS_COUNT 6
-#define RT_CMD_MAX_SEARCH_DEPTH 3
+#define RT_CMD_ALL_COMMANDS_COUNT (RU(7))
+#define RT_CMD_MAX_SEARCH_DEPTH (rt_log2_floor(RT_CMD_ALL_COMMANDS_COUNT))
 
 typedef enum RT_TOKEN_FLAVORS {
   RT_CMD_UNDEFINED_T,
@@ -84,6 +84,7 @@ int                        rt_parser_lex_args(rt_parser parser);
 int                        rt_parser_parse_in_place(rt_parser parser);
 
 /* ========      command exec functions      ======== */
+int rt_parser_execute_flush(void *params_ptr);
 int rt_parser_execute_gain(void *params_ptr);
 int rt_parser_execute_gate(void *params_ptr);
 int rt_parser_execute_limit(void *params_ptr);
