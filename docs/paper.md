@@ -46,16 +46,16 @@ author: Jackson Kaplan
 
 # Mathematics
 
-For this section explaining the math behind RTSTFT, I will be using *extremely* explicit notation. For any readers with a background in maths, it will likely seem like overkill, but I do so in order to create an explanation that I wish had existed when I was learning all of this on my own. The following explanation is intended for a anyone with only a fuzzy recollection of highschool-level calculus, and insists upon instilling the reader with a deep understanding of the actual mechanisms and reasoning behind the math instead of just the computations alone.
+For this section explaining the math behind RTSTFT, I will be using *extremely* explicit notation. For any readers with a background in maths, it will likely seem like overkill, but I do so in order to create an explanation that I wish had existed when I was learning all of this on my own. The following explanation is intended for a anyone with only a fuzzy recollection of highschool level calculus, and insists upon instilling the reader with a deep understanding of the actual mechanisms and reasoning behind the math instead of just the computations alone.
 
 ## An Overview of the Fourier Transform
 
-For some set of $N$ input values $x_{input}$, the Discrete Fourier Transform (DFT) will return an array of values $x_{output}$ at an index $k$ defined as:
+For some set of $N$ input values $x_{input}$, the Discrete Fourier Transform (DFT) will return an array of values $x_{output}$ at an index $k$ defined as\footnote{For those who may not know: the sigma symbol $\sum$ simply indicates adding up the values of an expression for all integers in the given range. As such, $\sum_{n=0}^{N - 1}f(n)$ simply indicates determining the output of $f(n)$ for all $n$ from $0$ to $N -1$, and then summing all these values together.}:
 
 $$\displaystyle x_{output}[k] = \sum_{n=0}^{N - 1}{x_{input}[n] \cdot e^{\frac{i2\pi kn}{N}}}$$ 
 
 
-Note that this set of input values, or "signal" as it will be hereon referred to, is zero-indexed, hence taking the sum from 0 to N-1. This equation may certainly seem a little daunting, but we can break it down a bit by noting that it shares the form of Euler's formula, $e^{ix} = \cos{x} + i\sin{x}$. Applying this, we get\footnote{Wikipedia}:
+Note that this set of input values, or "signal" as it will be hereon referred to, is zero-indexed, hence taking the sum from 0 to N-1. This equation may certainly seem a little daunting, but we can break it down a bit by noting that it shares the form of Euler's formula, $e^{ix} = \cos{x} + i\sin{x}$. Applying this, we get the following\footnote{Wikipedia}:
 
 $$\displaystyle x_{output}[k] = \sum_{n=0}^{N - 1}{x_{input}[n] \cdot (\cos(\frac{i2\pi kn}{N}) + i\sin(\frac{i2\pi kn}{N}))}$$
 
@@ -63,7 +63,7 @@ Though this seems no less complicated, it tells us something very fundamental ab
 
 What matters is, when we take the absolute value and the angle of a complex number at some index $k$ of $x_{output}$ (corresponding to taking the radius and the angle of the complex number on its imaginary circle), the values we get back are the amplitude and the phase of the sinusoid with the frequency $\frac{1}{k}$ samples. 
 
-Let me state that again in simpler terms for emphasis: the DFT decomposes any input signal into a set of sinusoid waves, and gives us the phase and amplitude of each of those sinusoids. This mathematical operation is not an estimation: it is 100% accurate and completely reversible. Even for people familiar with the DFT, the significance of this cannot be overstated: being able to decompose a signal like this, turning its time-domain information into frequency-domain information, is an invaluable tool in almost any field of mathematics that deals with periodic signals. This explanation still might not suffice for many, as even I still have trouble fully linking the variables in the equation to what's actually going on under the hood. I insist you go to 3blue1brown's YouTube Channel\footnote{3Blue1Brown} and take a look at his video on the DFT; I find the visualizations to be extremely helpful in building a deeper understanding of how the DFT really works.
+Let me state that again in simpler terms, for emphasis: ***the DFT decomposes any input signal into a set of sinusoid waves, and gives us the phase and amplitude of each of those sinusoids***. This mathematical operation is not an estimation: it is 100% accurate and completely reversible. Even for people familiar with the DFT, the significance of this cannot be overstated: being able to decompose a signal like this, turning its time-domain information into frequency-domain information, is an invaluable tool in almost any field of mathematics that deals with periodic signals. This explanation still might not suffice for many, as even I still have trouble fully linking the variables in the equation to what's actually going on under the hood. I insist you go to 3blue1brown's YouTube Channel\footnote{3Blue1Brown} and take a look at his video on the DFT; I find the visualizations to be extremely helpful in building a deeper understanding of how the DFT really works.
 
 The DFT lies at the core of countless more complex signal processing algorithms, such as the ones that lie at the heart of RTSTFT: the phase vocoder, and the Short-Time Fourier Transform upon which it depends.
 
@@ -85,11 +85,7 @@ $$A_{m}[k] = (\sum_{n = 0}^{N-1}{
        x_{input}[n] \cdot e^{\frac{i2\pi kn}{N}}) \cdot w[n] 
 }$$
 
-for the output fra $x_{frame}$ in the input sequence $x_{input}$, and the windowing function $w[n]$ for the given sample $n$. $u[n]$ is the unit step function, defined as:
-
-$$u[n] = \begin{cases} 1 & n \ge 0 \\ 0 & n < 0 \end{cases}$$
-
-In this context, the unit step function is simply used to excluded any of the frames that aren't overlapping the current frame $m$.
+for the output fra $x_{frame}$ in the input sequence $x_{input}$, and the windowing function $w[n]$ for the given sample $n$. 
 
 ## Phase Vocoder
 
@@ -103,7 +99,19 @@ This is where the phase vocoder comes in. Using the phase information from the c
 
 ### Phase Vocoder - Mathematical Definitions
 
-Let's use the same
+Before beginning, allow me to clarify several things that were difficult for me to grasp as someone who didn't have much exposure to academic-level DSP symbology. One of my main goals with RTSTFT was to make these complex-seeming algorithms much more accessible to musicians and other end-users who may be unfamiliar with many of these concepts, and this paper will follow suit in that regard.
+
+In the following equations, there are two symbols that you may find intimidating: the Greek letters $\phi$ and $\omega$ (phi and omega). $\phi$ is used to denote a phase angle, i.e. the current "position" of a waveform, where as $\omega$ is the angular frequency, which is essentially just the cyclic frequency multipled py $2\pi$ radians. For instance, if we look at the following sine wave:
+
+![sine wave](phi_omega.png)
+
+We note that at 0 radians, it begins with its lowest crest, corresponding to the value of $\sin(\frac{3\pi}4)$, which means this sinusoid has a ***phase angle*** of $\frac{3\pi}4$ radians.
+
+$u[n]$ is the unit step function, defined as:
+
+$$u[n] = \begin{cases} 1 & n \ge 0 \\ 0 & n < 0 \end{cases}$$
+
+In this context, the unit step function is simply used to excluded any of the frames that aren't overlapping the current frame $m$.
 
 ## Definitions 
 Starting with a chosen FFT frame size $N$,  take the following definitions:
