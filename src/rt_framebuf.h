@@ -17,7 +17,7 @@
 #define RT_FRAME_IS_PROCESSED (1 << 1)
 
 typedef struct RTSTFT_Framebuffer {
-  rt_real      *omega, *phi_a_prev, *delta_phi_prev, *phi_s_cuml, *amp_holder;
+  rt_real      *omega, *phi_a_prev, *omega_true_prev, *phi_s_cuml, *amp_holder;
   rt_real      *frame, *work, *window;
   PFFFT_Setup **setups;
 } rt_framebuf_t;
