@@ -3,7 +3,6 @@ PANDOC="/opt/homebrew/bin/pandoc"
 TARGET=paper.md
 OUTPUT=$(TARGET:.md=.pdf)
 
-all: $(OUTPUT)
-$(OUTPUT): $(TARGET)
+all: 
 	@echo $@
-	$(PANDOC) -o $@ $<
+	$(PANDOC)  --csl=apa.csl --bibliography=RTSTFT.bib -C -o $(OUTPUT) $(TARGET)

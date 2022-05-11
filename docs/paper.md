@@ -1,6 +1,7 @@
 ---
 title: THE RTSTFT FRAMEWORK
 author: Jackson Kaplan
+nocite: '@*'
 ---
 \pagebreak
 # Acknowledgements
@@ -58,7 +59,7 @@ For some set of $N$ input values $x_{input}$, the Discrete Fourier transform (DF
 $$\displaystyle x_{output}[k] = \sum_{n=0}^{N - 1}{x_{input}[n] \cdot e^{\frac{i2\pi kn}{N}}}$$ 
 
 
-Note that this set of input values, or "signal" as it will be hereon referred to, is zero-indexed, hence taking the sum from 0 to N-1. This equation may certainly seem a little daunting, but we can break it down a bit by noting that it shares the form of Euler's formula, $e^{ix} = \cos{x} + i\sin{x}$. Applying this, we get the following\footnote{Wikipedia}:
+Note that this set of input values, or "signal" as it will be hereon referred to, is zero-indexed, hence taking the sum from 0 to N-1. This equation may certainly seem a little daunting, but we can break it down a bit by noting that it shares the form of Euler's formula, $e^{ix} = \cos{x} + i\sin{x}$. Applying this, we get the following\footnote{Wikipedia}}:
 
 $$\displaystyle x_{output}[k] = \sum_{n=0}^{N - 1}{x_{input}[n] \cdot (\cos(\frac{i2\pi kn}{N}) + i\sin(\frac{i2\pi kn}{N}))}$$
 
@@ -76,7 +77,7 @@ The short-time Fourier transform (STFT) is a method of extracting data about how
 
 The STFT is often performed on overlapping frames of signal, with the factor of the overlap $F_{overlap}$ determining how much the samples frames overlap. This overlap distance, defined as the frame size $N$ divided by $F_{overlap}$, is referred to as the "hop," as it is the distance the algorithm hops to get from one frame to the next. As an example, an STFT with $F_{overlap} = 4$ and $N = 1024$ would take a 1024-sample frame from the input signal every 256 samples. A long input signal of 4096 samples, when run through this STFT, would return 13 windowed frames, each sampled 256 samples apart from each other.
 
-These overlapping frames will also have a *windowing function* applied to them \footnote{Götzen et. al.}. This reduces the power of samples at the edges of the frames, and tends to increase the precision of the STFT. The Hanning window is the most commonly used of these:
+These overlapping frames will also have a *windowing function* applied to them \footnote{Götzen}. This reduces the power of samples at the edges of the frames, and tends to increase the precision of the STFT. The Hanning window is the most commonly used of these:
 
 ![Sinusoid Hanning windowing](window.png)
 
@@ -172,7 +173,7 @@ The maths above are a little different from any of the sources I found, but they
 
 # Implementation
 
-RTSTFT is written in pure C, with the intention of being adaptable to almost any purpose. In its early stages, it was tested as a purely offline processing library, achieving impressive speeds thanks to the inclusion of the PFFFT (Pretty Fast FFT) library for the requisite Fourier transforms. \footnote{Pommier} Because of the inclusion of this PFFFT, RTSTFT was not able to meet ANSI C standards, however this is likely not an issue as this standard is only required by exceptionally old or specific hardware. It is not only a phase vocoder implementation, but also provides end users with several novel ways of manipulating the STFT and phase vocoder algorithms, hence the creation of a companion plugin for RTSTFT was created to allow musicians and producers to harness the high level of detailed control that the library allows: rtstft_ctl. Somewhat contrary to its name, RTSTFT is not intended to be a particularly low-latency DSP processor; instead, it attempts to give real-time control over parameters that are generally only available in offline algorithms, if at all. The following implementation breakdown will focus solely on RTSTFT, as rtstft_ctl is mostly just wrapper code intended to allow clean GUI access to the library's functionalities. Unfortunately, there is not a functioning test suite written for RTSTFT, but rtstft_ctl could be profiled to get a very good idea of RTSTFT's real-world performance. I have not noted any significant performance dips unless using large FFT frame sizes, i.e. 8192 or higher.
+RTSTFT is written in pure C, with the intention of being adaptable to almost any purpose. In its early stages, it was tested as a purely offline processing library, achieving impressive speeds thanks to the inclusion of the PFFFT (Pretty Fast FFT) library for the requisite Fourier transforms. \footnote{Pommier} Because of the inclusion of this PFFFT, RTSTFT was not able to meet ANSI C standards, however this is likely not an issue as this standard is only required by exceptionally old or specific hardware. It is not only a phase vocoder implementation, but also provides end users with several novel ways of manipulating the STFT and phase vocoder algorithms, hence the creation of a companion plugin for RTSTFT was created to allow musicians and producers to harness the high level of detailed control that the library allows: rtstft\_ctl. Somewhat contrary to its name, RTSTFT is not intended to be a particularly low-latency DSP processor; instead, it attempts to give real-time control over parameters that are generally only available in offline algorithms, if at all. The following implementation breakdown will focus solely on RTSTFT, as rtstft\_ctl is mostly just wrapper code intended to allow clean GUI access to the library's functionalities. Unfortunately, there is not a functioning test suite written for RTSTFT, but rtstft\_ctl could be profiled to get a very good idea of RTSTFT's real-world performance. I have not noted any significant performance dips unless using large FFT frame sizes, i.e. 8192 or higher.
 
 ## Architecture
 ![RTSTFT implementation overview](implementation.png)
@@ -185,9 +186,9 @@ The one major innovation of RTSTFT is the way it approaches the final overlap-ad
 
 Normally, a phase vocoder-based pitch shifter will time-stretch all available audio, and then interpolate the full stretched signal back down to its original size. In real-time audio, this is not practical, as it would involve a *third* FIFO to hold the stretched audio, and only interpolate after all frames that overlap with the current frame have also been processed. This would result in a twofold increase in latency, which is not ideal for a library intended to be used in music production. Instead, RTSTFT interpolates *each frame* on its way into the output FIFO, which is mathematically sound as the initial phase angle of each bin is conserved through the process of interpolation, and any rounding errors with respect to the window amplitudes of the samples are minimal. At this point, the audio is fully processed and simply awaits reading at the output FIFO, which pops off individual samples at the same rate that the input FIFO ingests them.
 
-RTSTFT also presents an outward-facing API to allow for host programs to change its settings in real-time. To account for the host dispatching these changes on a different thread than the one responsible for audio processing, RTSTFT has systems in place to ensure that its settings aren't meddled with while it's in the process of manipulating a frame, as this could result in disastrous effects. Most settings are stored in a volatile buffer intended to take multiple writes from many threads; this buffer only transfers its data to the "official" settings buffer once at the beginning of every FFT frame's processing. For more complicated changes, such as a change in the FFT size or overlap factor, RTSTFT has a crude thread lock implementation, which prevents any audio I/O from occurring while it interpolates its per-bin settings to the new FFT settings.\footnote{in rtstft_ctl, the plugin also notifies the host to bypass its processing functionality while this lock is active.}. However, the effects of this lock are often barely noticeable, as the code is generally quick enough to finish these settings changes before the next chunk of audio needs to be processed.
+RTSTFT also presents an outward-facing API to allow for host programs to change its settings in real-time. To account for the host dispatching these changes on a different thread than the one responsible for audio processing, RTSTFT has systems in place to ensure that its settings aren't meddled with while it's in the process of manipulating a frame, as this could result in disastrous effects. Most settings are stored in a volatile buffer intended to take multiple writes from many threads; this buffer only transfers its data to the "official" settings buffer once at the beginning of every FFT frame's processing. For more complicated changes, such as a change in the FFT size or overlap factor, RTSTFT has a crude thread lock implementation, which prevents any audio I/O from occurring while it interpolates its per-bin settings to the new FFT settings.\footnote{ in rtstft\_ctl the plugin also notifies the host to bypass its processing functionality while this lock is active }. However, the effects of this lock are often barely noticeable, as the code is generally quick enough to finish these settings changes before the next chunk of audio needs to be processed.
 
-Next, we'll explore the heart and soul of RTSTFT: its manipulation engine. Retention and Phase Mod affect how much the phase from the previous frame affects the current frame. Phase Chaos introduces random variation to the final phase, which can be leveraged to produce a chorus-like effect. These parameters are applied to the calculation of the synthetic phase like so:
+Next, we'll explore the heart and soul of RTSTFT: its manipulation engine. 
 
 
 
@@ -197,37 +198,52 @@ For more information, take a look at [RTSTFT's source on github.](https://github
 
 RTSTFT presents two types of manipulations to the user: global phase-based manipulations, and per-bin amplitude manipulations. These could easily be expanded on in the future, but I'll just describe what currently exists in the implementation.
 
-The pitch setting is the same stretching factor $S$ as seen in the phase vocoder definitions section of this paper, determining the amount by which the frames are moved apart in their overlaps and to what extent they are stretched during interpolation. 
+The pitch setting is the same stretching factor $S$ as seen in the phase vocoder definitions section of this paper, determining the amount by which the frames are moved apart in their overlaps and to what extent they are stretched during interpolation. Retention and Phase Mod affect how much the phase from the previous frame affects the current frame. Phase Chaos introduces random variation to the final phase, which can be leveraged to produce a chorus-like effect. These parameters are applied to the calculation of the synthetic phase like so:
 
-$$\phi_{m}^{s}[k] = \text{wrap}(\phi_{m-1}^{s}[k]\cdot\text{retention} + \omega^{wrapped}_{m-1}[k] \cdot S\cdot{\text{phase mod}} + \text{rand}() \cdot\pi)$$
+
+$$\phi_{m}^{s}[k] = \text{wrap}(\phi_{m-1}^{s}[k]\cdot\text{retention} + \omega^{wrapped}_{m-1}[k] \cdot \text{pitch}\cdot{\text{phase mod}} + \text{rand}() \cdot\pi)$$
 
 where $\text{rand}()$ produces some random value from the range $[-1, 1]$.
 
-These phase manipulations generally produce extremely garbled or highly resonant sonic results, which can often be grating but can occasionally produce some extremely interesting experimental sounds. However, the pièce de résistance of RTSTFT is undoubtedly its per-bin manipulations. Consisting of Gain, Gate, and Limit, these manipulations allow you to define a gain multiplier for each bin, a gate amplitude which defines the minimum amplitude a bin must have or else be set to 0, and a limit amplitude that will clip the maximum amplitude of the bin. These settings can be set with high precision using the rt_cmd language built into RTSTFT (which we'll look at in a second)
+These phase manipulations generally produce extremely garbled or highly resonant sonic results, which can often be grating but can occasionally produce some extremely interesting experimental sounds. However, the pièce de résistance of RTSTFT is undoubtedly its per-bin manipulations. Consisting of Gain, Gate, and Limit, these manipulations allow you to define a gain multiplier for each bin, a gate amplitude which defines the minimum amplitude a bin must have or else be set to 0, and a limit amplitude that will clip the maximum amplitude of the bin. These settings can be set with high precision using the rt_cmd language built into RTSTFT (which we'll look at in a second), but can also be used extremely intuitively with rtstft\_ctl's graphical spectral display. When the GUI doesn't give the sufficient level of precision however, generally that's the end of the story for most audio plugins, but for RTSTFT, rt_cmd provides that extra dimension of control.
 
 ## rt_cmd
 
-rt_cmd is the native command line language built directly into the RTSTFT library. Unfortunately, it is not nearly as fleshed out as I would have like it to have been, but as I developed the rtstft_ctl plugin, I began to realize how most operations are much simpler to undertake from the GUI as opposed to the command line, especially in the context of music production. That said, I did leave in a command line so that anyone who felt the need to get extremely surgical with rtstft_ctl may do so by leveraging the rt_cmd language.
+rt_cmd is the native command line language built directly into the RTSTFT library. Unfortunately, it is not nearly as fleshed out as I would have like it to have been, but as I developed the rtstft\_ctl plugin, I began to realize how most operations are much simpler to undertake from the GUI as opposed to the command line, especially in the context of music production. That said, I did leave in a command line so that anyone who felt the need to get extremely surgical with rtstft\_ctl may do so by leveraging the rt_cmd language.
 
-### syntax
+### Syntax
 
 rt_cmd follows an exceptionally simplistic syntactic structure, which can be summed up as:
 ```
 COMMAND [FLAGS[FLAG ARGUMENTS...]...] COMMAND ARGUMENTS...
 ```
 
+To get familiar with it, we should take a look at a few examples.
 
-Limit the amplitude of bins 25 through 60 (inclusive) to $\pm0.5$, where amplitude is measured in the normal DSP convention of $[-1,1]$:
+To limit the amplitude of bins 25 through 60 (inclusive) to $\pm0.5$, where amplitude is measured in the normal DSP convention of $[-1,1]$:
 
-`limit 25-60 0.5`
+`limit 0.5 25-60`
 
-Apply (roughly) the same limiting using decibels (dBFS):
+To apply (roughly) the same limiting using decibels (dBFS):
 
-`limit 25-60 -6`
+`limit -b -6 25-60`
 
 Apply gain to bins 200-400 utilizing an exponential curve defined by $x^{10^{\text{input}}}$, where $\text{input}\in[-1,1]$ and $\text{input} = 0.5$:
 
-`gain 200-400 -c 0.5 -12 -6`
+`gain 200-400 -e 0.5 -12 -6`
+
+Here we can see the two main flags currently employed in rt_cmd: `-b` and `-e`. The `-b` flag simply indicates that the parser should expect values in decibels, which is often a much more intuitive unit to use for music producers. `-e` produces an exponential curve, taking in three values: the curve strength (which should be in the range $[-10, 10]$)
+
+
+### Parsing
+
+Though it behaves like a command-line tool, rt_cmd's parser is actually much more akin to that of a full-blown language compiler. Though this is overkill for its current state, it is intended to be infinitely and easily extensible, allowing for the language to grow naturally with the rest of the library as additional functionality is added. For a full picture of how rt_cmd parses its commands, I'd recommend taking a look at the source, but the general flow of execution goes like this:
+
+1. A string of characters is passed into rt_cmd's parser object, which separates the string into raw tokens solely by separating them by whitespace.
+2. The type, or "flavour" of these tokens is determined by the lexer—e.g. integer, float, etc.
+3. Given the command designated by the first token, a corresponding function is executed which takes the organized and lexed tokens and passes them into the appropriate RTSTFT API function.
+
+Thought not the most computationally efficient system, modern computers can handle string operations like these with ease, which is only compounded by the fact that the command parser will almost always be running on a different thread.
 
 ## Future Optimizations
 
@@ -246,26 +262,12 @@ Though the threaded option it is the best solution on paper, it would increase t
 
 In all likelihood, all of these optimizations would only be pursued if RTSTFT were ever rewritten with the intent of creating a commercial product, but I will leave them here for any in the open source community who would like to create a higher-performance fork of RTSTFT.
 
-\pagebreak
-# Bibliography 
-
-1. 3Blue1Brown. (2018, January 26). But what is the Fourier Transform?  A visual introduction. https://www.youtube.com/watch?v=spUNpyF58BY
-2. Discrete Fourier transform. (2022). In Wikipedia. https://en.wikipedia.org/w/index.php?title=Discrete_Fourier_transform&oldid=1081065184
-3. Fourier transform. (2022). In Wikipedia. https://en.wikipedia.org/w/index.php?title=Fourier_transform&oldid=1085783068
-4. Götzen, A., Arfib, D., & Bernardini, N. (2000). Traditional(?) implementation of a phase vocoder: The tricks of the trade. 37–44.
-5. Grondin, François. Guitar Pitch Shifter—Algorithm. (n.d.). Retrieved May 10, 2022, from http://www.guitarpitchshifter.com/algorithm.html
-6. Lim, K. A. (n.d.). An Open-Source Phase Vocoder with Some Novel Visualizations. 39.
-7. Srinivas, N., Amara, M., & Kumar, P. K. (n.d.). Implementation of Pitch Shifter using Phase Vocoder Algorithm on Artix-7 FPGA. 8.
-8. Pommier, J. (n.d.). jpommier / pffft / pffft.c—Bitbucket. Retrieved May 11, 2022, from https://bitbucket.org/jpommier/pffft/src/master/pffft.c
-9. The Mathematical Genius of Auto-Tune. (2016, September 26). Priceonomics. https://priceonomics.com/the-inventor-of-auto-tune/
-
-
-\pagebreak
+\newpage
 # Appendix
 
 ## Code
 
-The core RTSTFT library can be found at its [github repo](https://github.com/ancientjpeg/RTSTFT), and the companion plugin rtstft_ctl can also be [found on GitHub](https://github.com/ancientjpeg/rtstft_ctl) with instructions to build from source.
+The core RTSTFT library can be found at its [github repo](https://github.com/ancientjpeg/RTSTFT), and the companion plugin rtstft\_ctl can also be [found on GitHub](https://github.com/ancientjpeg/rtstft\_ctl) with instructions to build from source.
 
 ## Glossary of terms
 
@@ -277,3 +279,6 @@ $$\text{array of analysis frames extracted via STFT} = A$$
 $$\text{array of synthetic frames assembled after phase vocoding} = O$$
 $$\text{analysis hop}       = \text{hop}_a = \frac{N}{F_{overlap}}$$
 $$\text{synthetic hop}       = \text{hop}_s = \text{round}({S * \text{hop}_a})     $$
+
+\newpage
+# References
