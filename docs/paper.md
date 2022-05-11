@@ -183,12 +183,27 @@ Once inside the frame buffer, the audio data is first transformed using the PFFF
 
 The one major innovation of RTSTFT is the way it approaches the final overlap-adding and interpolation step. I don't claim to have invented the following procedure, but I did develop on my own and didn't find any mention of a similar tactic in any sources I came across.
 
-Normally, a phase vocoder-based pitch shifter will time-stretch all available audio, and then interpolate the full stretched signal back down to its original size. In real-time audio, this is not practical, as it would involve a *third* FIFO to hold the stretched audio, and only interpolate after all frames that overlap with the current frame have also been processed. This would result in a twofold increase in latency, which is not ideal for a library intended to be used in music production. 
+Normally, a phase vocoder-based pitch shifter will time-stretch all available audio, and then interpolate the full stretched signal back down to its original size. In real-time audio, this is not practical, as it would involve a *third* FIFO to hold the stretched audio, and only interpolate after all frames that overlap with the current frame have also been processed. This would result in a twofold increase in latency, which is not ideal for a library intended to be used in music production. Instead, RTSTFT interpolates *each frame* on its way into the output FIFO, which is mathematically sound as the initial phase angle of each bin is conserved through the process of interpolation, and any rounding errors with respect to the window amplitudes of the samples are minimal. At this point, the audio is fully processed and simply awaits reading at the output FIFO, which pops off individual samples at the same rate that the input FIFO ingests them.
+
+RTSTFT also presents an outward-facing API to allow for host programs to change its settings in real-time. To account for the host dispatching these changes on a different thread than the one responsible for audio processing, RTSTFT has systems in place to ensure that its settings aren't meddled with while it's in the process of manipulating a frame, as this could result in disastrous effects. Most settings are stored in a volatile buffer intended to take multiple writes from many threads; this buffer only transfers its data to the "official" settings buffer once at the beginning of every FFT frame's processing. For more complicated changes, such as a change in the FFT size or overlap factor, RTSTFT has a crude thread lock implementation, which prevents any audio I/O from occurring while it interpolates its per-bin settings to the new FFT settings.\footnote{in rtstft_ctl, the plugin also notifies the host to bypass its processing functionality while this lock is active.}. However, the effects of this lock are often barely noticeable, as the code is generally quick enough to finish these settings changes before the next chunk of audio needs to be processed.
+
+Next, we'll explore the heart and soul of RTSTFT: its manipulation engine. Retention and Phase Mod affect how much the phase from the previous frame affects the current frame. Phase Chaos introduces random variation to the final phase, which can be leveraged to produce a chorus-like effect. These parameters are applied to the calculation of the synthetic phase like so:
 
 
-For more information, take a look at [RTSTFT's source on github](https://github.com/ancientjpeg/RTSTFT).
+
+For more information, take a look at [RTSTFT's source on github.](https://github.com/ancientjpeg/RTSTFT).
 
 ## Manipulations
+
+RTSTFT presents two types of manipulations to the user: global phase-based manipulations, and per-bin amplitude manipulations. These could easily be expanded on in the future, but I'll just describe what currently exists in the implementation.
+
+The pitch setting is the same stretching factor $S$ as seen in the phase vocoder definitions section of this paper, determining the amount by which the frames are moved apart in their overlaps and to what extent they are stretched during interpolation. 
+
+$$\phi_{m}^{s}[k] = \text{wrap}(\phi_{m-1}^{s}[k]\cdot\text{retention} + \omega^{wrapped}_{m-1}[k] \cdot S\cdot{\text{phase mod}} + \text{rand}() \cdot\pi)$$
+
+where $\text{rand}()$ produces some random value from the range $[-1, 1]$.
+
+These phase manipulations generally produce extremely garbled or highly resonant sonic results, which can often be grating but can occasionally produce some extremely interesting experimental sounds. However, the pièce de résistance of RTSTFT is undoubtedly its per-bin manipulations. Consisting of Gain, Gate, and Limit, these manipulations allow you to define a gain multiplier for each bin, a gate amplitude which defines the minimum amplitude a bin must have or else be set to 0, and a limit amplitude that will clip the maximum amplitude of the bin. These settings can be set with high precision using the rt_cmd language built into RTSTFT (which we'll look at in a second)
 
 ## rt_cmd
 

@@ -142,7 +142,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   rt_real *frame_ptr = c->framebuf->frame;
   rt_uint  i;
   rt_real  real, imag, amp, phase;
-  rt_real  omega_true, phase_adj, phase_cuml_val, phase_calc_final,
+  rt_real  omega_true, phi_s_curr, phase_cuml_val, phase_calc_final,
       phase_chaos_curr = 1.f;
   rt_real *phi_a_prev, *omega_true_prev, *phi_s_cuml, *curr_phase_ptr;
   rt_real  fft_log     = (rt_real)(rt_log2_floor(p->fft_size));
@@ -185,18 +185,18 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
     omega_true      = c->framebuf->omega[i] + wrap(omega_true);
 
     /** save the correct, pitch-accurate phase */
-    phase_adj = *phi_s_cuml * p->retention_mod
-                + *omega_true_prev * p->scale_factor * p->phase_mod;
-    if (isnan(phase_adj)) {
-      phase_adj = 0;
+    phi_s_curr = *phi_s_cuml * p->retention_mod
+                 + *omega_true_prev * p->scale_factor * p->phase_mod;
+    if (isnan(phi_s_curr)) {
+      phi_s_curr = 0;
     }
     if (p->phase_chaos > 0.f) {
-      phase_adj += (rand() - (float)(RAND_MAX >> 1)) / RAND_MAX * p->phase_chaos
-                   * 2 * M_PI;
+      phi_s_curr += (rand() - (float)(RAND_MAX >> 1)) / RAND_MAX
+                    * p->phase_chaos * 2 * M_PI;
     }
 
     *omega_true_prev = omega_true;
-    *phi_s_cuml      = wrap(phase_adj);
+    *phi_s_cuml      = wrap(phi_s_curr);
 
     *phi_a_prev      = *curr_phase_ptr;
     *curr_phase_ptr  = *phi_s_cuml;
