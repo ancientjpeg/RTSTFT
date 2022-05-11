@@ -262,6 +262,8 @@ Though the threaded option it is the best solution on paper, it would increase t
 
 In all likelihood, all of these optimizations would only be pursued if RTSTFT were ever rewritten with the intent of creating a commercial product, but I will leave them here for any in the open source community who would like to create a higher-performance fork of RTSTFT.
 
+# Conclusion
+
 \newpage
 # Appendix
 
