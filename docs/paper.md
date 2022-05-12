@@ -3,50 +3,35 @@ title: THE RTSTFT FRAMEWORK
 author: Jackson Kaplan
 nocite: '@*'
 ---
-\pagebreak
-# Acknowledgements
-\pagebreak
+\newpage
 
 # Abstract
-- What is it?
-  - Pure C Library
-  - A core STFT algorithm with several methods for manipulation
-    - Per-bin manipulations, i.e. gating, limiting, muting
-    - Phase vocoder based pitch-shifting
-    - Freeform phase manipulation for effects akin to phase chorus
-    - More to come...
-  - A scripting language, rt_cmd, for precise control of these parameters
-    - Includes a custom command parser
-- What can it do?
-  - User level manipulation of FFT bins, both amplitude and phase
-    - Sonically akin to filtration, but with audible artifacts that can be creatively exploited
-  - Methods for adjusting the phase vocoder algorithm for creative results
-    - phase chorus
-    - "robotization", but with more control
-  - Intended for users to get in deep and experiment with + corrupt their sounds
+
+RTSTFT is a library written in pure C, and includes a phase vocoder algorithm with several novel ways for users to manipulate the algorithm directly to achieve highly unique sounds. It also includes a small built-in command line tool with its own language, rt_cmd, to allow for precise control of these manipulations. At its simplest usage, RTSTFT can be utilized much like an audio equalizer or filter, but its strengths lie with how much access to the underlying algorithm is given to the user. Not only is it an extremely competent pitch shifter, capable of handling complex harmonic content at certain settings, but it also deigns to break into as-of-yet unexplored territory in experimental music production.
+
+This paper is intended to not only outline the specifics of RTSTFT, but provide an in-depth and hopefully intuitive explanation of all the underlying mathematics, as I found that there are very few beginner-friendly resources for learning about advanced DSP\footnote{Digital Signal Processing} algorithms such as this one. As such, this paper is intended to be as educational as it is technical, and I hope that any who come across this paper find it useful. I insist that anyone trying to learn from what I've written here contact me with any questions, as I believe the knowledge I've employed in the creation of RTSTFT should be easily accessible to everyone without needing to spend hours familiarizing oneself with academic DSP symbology.
+
+# Acknowledgements
+
+RTSTFT is a work inspired by the growth in my musical abilities inspired by many of my peers and professors at CalArts. In particular, I'm incredibly thankful to Hanna for helping my grow my taste in music and discover the types of sounds that inspired my to create RTSTFT, and to Tracey for being the expert sonic experimentalist I needed around to actually feel capable of tackling the types of sounds I wanted to recreate. A huge thanks to John Tejada and John Baffa for helping me solidify my knowledge of musical creativity and mix engineering, without which I wouldn't have even known where to begin when trying to design my own audio processors. And finally thanks to Jacob Penn for the monumental amount of assistance in restructuring the architecture of RTSTFT's codebase, bringing it from an over-engineered monstrosity to a streamlined system that can actually accomplish the goals it was created for.
+
+\newpage
 
 # Background & History
 ## Motivation and philosophy behind creation
-- Digital audio is stuck trying to emulate and outperform analog gear
-- Very little emphasis on exploring the creative possibilities that are unique to digital sound processing algorithms
-- Few spectral plugins that aren't extremely nebulous about their actual internal function
-- Very few creative plugins in general that emphasize surgical precision
-- Absolutely no spectral plugins that allow direct interface with their underlying algorithms (to my knowledge)
-  - RTSTFT is designed for user-level manipulation of individual FFT bins
-- Also intended as a lightweight and friendly introduction to command-line syntax
-  - A skill I think everyone deserves to be taught but lacks easily available resources for beginners
-## History of spectral audio
-- Fourier transform began as a method for thermodynamic analysis
-- Equalizers began as audio applications of principles used in electrical engineering
-  - By their nature, smooth and somewhat imprecise (which is generally pleasing to the ear)
-- Vocoders may be the first discretized audio processor
-  - Utilized filters to isolate frequency bands for individual processing
-- With the advent of modern computers, the DFT could be performed real-time
-  - H910 Harmonizer
-  - AutoTune (started out as oil location)
-  - Phase vocoding for cell phones
-  - JPEGs! (DCT)
 
+Though I have been playing music since I was an adolescent, I only felt like I came into my own when I started exploring digital music production. As time has gone on, I've found myself drawn more and more to extremely experimental variants of sound design, to a point where in the past several years I've started to feel limited by the tools available to digital musicians. As I've grown as a programmer, I've begun to realize that there is a whole world of possibilities that isn't being explored by most plug-in designers. The vast majority of digital audio plug-ins seek only to emulate their analog ancestors, which in my view, is deeply near-sighted and fails to take advantage of the boundless possibilities that exist in the realm of digital audio. Analog audio processors are often revered for imparting a more "natural" and "warm" sound, and in this, they invariably excel—to the point that it becomes futile for digital processors to attempt to compete with them. Instead of trying to chase such a fever dream, I am of the opinion that far more resources should be devoted to finding new ways that digital audio manipulation can generate results that would be otherwise impossible. One avenue that has not been explored by the industry is by giving users much more direct control over these algorithms, as the few experimental plug-ins that do exist tend to hide most of the technicalities of their operation for fear of seeming too complex or intimidating. 
+
+This is the core of the intention behind RTSTFT. It gives unadulterated control over almost every facet of its underlying DSP, and tries to do so in a way that is still accessible to users who aren't experts in the field. It's a very difficult balance to strike, but without even an attempt at it, music producers and sound designers might never know the world of possibilities that exists for them but has been kept out of their reach. Not only is RTSTFT meant to be accessible, but it is also ideally meant to be informative. The more users know about what's going on under the hood, the more they'll be able to intentionally bend audio in new and exciting ways. Further, it's secondarily founded on the idea that many skills that come as second nature to programmers should be universal to everyone, without needing to dig through pages on pages of unfriendly manuals and forum posts just to get a handle on the basics. The main example of this that RTSTFT is intended to convey is the usage of the command line. The wealth of tools and time-saving capabilities that a computer's command line has should be something that everyone has access to, but unfortunately the command line itself serves as a barrier to wider-spread adoption with its bizarre syntax that can come across as completely alien to the uninitiated. With a (hopefully) friendly command line interface custom-made to act as a friendly introduction to using the command line, it is my hope that some users will take RTSTFT as a jumping-off point to learning how to use their own computer's command line, a skill that I see as a necessity so that people can spend less time doing battle with programs that have complicated graphical interfaces and more time actually completing their tasks and doing what they actually intend to.
+
+RTSTFT is hopefully the first in a line of many audio tools built to make users more comfortable with the more technical side of the software they use, in hopes that it may unlock creativity and greatly increase the range of possibilities that musicians and sound designers have when making their art.
+
+## History of spectral audio
+Throughout the history of recorded audio, there have always been tools to modify the incoming sound in order to have it fit the artists' and producers' preferences. The earliest of these were circuits that were already heavily employed in fields that had little to do with audio; electrical mechanisms like filters and amplifiers were extremely important in maintaining the growing power grids of the era. Even synthesizers, often seen as the first step in the advent of electronic music, were still fundamentally analog, and thus shared the same limitations as the other audio tools available to musicians in the studio. It was only with the advent of computers did decades, if not centuries, of signal processing theory in the realm of academics become viable for use in music production. One of the first examples of a digital machine being used in the studio was Eventide's H910 Harmonizer\footnote{Valhalla DSP}. Though there were technically analog devices capable of doing this\footnote{Ibid.}, they involved complex systems of multiple tape heads rotating with a slight offset. The H910 offered an extremely simple and intuitive interface to achieve pitch-shifting without the hassle of such a delicate analog system, and its popularity grew exponentially soon after its release. However, the era of digital music didn't begin until two important milestones were reached: first, the ability of mainstream computers to be able to handle large quantities of audio, and second, the release of Antares Auto-Tune.
+
+Andy Hildebrand was an electrical engineering PhD who was contracted by Exxon in the 1990s to develop software that would allow them to more accurately decipher seismic data in order to better locate underground oil reserves. However, as a classically-trained musician, Hildebrand soon realized that these same techniques could prove to be useful to music producers as well. He went on to develop Auto-Tune, a digital pitch corrector that completely changed music as we know it today. Utilizing an algorithm known as the phase vocoder (which lies at the core of RTSTFT as well), Auto-Tune is able to change the pitch of an incoming audio signal, and can do so automatically by detecting the original pitch using a technique known as autocorrelation. Since the release of Auto-Tune, there have been countless audio plug-ins that utilize spectral techniques such as the phase vocoder to alter audio in ways that analog devices are simply incapable of achieving. However, many of these digital algorithms, and certainly all the spectral ones, would not exist if not for the work of French mathematician Jean Baptiste Fourier.
+
+Though Fourier's influence on modern audio processing is debatably greater than any other individual contributor, his work had nothing to do with sound; instead, his mathematical theories were focused on the behavior of heat.\footnote{Jessop} Fourier's discoveries were looked upon with skepticism in his own time, but are now regarded as one of the foundations of modern mathematics. Without getting too technical, the core of Fourier's contributions is the idea that *any* periodic signal can be broken down into a series of harmonic sinusoid waveforms. The function that allows this decomposition has since been termed the Fourier transform, and it now serves as the foundation for countless fields, ranging from music production and engineering to the study of quantum physics. As we'll see, though the math can seem a little daunting, it is extremely elegant in its core ideation, and in application it presents a massive space of possibilities for experimental sound design that I believe have barely been explored.
 
 # Mathematics
 
@@ -228,12 +213,11 @@ To apply (roughly) the same limiting using decibels (dBFS):
 
 `limit -b -6 25-60`
 
-Apply gain to bins 200-400 utilizing an exponential curve defined by $x^{10^{\text{input}}}$, where $\text{input}\in[-1,1]$ and $\text{input} = 0.5$:
+Apply gain to bins 200-400 utilizing an exponential curve, with the curve ranging from -12dB to -6dB:
 
-`gain 200-400 -e 0.5 -12 -6`
+`gain -b -e -2 -12 -6`
 
-Here we can see the two main flags currently employed in rt_cmd: `-b` and `-e`. The `-b` flag simply indicates that the parser should expect values in decibels, which is often a much more intuitive unit to use for music producers. `-e` produces an exponential curve, taking in three values: the curve strength (which should be in the range $[-10, 10]$)
-
+Here we can see the two main flags currently employed in rt_cmd: `-b` and `-e`. The `-b` flag simply indicates that the parser should expect values in decibels, which is often a much more intuitive unit to use for music producers. `-e` produces an exponential curve, taking in three values: the curve strength (which should be in the range $[-10, 10]$), the value at the beginning of the curve, and the value at the end of the curve. The curve equation is defined as $f(x) = x^{2^{a}}$, where $a$ is the curve power. This curve is then use to interpolate between the start and end values of the curve. See the source for details on exactly how this is accomplished.
 
 ### Parsing
 
@@ -264,12 +248,18 @@ In all likelihood, all of these optimizations would only be pursued if RTSTFT we
 
 # Conclusion
 
+RTSTFT is the culmination of years of experience in music and sound design, born of a desire to pull back the curtain on the fascinating world of DSP that is often hidden from musicians and producers. Though simple relative to many other existing plug-ins, it is hopefully the first in a line of many audio processors that try to give users full control over their audio, and embolden sonic creativity in ways that were previously unthinkable. I implore any readers of this paper who have their own ideas for novel applications of DSP algorithms to contact me directly, as it is my goal to inspire a new wave of software that truly takes advantage of the wealth of possibilities digital audio has to offer.
+
 \newpage
 # Appendix
 
+## Contact
+
+Please feel free to reach me through email via jacksonkaplan@alum.calarts.edu, or find my social media linked [through my website](https://ancientjpeg.github.io), ancientjpeg.github.io.
+
 ## Code
 
-The core RTSTFT library can be found at its [github repo](https://github.com/ancientjpeg/RTSTFT), and the companion plugin rtstft\_ctl can also be [found on GitHub](https://github.com/ancientjpeg/rtstft\_ctl) with instructions to build from source.
+The core RTSTFT library can be found at its [github repo](https://github.com/ancientjpeg/RTSTFT) located at https://github.com/ancientjpeg/RTSTFT, and the companion plugin rtstft_ctl can also be [found on GitHub](https://github.com/ancientjpeg/rtstft_ctl) located at https://github.com/ancientjpeg/rtstft\_ctl with instructions to build from source.
 
 ## Glossary of terms
 
