@@ -106,7 +106,7 @@ Before beginning, in the spirit of being unnecessarily explicit in the technical
 
 In the following equations, there are two symbols that you may find intimidating: the Greek letters $\phi$ and $\omega$ (phi and omega). $\phi$ is used to denote a phase angle, i.e. the current "position" of a waveform, where as $\omega$ is the angular frequency, which is essentially just the cyclic frequency multiplied py $2\pi$ radians. For instance, if we look at the following sine wave:
 
-![Sine wave with angular frequency $\omega=4\pi$ and phase angle $\phi=\frac{\pi}2$](phi_omega.png)
+![Sine wave with angular frequency $\omega=4\pi$ and phase angle $\phi=\frac{\pi}2$](phi_omega.png){#id .class width=300px}
 
 First off, we notice that this sine wave cycles twice over the course of its period, which gives it an angular frequency of $\omega = 2 * 2\pi = 4\pi$. We also note that the waveform initially moves downward, implying that it has been shifted over (as a normal sine wave initially proceeds upwards). As such, we say its phase angle, $\phi$, is equal to the amount it has been shifted to the left. In this case, the sinusoid begins at the point that would've corresponded to $\frac{\pi}2$ radians on the un-shifted waveform, giving this waveform a phase angle $\phi = \frac{\pi}2$.
 
