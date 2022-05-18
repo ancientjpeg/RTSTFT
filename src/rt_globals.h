@@ -35,7 +35,7 @@ typedef unsigned int rt_uint;
 #endif
 
 #define RT_UINT_FALSE ((rt_uint)-1)
-#define RT_REAL_ERR ((rt_real)(0. / 0.))
+#define RT_REAL_ERR NAN
 #define RT_INT_ERR INT_MIN
 
 #ifdef RT_FFT_MIN_POW_OVERRIDE

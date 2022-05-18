@@ -31,7 +31,7 @@ rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
     p->chans[i] = rt_chan_init(p);
   }
   rt_set_multichannel(p, 0);
-  p->listener         = (rt_listener_t){};
+  p->listener         = (rt_listener_t){0};
   p->samples_ingested = 0;
   p->initialized      = 1;
   return p;
