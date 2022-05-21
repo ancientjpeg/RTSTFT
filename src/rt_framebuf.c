@@ -39,7 +39,7 @@ rt_framebuf rt_framebuf_init(rt_params p)
    * unneeded for phase vocoder, but keeping for posterity
    *
    */
-  rt_uint num_real_bins = (p->fft_max >> 2) + 1;
+  rt_uint num_real_bins = (p->fft_max >> 1) + 1;
   framebuf->phi_a_prev  = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
   framebuf->omega_true_prev
       = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
