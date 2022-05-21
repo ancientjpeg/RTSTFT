@@ -10,22 +10,24 @@
  */
 #include "rtstft.h"
 
+void rt_framebuf_recalc_omegas(rt_params, rt_framebuf);
+
 /**
  * @brief Init function for RTSTFT's framebuffer.
  *
  *
- * @param p An rt_params signifying the active instance of RTSTFT.
+ * @param p Target rt_params object.
  * @return rt_framebuf returns this framebuffer.
  *
  *
  * Detailed description here. For reference, omega designates the "ideal"
- * frequencies of each FFT bin, or more accurately, the calculated phase offset
- * of a certain bin after hop_a samples. This is measured in radians.
+ * frequencies of each FFT bin, or more accurately, the calculated phase
+ * offset of a certain bin after hop_a samples. This is measured in radians.
  *
- * phi_a_prev is the analyzed frequencies from the previous frame. phi_s_cuml is
- * the current, calculated phase offset at each bin-this parameter is
- * incremented by the current calculated phase offset, and then wrapped, for
- * each frame.
+ * phi_a_prev is the analyzed frequencies from the previous frame.
+ * phi_s_cuml is the current, calculated phase offset at each bin-this
+ * parameter is incremented by the current calculated phase offset, and then
+ * wrapped, for each frame.
  *
  */
 rt_framebuf rt_framebuf_init(rt_params p)
@@ -37,7 +39,7 @@ rt_framebuf rt_framebuf_init(rt_params p)
    * unneeded for phase vocoder, but keeping for posterity
    *
    */
-  rt_uint num_real_bins = p->fft_max / 2 + 1;
+  rt_uint num_real_bins = (p->fft_max >> 2) + 1;
   framebuf->phi_a_prev  = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
   framebuf->omega_true_prev
       = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
@@ -46,17 +48,11 @@ rt_framebuf rt_framebuf_init(rt_params p)
 
   /**< represents per-bin phase offset in rads/hop */
   framebuf->omega = (rt_real *)malloc(num_real_bins * sizeof(rt_real));
-  rt_uint i;
-  for (i = 0; i < num_real_bins; i++) {
-    /** get angular frequency as w = 2pi * i * hop_a / N, which simplifies to
-     * 2pi * i / overlap_factor */
-    framebuf->omega[i] = ((rt_real)i / p->overlap_factor) * 2 * M_PI;
-  }
 
   /**
-   * @brief Frame allocation occurs here. Frames are allocated to maximum size
-   * to prevent any need for reallocation during processing in the event of a
-   * modification to the FFT size.
+   * @brief Frame allocation occurs here. Frames are allocated to maximum
+   * size to prevent any need for reallocation during processing in the
+   * event of a modification to the FFT size.
    */
   framebuf->frame
       = (rt_real *)pffft_aligned_malloc(3 * p->fft_max * sizeof(rt_real));
@@ -66,7 +62,7 @@ rt_framebuf rt_framebuf_init(rt_params p)
   /**< setup allocation */
   rt_uint num_setups = p->fft_max - p->fft_min + 1;
   framebuf->setups = (PFFFT_Setup **)malloc(num_setups * sizeof(PFFFT_Setup *));
-  rt_uint N, curr;
+  rt_uint i, N, curr;
   for (i = RT_FFT_MIN_POW; i <= RT_FFT_MAX_POW; i++) {
     N                      = (1 << i);
     curr                   = i - RT_FFT_MIN_POW;
@@ -85,6 +81,7 @@ void rt_framebuf_flush(rt_params p, rt_framebuf framebuf)
   memset(framebuf->omega_true_prev, 0, num_real_bins * sizeof(rt_real));
   memset(framebuf->phi_s_cuml, 0, num_real_bins * sizeof(rt_real));
   rt_fill_window(framebuf->window, p->frame_size);
+  rt_framebuf_recalc_omegas(p, framebuf);
 }
 
 /**
@@ -109,6 +106,32 @@ rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf)
   free(framebuf->amp_holder);
   free(framebuf);
   return NULL;
+}
+
+/**
+ * @brief Calculate "ideal" angular frequencies, expressed as radians per
+ * overlap
+ *
+ * @param p Target rt_params object
+ * @param framebuf Target frame buffer
+ *
+ * @details The general representation of the "ideal" angular frequencies (often
+ * expressed as omega) in most phase vocoder writeups is in terms of
+ * radians/sample, or even radians/second.  However, Because the DFT is agnostic
+ * of what units you use for time, the most efficient way to represent these
+ * angular frequencies is in terms of frame overlap, e.g. for an overlap factor
+ * of 4, omega will be the change in phase (in radians) in whatever amount of
+ * time 1/4 of a frame takes up. Because the angular frequency in terms of frame
+ * length is simply 2pi * bin index, you can just divide this value by the
+ * overlap factor, resulting in a very simple calculation that helps to keep the
+ * entire phase vocoding process as conceptually simple as possible.
+ */
+void rt_framebuf_recalc_omegas(rt_params p, rt_framebuf framebuf)
+{
+  rt_uint i;
+  for (i = 0; i < (p->fft_size >> 1) + 1; i++) {
+    framebuf->omega[i] = ((rt_real)i / p->overlap_factor) * 2 * M_PI;
+  }
 }
 
 /**
@@ -142,8 +165,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   rt_real *frame_ptr = c->framebuf->frame;
   rt_uint  i;
   rt_real  real, imag, amp, phase;
-  rt_real  omega_true, phi_s_curr, phase_cuml_val, phase_calc_final,
-      phase_chaos_curr = 1.f;
+  rt_real  omega_true, phi_s_curr;
   rt_real *phi_a_prev, *omega_true_prev, *phi_s_cuml, *curr_phase_ptr;
   rt_real  fft_log     = (rt_real)(rt_log2_floor(p->fft_size));
   rt_real  amp_adj_rev = (rt_real)(fft_log * fft_log),
