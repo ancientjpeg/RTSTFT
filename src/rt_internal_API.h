@@ -33,11 +33,11 @@ void rt_params_check_mod(rt_params p);
 /* ========   rt_manip    ======== */
 rt_manip rt_manip_init(rt_params p);
 void     rt_manip_clean(rt_manip m);
-void     rt_manip_reset(rt_params p, rt_manip m);
-void     rt_manip_update(rt_params p, rt_chan c);
-void     rt_manip_on_multichannel_change(rt_params p);
-void     rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr);
-void     rt_manip_framesize_changed(rt_params p, rt_chan c);
+void rt_manip_reset(rt_params p, rt_manip m, rt_manip_flavor_t target_flavor);
+void rt_manip_update(rt_params p, rt_chan c);
+void rt_manip_on_multichannel_change(rt_params p);
+void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr);
+void rt_manip_framesize_changed(rt_params p, rt_chan c);
 void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
                        rt_uint bin0, rt_uint binN, rt_real value);
 void rt_manip_set_bins_curved(rt_params p, rt_chan c,

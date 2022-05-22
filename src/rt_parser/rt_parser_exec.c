@@ -48,12 +48,42 @@ int rt_parser_execute_limit(void *params_ptr)
 
 int rt_parser_execute_reset(void *params_ptr)
 {
-  rt_params p = (rt_params)params_ptr;
-  rt_uint   i;
-  for (i = 0; i < p->num_chans; i++) {
-    rt_manip_reset(p, p->chans[i]->manip);
+  rt_params         p             = (rt_params)params_ptr;
+  rt_uint           i             = 0;
+  rt_manip_flavor_t target_flavor = RT_MANIP_FLAVOR_COUNT;
+  if (p->parser.command.args[1].token_flavor != RT_CMD_UNDEFINED_T) {
+    sprintf(p->parser.error_msg_buffer, "Too many args passed to reset");
+    return 27;
   }
-  sprintf(p->parser.error_msg_buffer, "Full reset of all mainps successful");
+
+  if (p->parser.command.args[0].token_flavor == RT_CMD_UNDEFINED_T) {
+    sprintf(p->parser.error_msg_buffer, "Full reset of all manips successful");
+  }
+  else if (p->parser.command.args[0].token_flavor == RT_CMD_STRING_T) {
+    const char *flavors[RT_MANIP_FLAVOR_COUNT] = {"gain", "gate", "limit"};
+    const char *subcommand = p->parser.command.args[0].raw_arg.str;
+    do {
+      if (strncmp(flavors[i], subcommand, RT_CMD_ARG_LEN_MAX) == 0) {
+        target_flavor = i;
+        sprintf(p->parser.error_msg_buffer,
+                "Full reset of all %s manips successful", subcommand);
+        break;
+      }
+    } while (++i < RT_MANIP_FLAVOR_COUNT);
+    if (i == RT_MANIP_FLAVOR_COUNT) {
+      sprintf(p->parser.error_msg_buffer, "%s is not a valid manip to reset",
+              subcommand);
+      return 28;
+    }
+  }
+  else {
+    sprintf(p->parser.error_msg_buffer, "Unexpected arg type passed to reset");
+    return 29;
+  }
+
+  for (i = 0; i < p->num_chans; i++) {
+    rt_manip_reset(p, p->chans[i]->manip, target_flavor);
+  }
 
   return 0;
 }
@@ -125,7 +155,7 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
   }
 
   /* get the command arg */
-  rt_real val = rt_float_from_any_numeric_token(&cmd->command_args[0]);
+  rt_real val = rt_float_from_any_numeric_token(&cmd->args[0]);
   rt_uint status;
   if (values_in_db) {
     val = rt_dbtoa(val);
@@ -144,8 +174,8 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
   if (status)
     return status;
 
-  bin0 = cmd->command_args[1].raw_arg.irange[0];
-  binN = cmd->command_args[1].raw_arg.irange[1];
+  bin0 = cmd->args[1].raw_arg.irange[0];
+  binN = cmd->args[1].raw_arg.irange[1];
 
   /* begin range checks */
   if (bin0 > rt_manip_len(p) || binN > rt_manip_len(p) || binN < bin0) {

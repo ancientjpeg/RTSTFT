@@ -32,7 +32,7 @@ rt_manip rt_manip_init(rt_params p)
   m->current_num_manips = rt_manip_len(p);
   m->manips             = pffft_aligned_malloc(len * sizeof(rt_real));
   m->hold_manips        = pffft_aligned_malloc(len * sizeof(rt_real));
-  rt_manip_reset(p, m);
+  rt_manip_reset(p, m, RT_MANIP_FLAVOR_COUNT);
   return m;
 }
 
@@ -47,10 +47,13 @@ void rt_manip_clean(rt_manip m)
 /* ========================  parameter change  ======================== */
 /* ==================================================================== */
 
-void rt_manip_reset(rt_params p, rt_manip m)
+void rt_manip_reset(rt_params p, rt_manip m, rt_manip_flavor_t target_flavor)
 {
   rt_uint i, j;
   for (i = 0; i < RT_MANIP_FLAVOR_COUNT; i++) {
+    if (target_flavor != i && target_flavor != RT_MANIP_FLAVOR_COUNT) {
+      continue;
+    }
     for (j = 0; j < rt_manip_len_max(p); j++) {
       rt_uint frame_index = rt_manip_index(p, i, j);
       switch (i) {

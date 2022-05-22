@@ -2,39 +2,38 @@
 
 rt_token_t *rt_parser_next_available_token_slot(rt_parser parser)
 {
-  rt_token_t *ptr = parser->token_buffer;
-  do {
-    if (ptr->token_flavor == RT_CMD_UNDEFINED_T) {
-      return ptr;
-    }
-  } while (++ptr != parser->token_buffer + RT_CMD_ARGC_MAX);
+  if (parser->next_available_token_slot < RT_CMD_ARGC_MAX) {
+    return parser->token_buffer + parser->next_available_token_slot++;
+  }
   sprintf(parser->error_msg_buffer, "Ran out of token slots.\n");
   return NULL;
 }
 
+void rt_parser_lex_string(rt_parser parser, rt_token_t *token,
+                          const char *token_raw)
+{
+  token->token_flavor = RT_CMD_STRING_T;
+  strcpy(token->raw_arg.str, token_raw);
+}
+
 int rt_parser_lex_command(rt_parser parser, rt_token_t *token,
-                          const char *raw_token)
+                          const char *token_raw)
 {
   const rt_command_define_t *cmd
-      = rt_parser_check_command_exists(parser, raw_token);
+      = rt_parser_check_command_exists(parser, token_raw);
   if (cmd == NULL) {
     return 1;
   }
   token->token_flavor = RT_CMD_COMMAND_T;
-  strcpy(token->raw_arg.str, raw_token);
+  strcpy(token->raw_arg.str, token_raw);
   parser->active_cmd_def = cmd;
   return 0;
 }
 
-int rt_parser_lex_param(rt_parser parser, const char *current_token)
+int rt_parser_lex_param(rt_parser parser, rt_token_t *token, const char *current_token)
 {
   rt_uint     i = 1;
-  rt_token_t *token;
   do {
-    token = rt_parser_next_available_token_slot(parser);
-    if (token == NULL) {
-      return 10;
-    }
     token->token_flavor   = RT_CMD_PARAM_T;
     token->raw_arg.str[0] = current_token[i];
   } while (current_token[++i] != '\0');
@@ -119,7 +118,7 @@ int rt_parser_lex_args(rt_parser parser)
     }
     if (token_raw[0] == '-') {
       if (isalpha(token_raw[1])) {
-        status = rt_parser_lex_param(parser, token_raw);
+        status = rt_parser_lex_param(parser, token, token_raw);
       }
       else if (isdigit(token_raw[1])) {
         status = rt_parser_lex_numeric(parser, token, token_raw);
@@ -135,6 +134,9 @@ int rt_parser_lex_args(rt_parser parser)
     }
     else if (argc == 0) {
       status = rt_parser_lex_command(parser, token, token_raw);
+    }
+    else if (isalpha(token_raw[0])) {
+      rt_parser_lex_string(parser, token, token_raw);
     }
     else {
       sprintf(parser->error_msg_buffer, "Unexpected token %s during lexing\n",

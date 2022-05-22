@@ -8,6 +8,7 @@
 #define RT_CMD_BUFFER_LEN (RT_CMD_ARGC_MAX * RT_CMD_ARG_LEN_MAX)
 #define RT_CMD_NAME_LEN 10
 #define RT_CMD_MAX_OPTS 4
+#define RT_CMD_STROPC_MAX 2
 #define RT_CMD_OPT_ARGC_MAX 3
 #define RT_CMD_COMMAND_ARGC_MAX 3
 
@@ -60,7 +61,7 @@ typedef struct RTSTFT_Parsed_Option {
 } rt_opt_t;
 typedef struct RTSTFT_Parsed_Command {
   char       name[RT_CMD_NAME_LEN];
-  rt_token_t command_args[RT_CMD_COMMAND_ARGC_MAX];
+  rt_token_t args[RT_CMD_COMMAND_ARGC_MAX];
   rt_opt_t   options[RT_CMD_MAX_OPTS];
 } rt_command_t;
 
@@ -70,7 +71,7 @@ typedef struct RTSTFT_Parser {
   const rt_command_define_t *active_cmd_def;
   rt_command_t               command;
   char                       error_msg_buffer[100];
-  char                       buffer_active;
+  char                       buffer_active, next_available_token_slot;
 } rt_parser_t;
 typedef rt_parser_t             *rt_parser;
 

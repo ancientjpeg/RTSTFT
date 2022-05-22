@@ -131,7 +131,7 @@ int rt_parser_parse_in_place(rt_parser parser)
       return 9;
     }
     else {
-      parser->command.command_args[parsed_cmd_args++]
+      parser->command.args[parsed_cmd_args++]
           = parser->token_buffer[token_index++];
     }
   }

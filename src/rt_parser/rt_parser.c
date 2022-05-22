@@ -54,29 +54,23 @@ void rt_parser_clear_buffer(rt_parser parser)
   memset(parser, 0, sizeof(rt_parser_t));
 }
 
+#define RT_PARSER_ERROR_CHECK(status)                                          \
+  if ((status)) {                                                              \
+    p->listener.listener_callback(p->listener.listener_obj, error_ret);        \
+    return (status);                                                           \
+  }
+
 int rt_parse_and_execute(rt_params p, const char *arg_str)
 {
   rt_parser_clear_buffer(&p->parser);
   int                  status    = rt_parser_split_argv(&p->parser, arg_str);
   rt_listener_return_t error_ret = rt_get_empty_listener_data();
-  if (status) {
-    p->listener.listener_callback(p->listener.listener_obj, error_ret);
-    return status;
-  }
+  RT_PARSER_ERROR_CHECK(status)
   status = rt_parser_lex_args(&p->parser);
-  if (status) {
-    p->listener.listener_callback(p->listener.listener_obj, error_ret);
-    return status;
-  }
+  RT_PARSER_ERROR_CHECK(status)
   status = rt_parser_parse_in_place(&p->parser);
-  if (status) {
-    p->listener.listener_callback(p->listener.listener_obj, error_ret);
-    return status;
-  }
+  RT_PARSER_ERROR_CHECK(status)
   status = p->parser.active_cmd_def->exec_func((void *)p);
-  if (status) {
-    p->listener.listener_callback(p->listener.listener_obj, error_ret);
-    return status;
-  }
+  RT_PARSER_ERROR_CHECK(status)
   return 0;
 }
