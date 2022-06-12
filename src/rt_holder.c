@@ -100,7 +100,6 @@ void rt_update_manips(rt_params p)
 void rt_update_params(rt_params p)
 {
   const rt_holder h = p->hold;
-  rt_uint         i;
 
   if ((p->hold->tracker & RT_MANIPS_CHANGED) && p->initialized) {
     rt_update_manips(p);
@@ -143,7 +142,7 @@ void rt_set_frame_size(rt_params p, rt_uint frame_size)
 void rt_set_overlap(rt_params p, rt_uint overlap_factor)
 {
   if (overlap_factor > RT_OVERLAP_MAX || overlap_factor < RT_OVERLAP_MIN) {
-    fprintf(stderr, "Overlap factor must be in range %d-%d. Got value %lu\n",
+    fprintf(stderr, "Overlap factor must be in range "ru"-"ru". Got value "ru"\n",
             RT_OVERLAP_MIN, RT_OVERLAP_MAX, overlap_factor);
     exit(1);
   }
@@ -153,7 +152,7 @@ void rt_set_overlap(rt_params p, rt_uint overlap_factor)
 void rt_set_pad_factor(rt_params p, rt_uint pad_factor)
 {
   if (pad_factor > RT_PAD_MAX) {
-    fprintf(stderr, "Pad factor must less than %d. Got value %lu\n", RT_PAD_MAX,
+    fprintf(stderr, "Pad factor must less than %d. Got value "ru"\n", RT_PAD_MAX,
             pad_factor);
     exit(1);
   }
@@ -164,7 +163,7 @@ void rt_set_buffer_size(rt_params p, rt_uint buffer_size)
 {
   rt_uint buffer_pow = rt_check_pow_2(buffer_size);
   if (buffer_pow == RT_UINT_FALSE) {
-    fprintf(stderr, "%lu is an invalid buffer size: not a power of 2.\n",
+    fprintf(stderr, ru" is an invalid buffer size: not a power of 2.\n",
             buffer_size);
     exit(1);
   }
@@ -193,18 +192,18 @@ void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint overlap_factor,
 
   rt_uint frame_pow = rt_check_pow_2(frame_size);
   if (frame_pow == RT_UINT_FALSE) {
-    fprintf(stderr, "%lu is an invalid frame size: not a power of 2.\n",
+    fprintf(stderr, ru" is an invalid frame size: not a power of 2.\n",
             frame_size);
     exit(1);
   }
   rt_uint fft_pow  = frame_pow + pad_factor;
-  rt_uint fft_size = 1UL << fft_pow;
+  rt_uint fft_size = RU(1) << fft_pow;
   if (fft_size > p->fft_max) {
-    fprintf(stderr, "Exceeded maximum frame size; got value %lu.\n", fft_size);
+    fprintf(stderr, "Exceeded maximum frame size; got value "ru".\n", fft_size);
     exit(1);
   }
   else if (fft_size < p->fft_min) {
-    fprintf(stderr, "Below minimum frame size; got value %lu.\n", fft_size);
+    fprintf(stderr, "Below minimum frame size; got value "ru".\n", fft_size);
     exit(1);
   }
   p->hold->pad_factor = pad_factor;
