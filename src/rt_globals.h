@@ -68,6 +68,9 @@ typedef unsigned int rt_uint;
 #define RT_PAD_MAX 3
 #endif
 
+#define RT_DB_MIN (-96.f)
+#define RT_DB_MAX (12.f)
+
 typedef enum RT_PARAM_FLAVOR {
   RT_SCALE_FACTOR_MOD,
   RT_RETENTION_MOD,
