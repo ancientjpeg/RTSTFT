@@ -39,15 +39,6 @@ rt_real rt_atodb(rt_real amp_val)
   return amp_val > 0.f ? ret : FLT_MIN;
 }
 
-rt_real rt_raw_amp_to_db_scaled_amp(rt_real raw_amp)
-{
-  // could just use -6, but you've failed to consider how obnoxious I am
-  const rt_real DB_OF_0_5 = -6.02059991328f;
-
-  RT_DB_MIN;
-  RT_DB_MAX;
-}
-
 /**
  * @brief Generic function to wait for a "lock"
  *
