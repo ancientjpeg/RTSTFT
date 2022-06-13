@@ -19,9 +19,9 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
   rt_set_single_param(p, RT_RETENTION_MOD, 1.f);
   rt_set_single_param(p, RT_PHASE_MOD, 1.f);
   rt_set_single_param(p, RT_PHASE_CHAOS, 0.f);
-  rt_set_single_param(p, RT_PARAM_GATE_MOD, 0.f);
-  rt_set_single_param(p, RT_PARAM_GAIN_MOD, 0.f);
-  rt_set_single_param(p, RT_PARAM_LIMIT_MOD, 0.f);
+  rt_set_single_param(p, RT_PARAM_GATE_MOD, 1.f);
+  rt_set_single_param(p, RT_PARAM_GAIN_MOD, 1.f);
+  rt_set_single_param(p, RT_PARAM_LIMIT_MOD, 1.f);
   rt_set_single_param(p, RT_DRY_WET, 1.f);
   rt_set_buffer_size(p, buffer_size);
   rt_set_fft_size(p, frame_size, overlap_factor, pad_factor);
@@ -142,7 +142,8 @@ void rt_set_frame_size(rt_params p, rt_uint frame_size)
 void rt_set_overlap(rt_params p, rt_uint overlap_factor)
 {
   if (overlap_factor > RT_OVERLAP_MAX || overlap_factor < RT_OVERLAP_MIN) {
-    fprintf(stderr, "Overlap factor must be in range "ru"-"ru". Got value "ru"\n",
+    fprintf(stderr,
+            "Overlap factor must be in range " ru "-" ru ". Got value " ru "\n",
             RT_OVERLAP_MIN, RT_OVERLAP_MAX, overlap_factor);
     exit(1);
   }
@@ -152,8 +153,8 @@ void rt_set_overlap(rt_params p, rt_uint overlap_factor)
 void rt_set_pad_factor(rt_params p, rt_uint pad_factor)
 {
   if (pad_factor > RT_PAD_MAX) {
-    fprintf(stderr, "Pad factor must less than %d. Got value "ru"\n", RT_PAD_MAX,
-            pad_factor);
+    fprintf(stderr, "Pad factor must less than %d. Got value " ru "\n",
+            RT_PAD_MAX, pad_factor);
     exit(1);
   }
   rt_set_fft_size(p, p->hold->frame_size, p->hold->overlap_factor, pad_factor);
@@ -163,7 +164,7 @@ void rt_set_buffer_size(rt_params p, rt_uint buffer_size)
 {
   rt_uint buffer_pow = rt_check_pow_2(buffer_size);
   if (buffer_pow == RT_UINT_FALSE) {
-    fprintf(stderr, ru" is an invalid buffer size: not a power of 2.\n",
+    fprintf(stderr, ru " is an invalid buffer size: not a power of 2.\n",
             buffer_size);
     exit(1);
   }
@@ -192,18 +193,19 @@ void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint overlap_factor,
 
   rt_uint frame_pow = rt_check_pow_2(frame_size);
   if (frame_pow == RT_UINT_FALSE) {
-    fprintf(stderr, ru" is an invalid frame size: not a power of 2.\n",
+    fprintf(stderr, ru " is an invalid frame size: not a power of 2.\n",
             frame_size);
     exit(1);
   }
   rt_uint fft_pow  = frame_pow + pad_factor;
   rt_uint fft_size = RU(1) << fft_pow;
   if (fft_size > p->fft_max) {
-    fprintf(stderr, "Exceeded maximum frame size; got value "ru".\n", fft_size);
+    fprintf(stderr, "Exceeded maximum frame size; got value " ru ".\n",
+            fft_size);
     exit(1);
   }
   else if (fft_size < p->fft_min) {
-    fprintf(stderr, "Below minimum frame size; got value "ru".\n", fft_size);
+    fprintf(stderr, "Below minimum frame size; got value " ru ".\n", fft_size);
     exit(1);
   }
   p->hold->pad_factor = pad_factor;
