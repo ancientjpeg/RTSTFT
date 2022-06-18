@@ -49,7 +49,7 @@ void    rt_update_fft_size(rt_params p);
 void    rt_set_multichannel(rt_params p, rt_uint new_multichannel_mode);
 
 rt_real rt_get_param_val(rt_params p, rt_param_flavor_t param_flavor);
-rt_real rt_get_manip_val(rt_params p, rt_manip_flavor_t manip_flavor);
+rt_real rt_get_manip_mod_val(rt_params p, rt_manip_flavor_t manip_flavor);
 
 rt_uint rt_manip_obtain_manip_lock(rt_manip m);
 void    rt_manip_release_manip_lock(rt_manip m);
