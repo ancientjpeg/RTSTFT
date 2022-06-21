@@ -2,7 +2,7 @@
 
 GLOBALS="src/rt_globals.h"
 HEADER_SRC="src/rtstft.h"
-HEADER_GEN="build/include/rtstft.h"
+HEADER_GEN="build/include/librtstft.h"
 
 NEWLINE=$(echo)
 sed -n '/include <string\.h>/,$p;' $GLOBALS | sed '1d;$d;' > globals.temp

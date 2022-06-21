@@ -1,5 +1,5 @@
 SRC = $(wildcard src/*.c) $(wildcard src/**/*.c)
-OBJ_EXCLUDE = src/pffft/fftpack.o src/pffft/test_pffft.o src/test.o
+OBJ_EXCLUDE = src/pffft/fftpack.o src/pffft/test_pffft.o src/tests.o
 OBJ = $(filter-out $(OBJ_EXCLUDE),$(SRC:.c=.o))
 BUILD = build
 LIB = $(BUILD)/lib/librtstft.a

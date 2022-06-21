@@ -8,7 +8,7 @@
  * @copyright Copyright (c) 2022
  *
  */
-#include "rtstft.h"
+#include "librtstft.h"
 #include "wavfile.h"
 #include <time.h>
 #include <unistd.h>
