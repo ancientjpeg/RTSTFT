@@ -1,5 +1,4 @@
 build
-fftw*
 **/*.o
 
 # files used for testing
