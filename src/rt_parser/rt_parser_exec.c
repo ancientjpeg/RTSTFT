@@ -183,8 +183,8 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
     return 11;
   }
 
-  rt_uint c;
-  for (c = 0; c < p->num_chans; c++) {
+  rt_uint c, num_chans = p->manip_multichannel ? p->num_chans : RU(1);
+  for (c = 0; c < num_chans; c++) {
     if (curve_pow == -100.f) {
       rt_manip_set_bins(p, p->chans[c], def->manip_flavor, bin0, binN, value0);
     }
