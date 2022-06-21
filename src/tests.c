@@ -23,11 +23,17 @@ FILE *closeJSON(FILE *json);
 void  test_audio();
 void  test_parse();
 
-int   main()
+/**
+ * @brief at current, we only test for linkage success. a heavier batch of unit
+ * tests may be written in the future.
+ *
+ * @return int
+ */
+int main()
 {
   printf("testing:\n");
   test_parse();
-  // test_audio();
+  test_audio();
   printf("tests complete.\n");
   return 0;
 }

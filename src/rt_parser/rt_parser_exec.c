@@ -164,15 +164,13 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
   if (got_curve_opt) {
     valueN = val;
     status = rt_parser_exec_check_level(p, valueN);
-    if (status)
-      return status;
+    if (status) return status;
   }
   else {
     value0 = val;
   }
   status = rt_parser_exec_check_level(p, value0);
-  if (status)
-    return status;
+  if (status) return status;
 
   bin0 = cmd->args[1].raw_arg.irange[0];
   binN = cmd->args[1].raw_arg.irange[1];
@@ -197,6 +195,8 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
           cmd->name);
   rt_listener_return_t ret = rt_get_empty_listener_data();
   ret.manip_flavor         = def->manip_flavor;
-  p->listener.listener_callback(p->listener.listener_obj, ret);
+  if (p->listener.listener_callback != NULL) {
+    p->listener.listener_callback(p->listener.listener_obj, ret);
+  }
   return 0;
 }

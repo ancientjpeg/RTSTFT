@@ -19,7 +19,7 @@ debug:  $(OBJ) | $(FFTW) $(BUILD)
 	$(AR) crs $(LIB) $(OBJ) 
 release: CFLAGS = -Ofast
 release: $(OBJ) | $(FFTW) $(BUILD)
-	$(AR) $(LDLIBS)  $(OBJ) -o $(EXE) $(LFLAGS)
+	$(AR) crs $(LIB) $(OBJ) 
 $(BUILD):
 	-@mkdir -p $(BUILD)
 	-@mkdir -p $(BUILD)/lib
@@ -39,9 +39,9 @@ run-test:
 build-test:
 	$(CC) -c -Ibuild/include -g src/tests.c -o $(BUILD)/tests.o  
 	$(LD) -o $(TEST_EXE) $(BUILD)/tests.o -Lbuild/lib -lrtstft 
-	@rm $(BUILD)/tests.o
 	dsymutil $(TEST_EXE)
-test: build-test  run-test clean
+	@rm $(BUILD)/tests.o
+test: debug build-test  run-test clean
 	-@echo $(CFLAGS)
 echo_obj:
 	@echo $(SRC)

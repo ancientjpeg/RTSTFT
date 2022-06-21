@@ -10,6 +10,7 @@
  */
 #ifndef RT_GLOBALS_H
 #define RT_GLOBALS_H
+/* library includes */
 #include <ctype.h>
 #include <float.h>
 #include <limits.h>
@@ -18,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* type defines */
 #ifdef RT_DOUBLE
 typedef double rt_real;
 #else
@@ -38,6 +40,7 @@ typedef unsigned int rt_uint;
 #define RT_REAL_ERR NAN
 #define RT_INT_ERR INT_MIN
 
+/* stft-related defines */
 #ifdef RT_FFT_MIN_POW_OVERRIDE
 #define RT_FFT_MIN_POW RT_FFT_MIN_POW_OVERRIDE
 #else
@@ -68,6 +71,11 @@ typedef unsigned int rt_uint;
 #define RT_PAD_MAX 3
 #endif
 
+/**
+ * dB scaling defines
+ * not currently used in-lib, but kept here in case of a need for integration
+ * between the lib and rtstft_ctl
+ */
 #define RT_DB_MIN (-96.f)
 #define RT_DB_MAX (12.f)
 
@@ -92,6 +100,20 @@ typedef enum RT_MANIP_FLAVORS {
   RT_MANIP_FLAVOR_UNDEFINED
 } rt_manip_flavor_t;
 
+/* rt_parser defines */
+#define RT_CMD_ARGC_MAX 10
+#define RT_CMD_ARG_LEN_MAX 10
+#define RT_CMD_BUFFER_LEN (RT_CMD_ARGC_MAX * RT_CMD_ARG_LEN_MAX)
+#define RT_CMD_NAME_LEN 10
+#define RT_CMD_MAX_OPTS 4
+#define RT_CMD_STROPC_MAX 2
+#define RT_CMD_OPT_ARGC_MAX 3
+#define RT_CMD_COMMAND_ARGC_MAX 3
+
+#define RT_CMD_ALL_COMMANDS_COUNT (RU(7))
+#define RT_CMD_MAX_SEARCH_DEPTH (rt_log2_floor(RT_CMD_ALL_COMMANDS_COUNT))
+
+/* for integrating an external parameter manager with rt_cmd */
 typedef struct RTSTFT_Params_Listener_Return_Data {
   rt_param_flavor_t param_flavor;
   rt_manip_flavor_t manip_flavor;

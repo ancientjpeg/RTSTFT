@@ -3,18 +3,6 @@
 
 #include "../rt_globals.h"
 
-#define RT_CMD_ARGC_MAX 10
-#define RT_CMD_ARG_LEN_MAX 10
-#define RT_CMD_BUFFER_LEN (RT_CMD_ARGC_MAX * RT_CMD_ARG_LEN_MAX)
-#define RT_CMD_NAME_LEN 10
-#define RT_CMD_MAX_OPTS 4
-#define RT_CMD_STROPC_MAX 2
-#define RT_CMD_OPT_ARGC_MAX 3
-#define RT_CMD_COMMAND_ARGC_MAX 3
-
-#define RT_CMD_ALL_COMMANDS_COUNT (RU(7))
-#define RT_CMD_MAX_SEARCH_DEPTH (rt_log2_floor(RT_CMD_ALL_COMMANDS_COUNT))
-
 typedef enum RT_TOKEN_FLAVORS {
   RT_CMD_UNDEFINED_T,
   RT_CMD_PARAM_T,
