@@ -193,9 +193,9 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
   }
   sprintf(p->parser.error_msg_buffer, "successful parse of a %s command",
           cmd->name);
-  rt_listener_return_t ret = rt_get_empty_listener_data();
-  ret.manip_flavor         = def->manip_flavor;
   if (p->listener.listener_callback != NULL) {
+    rt_listener_return_t ret = rt_get_empty_listener_data();
+    ret.manip_flavor         = def->manip_flavor;
     p->listener.listener_callback(p->listener.listener_obj, ret);
   }
   return 0;
