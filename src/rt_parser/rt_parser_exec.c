@@ -183,13 +183,15 @@ int rt_parser_execute_gain_gate_limit(rt_params p)
     return 11;
   }
 
-  /* only mono for now */
-  if (curve_pow == -100.f) {
-    rt_manip_set_bins(p, p->chans[0], def->manip_flavor, bin0, binN, value0);
-  }
-  else {
-    rt_manip_set_bins_curved(p, p->chans[0], def->manip_flavor, bin0, binN,
-                             value0, valueN, curve_pow);
+  rt_uint c;
+  for (c = 0; c < p->num_chans; c++) {
+    if (curve_pow == -100.f) {
+      rt_manip_set_bins(p, p->chans[c], def->manip_flavor, bin0, binN, value0);
+    }
+    else {
+      rt_manip_set_bins_curved(p, p->chans[c], def->manip_flavor, bin0, binN,
+                               value0, valueN, curve_pow);
+    }
   }
   sprintf(p->parser.error_msg_buffer, "successful parse of a %s command",
           cmd->name);

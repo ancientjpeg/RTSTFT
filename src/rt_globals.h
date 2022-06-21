@@ -21,10 +21,13 @@
 
 /* type defines */
 #ifdef RT_DOUBLE
+#define RR(literal) (literal)
 typedef double rt_real;
 #else
+#define RR(literal) (literal##f)
 typedef float        rt_real;
 #endif
+#define rr "%f"
 
 #if UINT_MAX < 4294967295
 typedef unsigned long rt_uint;
@@ -76,8 +79,15 @@ typedef unsigned int rt_uint;
  * not currently used in-lib, but kept here in case of a need for integration
  * between the lib and rtstft_ctl
  */
-#define RT_DB_MIN (-96.f)
-#define RT_DB_MAX (12.f)
+#define RT_DB_MIN (RR(-100.))
+#define RT_DB_MAX (RR(12.))
+/* amplitude representation of RT_DB_MIN (-100.f) */
+#define RT_DB_MIN_AMP (RR(1e-05))
+
+/* define RT_ALLOW_NINF_DB if you'd like to allow manips to be == 0. */
+#ifndef RT_ALLOW_NINF_DB
+#define RT_ENFORCE_DB_MIN
+#endif
 
 typedef enum RT_PARAM_FLAVOR {
   RT_SCALE_FACTOR_MOD,

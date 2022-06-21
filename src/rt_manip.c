@@ -62,8 +62,13 @@ void rt_manip_reset(rt_params p, rt_manip m, rt_manip_flavor_t target_flavor)
         m->hold_manips[frame_index] = 1.;
         break;
       case RT_MANIP_GATE:
-        m->manips[frame_index]      = 0.;
-        m->hold_manips[frame_index] = 0.;
+#ifdef RT_ENFORCE_DB_MIN
+        m->manips[frame_index]      = RT_DB_MIN_AMP;
+        m->hold_manips[frame_index] = RT_DB_MIN_AMP;
+#else
+        m->manips[frame_index]      = RR(0.);
+        m->hold_manips[frame_index] = RR(0.);
+#endif
         break;
       case RT_MANIP_LIMIT:
         m->manips[frame_index]      = 1.;
@@ -88,7 +93,6 @@ void rt_manip_update(rt_params p, rt_chan c)
 {
   rt_uint  i, offset, len = rt_manip_len(p);
   rt_manip m = c->manip;
-  void    *v;
   if (m->current_num_manips != p->fft_size) {
     rt_manip_framesize_changed(p, c);
   }
@@ -96,8 +100,8 @@ void rt_manip_update(rt_params p, rt_chan c)
     for (i = 0; i < RT_MANIP_FLAVOR_COUNT; i++) {
       if (m->manip_tracker & (1UL << i)) {
         offset = rt_manip_index(p, i, 0);
-        v      = memcpy(m->manips + offset, m->hold_manips + offset,
-                        len * sizeof(rt_real));
+        memcpy(m->manips + offset, m->hold_manips + offset,
+               len * sizeof(rt_real));
       }
     }
   }
@@ -144,6 +148,10 @@ void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
     exit(1);
   }
 
+#ifdef RT_ENFORCE_DB_MIN
+  value = rt_max(RT_DB_MIN_AMP, value);
+#endif
+
   rt_uint bin_curr  = bin0,
           manip_pos = rt_manip_index(p, manip_flavor, bin_curr);
   do {
@@ -165,6 +173,11 @@ void rt_manip_set_bin_single(rt_params p, rt_chan c,
     fprintf(stderr, "Cannot set stereo manips when multichannel is disabled");
     exit(1);
   }
+
+#ifdef RT_ENFORCE_DB_MIN
+  value = rt_max(RT_DB_MIN_AMP, value);
+#endif
+
   c->manip->hold_manips[rt_manip_index(p, manip_flavor, bin)] = value;
   c->manip->manip_tracker |= (1UL << manip_flavor);
   p->hold->tracker |= RT_MANIPS_CHANGED;
@@ -183,6 +196,11 @@ void rt_manip_set_bins_curved(rt_params p, rt_chan c,
     fprintf(stderr, "Cannot set stereo manips when multichannel is disabled");
     exit(1);
   }
+
+#ifdef RT_ENFORCE_DB_MIN
+  value0 = rt_max(RT_DB_MIN_AMP, value0);
+  valueN = rt_max(RT_DB_MIN_AMP, valueN);
+#endif
 
   /* curve pow should be -10 to 10 with 0. as midpoint */
   /* it will be reversed, i.e. -10 makes a flattened curve */
