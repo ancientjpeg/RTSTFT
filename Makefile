@@ -27,7 +27,6 @@ $(BUILD):
 	sh gen_header.sh	
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
-.PHONY: clean
 clean: 
 	@echo CLEAN TIME
 	-@rm $(OBJ) 2>/dev/null || true
