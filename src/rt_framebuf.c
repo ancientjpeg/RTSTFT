@@ -185,7 +185,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
   for (i = 2; i < p->fft_size; i += 2) {
     real             = frame_ptr[i];
     imag             = frame_ptr[i + 1];
-    frame_ptr[i]     = sqrt(real * real + imag * imag) * amp_adj;
+    frame_ptr[i]     = hypotf(real, imag) * amp_adj;
     frame_ptr[i + 1] = atan2f(imag, real);
   }
 
@@ -213,7 +213,7 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
       phi_s_curr = 0;
     }
     if (p->phase_chaos > 0.f) {
-      phi_s_curr += (rand() - (float)(RAND_MAX >> 1)) / RAND_MAX
+      phi_s_curr += (rand() - (float)(RAND_MAX >> 1)) / (float)RAND_MAX
                     * p->phase_chaos * 2 * M_PI;
     }
 
