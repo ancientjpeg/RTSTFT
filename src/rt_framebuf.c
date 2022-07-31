@@ -8,6 +8,7 @@
  * @copyright Copyright (c) 2022
  *
  */
+#include "rt_globals.h"
 #include "rtstft.h"
 
 void rt_framebuf_recalc_omegas(rt_params, rt_framebuf);
@@ -61,12 +62,10 @@ rt_framebuf rt_framebuf_init(rt_params p)
 
   /**< setup allocation */
   rt_uint num_setups = p->fft_max - p->fft_min + 1;
-  framebuf->setups = (PFFFT_Setup **)malloc(num_setups * sizeof(PFFFT_Setup *));
-  rt_uint i, N, curr;
-  for (i = RT_FFT_MIN_POW; i <= RT_FFT_MAX_POW; i++) {
-    N                      = (1 << i);
-    curr                   = i - RT_FFT_MIN_POW;
-    framebuf->setups[curr] = pffft_new_setup(N, PFFFT_REAL);
+  rt_uint i, N;
+  for (i = 0; i < RT_FFT_POW_COUNT; i++) {
+    N                   = (1 << (i + RT_FFT_MIN_POW));
+    framebuf->setups[i] = pffft_new_setup(N, PFFFT_REAL);
   }
 
   rt_framebuf_flush(p, framebuf);
