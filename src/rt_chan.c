@@ -13,7 +13,7 @@
 rt_chan rt_chan_init(rt_params p)
 {
   rt_chan chan          = (rt_chan)malloc(sizeof(rt_chan_t));
-  rt_uint fifo_capacity = p->fft_max * 2;
+  rt_uint fifo_capacity = p->fft_max * RT_MAX_PITCH_RATIO;
   chan->in              = rt_fifo_init(fifo_capacity);
   chan->dry             = rt_fifo_init(fifo_capacity);
   chan->out             = rt_fifo_init(fifo_capacity);

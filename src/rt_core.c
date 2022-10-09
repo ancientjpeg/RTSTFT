@@ -49,9 +49,10 @@ void rt_digest_frame(rt_params p, rt_chan c)
    * lerp, i.e. we write to the next hop_a position but write N /
    * scale_factor samples.
    */
-  rt_uint input_size    = p->frame_size;
-  rt_uint hop_s_inverse = round(p->hop_a / p->scale_factor);
-  rt_uint output_size   = hop_s_inverse * p->overlap_factor;
+  rt_uint input_size      = p->frame_size;
+  rt_real hop_s_inv_float = p->hop_a / p->scale_factor;
+  rt_uint hop_s_inverse   = round(hop_s_inv_float);
+  rt_uint output_size     = hop_s_inv_float * p->overlap_factor;
   rt_real pos = 0., local_incr = (rt_real)(input_size - 1) / (output_size - 1);
   rt_uint out_pos_init = c->out->write_pos;
   rt_uint i, x0, x1;
@@ -71,8 +72,10 @@ void rt_digest_frame(rt_params p, rt_chan c)
   c->out->write_pos = rt_fifo_new_pos(c->out, out_pos_init, p->hop_a);
 }
 
-void rt_cycle_chan(rt_params p, rt_uint channel_index, rt_real *buffer,
-                   rt_uint buffer_len)
+void rt_cycle_chan(rt_params p,
+                   rt_uint   channel_index,
+                   rt_real  *buffer,
+                   rt_uint   buffer_len)
 {
   rt_chan c = p->chans[channel_index];
   rt_real wet, dry, dry_wet_inv = 1. - p->dry_wet;

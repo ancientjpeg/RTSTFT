@@ -234,8 +234,8 @@ void rt_framebuf_digest_frame(rt_params p, rt_chan c)
     phase                          = frame_ptr[i + 1];
     c->framebuf->amp_holder[i / 2] = amp;
     amp *= amp_adj_rev;
-    frame_ptr[i]     = amp * cos(phase);
-    frame_ptr[i + 1] = amp * sin(phase);
+    frame_ptr[i]     = amp * cosf(phase);
+    frame_ptr[i + 1] = amp * sinf(phase);
   }
   /** inverse transform */
   pffft_transform_ordered(c->framebuf->setups[p->setup], frame_ptr, frame_ptr,

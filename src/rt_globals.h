@@ -57,6 +57,8 @@ typedef unsigned int rt_uint;
 #define RT_FFT_MAX_POW 16
 #endif
 
+#define RT_MAX_PITCH_RATIO 4
+
 #define RT_FFT_POW_COUNT (RT_FFT_MAX_POW - RT_FFT_MIN_POW + 1)
 
 #ifdef RT_OVERLAP_MIN_OVERRIDE
