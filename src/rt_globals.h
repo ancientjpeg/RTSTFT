@@ -94,6 +94,10 @@ typedef unsigned int rt_uint;
 #define RT_ENFORCE_DB_MIN
 #endif
 
+/* remove some if statements that prevent memory corruption but also cause
+ * crashes (used for debug) */
+#define RT_OPTIMIZATION_REMOVE_CHECKS
+
 typedef enum RT_PARAM_FLAVOR {
   RT_SCALE_FACTOR_MOD,
   RT_RETENTION_MOD,

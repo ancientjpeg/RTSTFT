@@ -43,10 +43,14 @@ void rt_fifo_enqueue(rt_fifo fifo, rt_real *data, int n)
 
 void rt_fifo_enqueue_one(rt_fifo fifo, rt_real data)
 {
+
+#ifndef RT_OPTIMIZATION_REMOVE_CHECKS
   if (fifo->head == fifo->tail && !fifo->empty) {
     fprintf(stderr, "Cannot enqueue sample. FIFO is full.");
     exit(1);
   }
+#endif
+
   fifo->empty      = 0;
   fifo->read_empty = 0;
   fifo->queue[fifo->write_pos] += data;
@@ -88,6 +92,8 @@ void rt_fifo_enqueue_staggered(rt_fifo fifo, rt_real *data, int n, int advance)
 
 void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n)
 {
+
+#ifndef RT_OPTIMIZATION_REMOVE_CHECKS
   if (fifo->read_empty) {
     fprintf(stderr, "Error: Nothing to read.");
     exit(1);
@@ -96,6 +102,8 @@ void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n)
     fprintf(stderr, "Error: cannot read beyond the current write pointer.\n");
     exit(1);
   }
+#endif
+
   rt_uint i;
   for (i = 0; i < n; i++) {
     rt_uint index = i != 0 ? rt_fifo_new_pos(fifo, fifo->head, i) : fifo->head;
@@ -105,10 +113,14 @@ void rt_fifo_read(rt_fifo fifo, rt_real *dest, int n)
 
 void rt_fifo_dequeue_one(rt_fifo fifo, rt_real *dest)
 {
+
+#ifndef RT_OPTIMIZATION_REMOVE_CHECKS
   if (fifo->empty) {
     fprintf(stderr, "Error: Nothing to dequeue.");
     exit(1);
   }
+#endif
+
   if (dest != NULL) {
     if (fifo->read_empty) {
       fprintf(stderr, "Error: Nothing to read. ");
