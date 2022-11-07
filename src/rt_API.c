@@ -10,8 +10,12 @@
  */
 #include "rtstft.h"
 
-rt_params rt_init(rt_uint num_channels, rt_uint frame_size, rt_uint buffer_size,
-                  rt_uint overlap_factor, rt_uint pad_factor, float sample_rate)
+rt_params rt_init(rt_uint num_channels,
+                  rt_uint frame_size,
+                  rt_uint buffer_size,
+                  rt_uint overlap_factor,
+                  rt_uint pad_factor,
+                  float   sample_rate)
 {
   rt_params p         = malloc(sizeof(rt_params_t));
   p->initialized      = 0;
@@ -82,8 +86,11 @@ void rt_cycle_single(rt_params p, rt_real *buffer, rt_uint buffer_len)
   rt_cycle_offset(p, &buffer, 1, buffer_len, 0);
 }
 
-void rt_cycle_offset(rt_params p, rt_real **buffers, rt_uint num_buffers,
-                     rt_uint buffer_len, rt_uint sample_offset)
+void rt_cycle_offset(rt_params p,
+                     rt_real **buffers,
+                     rt_uint   num_buffers,
+                     rt_uint   buffer_len,
+                     rt_uint   sample_offset)
 {
   if (!rt_obtain_cycle_lock(p)) {
     return;
@@ -114,7 +121,10 @@ rt_uint rt_obtain_cycle_lock(rt_params p)
 {
   return rt_obtain_lock(&p->cycle_lock, 500000, 50);
 }
-void rt_release_cycle_lock(rt_params p) { rt_release_lock(&p->cycle_lock); }
+void rt_release_cycle_lock(rt_params p)
+{
+  rt_release_lock(&p->cycle_lock);
+}
 
 rt_listener_return_t rt_get_empty_listener_data()
 {

@@ -30,9 +30,18 @@ void rt_lerp_samples(rt_real *in, rt_real *out, rt_uint len_I, rt_uint len_O)
   }
 }
 
-rt_real rt_ptocen(rt_real pitch_ratio) { return log2f(pitch_ratio) * 1200.f; }
-rt_real rt_centop(rt_real cents) { return exp2f(cents / 1200.f); }
-rt_real rt_dbtoa(rt_real db_val) { return powf(10.f, (db_val) / 20.f); }
+rt_real rt_ptocen(rt_real pitch_ratio)
+{
+  return log2f(pitch_ratio) * 1200.f;
+}
+rt_real rt_centop(rt_real cents)
+{
+  return exp2f(cents / 1200.f);
+}
+rt_real rt_dbtoa(rt_real db_val)
+{
+  return powf(10.f, (db_val) / 20.f);
+}
 rt_real rt_atodb(rt_real amp_val)
 {
   rt_real ret = 20.f * log10f(amp_val);
@@ -70,4 +79,7 @@ rt_uint rt_obtain_lock(rt_uint *lock, rt_uint timeout_us, rt_uint refresh_us)
   }
   return RU(0);
 }
-void rt_release_lock(rt_uint *lock) { *lock = 0; }
+void rt_release_lock(rt_uint *lock)
+{
+  *lock = 0;
+}

@@ -10,9 +10,13 @@
  */
 #include "rtstft.h"
 
-void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
-                    rt_uint buffer_size, rt_uint overlap_factor,
-                    rt_uint pad_factor, rt_real sample_rate)
+void rt_holder_init(rt_params p,
+                    rt_uint   num_channels,
+                    rt_uint   frame_size,
+                    rt_uint   buffer_size,
+                    rt_uint   overlap_factor,
+                    rt_uint   pad_factor,
+                    rt_real   sample_rate)
 {
   p->hold = (rt_holder)malloc(sizeof(rt_holder_t));
   rt_set_single_param(p, RT_SCALE_FACTOR_MOD, 1.f);
@@ -36,7 +40,10 @@ void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
   }
 }
 
-void rt_holder_clean(rt_holder hold) { free(hold); }
+void rt_holder_clean(rt_holder hold)
+{
+  free(hold);
+}
 
 void rt_update_fft_size(rt_params p)
 {
@@ -184,8 +191,10 @@ void rt_set_sample_rate(rt_params p, rt_real sample_rate)
  * @param p
  * @param frame_size
  */
-void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint overlap_factor,
-                     rt_uint pad_factor)
+void rt_set_fft_size(rt_params p,
+                     rt_uint   frame_size,
+                     rt_uint   overlap_factor,
+                     rt_uint   pad_factor)
 {
 
   p->hold->overlap_factor = overlap_factor;
@@ -214,8 +223,9 @@ void rt_set_fft_size(rt_params p, rt_uint frame_size, rt_uint overlap_factor,
   p->hold->setup      = fft_pow - RT_FFT_MIN_POW;
 }
 
-void rt_set_single_param(rt_params p, rt_param_flavor_t param_flavor,
-                         rt_real new_val)
+void rt_set_single_param(rt_params         p,
+                         rt_param_flavor_t param_flavor,
+                         rt_real           new_val)
 {
   switch (param_flavor) {
   case RT_SCALE_FACTOR_MOD:

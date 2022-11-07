@@ -137,8 +137,12 @@ void rt_manip_framesize_changed(rt_params p, rt_chan c)
 /* ========================     bin setting    ======================== */
 /* ==================================================================== */
 
-void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
-                       rt_uint bin0, rt_uint binN, rt_real value)
+void rt_manip_set_bins(rt_params         p,
+                       rt_chan           c,
+                       rt_manip_flavor_t manip_flavor,
+                       rt_uint           bin0,
+                       rt_uint           binN,
+                       rt_real           value)
 {
   if (!rt_manip_obtain_manip_lock(c->manip)) {
     return;
@@ -162,9 +166,11 @@ void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
   p->hold->tracker |= RT_MANIPS_CHANGED;
   rt_manip_release_manip_lock(c->manip);
 }
-void rt_manip_set_bin_single(rt_params p, rt_chan c,
-                             rt_manip_flavor_t manip_flavor, rt_uint bin,
-                             rt_real value)
+void rt_manip_set_bin_single(rt_params         p,
+                             rt_chan           c,
+                             rt_manip_flavor_t manip_flavor,
+                             rt_uint           bin,
+                             rt_real           value)
 {
   if (!rt_manip_obtain_manip_lock(c->manip)) {
     return;
@@ -184,10 +190,14 @@ void rt_manip_set_bin_single(rt_params p, rt_chan c,
   rt_manip_release_manip_lock(c->manip);
 }
 
-void rt_manip_set_bins_curved(rt_params p, rt_chan c,
-                              rt_manip_flavor_t manip_flavor, rt_uint bin0,
-                              rt_uint binN, rt_real value0, rt_real valueN,
-                              rt_real curve_pow)
+void rt_manip_set_bins_curved(rt_params         p,
+                              rt_chan           c,
+                              rt_manip_flavor_t manip_flavor,
+                              rt_uint           bin0,
+                              rt_uint           binN,
+                              rt_real           value0,
+                              rt_real           valueN,
+                              rt_real           curve_pow)
 {
   if (!rt_manip_obtain_manip_lock(c->manip)) {
     return;
@@ -303,20 +313,26 @@ void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr)
 
 /* ========================        utils       ======================== */
 
-rt_uint rt_manip_index(rt_params p, rt_manip_flavor_t manip_flavor,
-                       rt_uint frame_index)
+rt_uint
+rt_manip_index(rt_params p, rt_manip_flavor_t manip_flavor, rt_uint frame_index)
 {
   return manip_flavor * rt_manip_len_max(p) + frame_index;
 }
 
-const rt_real *rt_manip_read_buffer(rt_params p, rt_chan c,
-                                    rt_manip_flavor_t manip_flavor)
+const rt_real *
+rt_manip_read_buffer(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor)
 {
   return c->manip->hold_manips + rt_manip_index(p, manip_flavor, 0);
 }
 
-rt_uint rt_manip_len_max(rt_params p) { return p->fft_max / 2; }
-rt_uint rt_manip_len(rt_params p) { return p->fft_size / 2; }
+rt_uint rt_manip_len_max(rt_params p)
+{
+  return p->fft_max / 2;
+}
+rt_uint rt_manip_len(rt_params p)
+{
+  return p->fft_size / 2;
+}
 rt_uint rt_manip_block_len(rt_params p)
 {
   return rt_manip_len_max(p) * RT_MANIP_FLAVOR_COUNT;
@@ -333,8 +349,10 @@ void rt_manip_copy_manips(rt_params p, rt_chan c, rt_real *dest, rt_uint len)
   memcpy(dest, c->manip->hold_manips, block_len * sizeof(rt_real));
 }
 
-void rt_manip_overwrite_manips(rt_params p, rt_chan c, rt_real *new_manips,
-                               rt_uint len)
+void rt_manip_overwrite_manips(rt_params p,
+                               rt_chan   c,
+                               rt_real  *new_manips,
+                               rt_uint   len)
 {
   rt_uint block_len = rt_manip_block_len(p);
   if (len != block_len) {

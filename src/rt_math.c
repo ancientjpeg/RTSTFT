@@ -64,8 +64,7 @@ void rt_hamming(rt_real *data, rt_uint len)
 rt_uint rt_log2_floor(rt_uint num)
 {
   int power = 0;
-  while (num >> (power) > 0)
-    power++;
+  while (num >> (power) > 0) power++;
   return power == 0 ? 0 : power - 1;
 }
 

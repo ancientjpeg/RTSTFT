@@ -9,14 +9,16 @@ rt_token_t *rt_parser_next_available_token_slot(rt_parser parser)
   return NULL;
 }
 
-void rt_parser_lex_string(rt_parser parser, rt_token_t *token,
+void rt_parser_lex_string(rt_parser   parser,
+                          rt_token_t *token,
                           const char *token_raw)
 {
   token->token_flavor = RT_CMD_STRING_T;
   strcpy(token->raw_arg.str, token_raw);
 }
 
-int rt_parser_lex_command(rt_parser parser, rt_token_t *token,
+int rt_parser_lex_command(rt_parser   parser,
+                          rt_token_t *token,
                           const char *token_raw)
 {
   const rt_command_define_t *cmd
@@ -30,9 +32,11 @@ int rt_parser_lex_command(rt_parser parser, rt_token_t *token,
   return 0;
 }
 
-int rt_parser_lex_param(rt_parser parser, rt_token_t *token, const char *current_token)
+int rt_parser_lex_param(rt_parser   parser,
+                        rt_token_t *token,
+                        const char *current_token)
 {
-  rt_uint     i = 1;
+  rt_uint i = 1;
   do {
     token->token_flavor   = RT_CMD_PARAM_T;
     token->raw_arg.str[0] = current_token[i];
@@ -40,7 +44,8 @@ int rt_parser_lex_param(rt_parser parser, rt_token_t *token, const char *current
   return 0;
 }
 
-int rt_parser_lex_numeric(rt_parser parser, rt_token_t *token,
+int rt_parser_lex_numeric(rt_parser   parser,
+                          rt_token_t *token,
                           const char *token_raw)
 {
   char    check;

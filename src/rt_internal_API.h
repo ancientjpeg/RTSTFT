@@ -22,9 +22,13 @@ rt_chan rt_chan_init(rt_params p);
 rt_chan rt_chan_clean(rt_params p, rt_chan chan);
 
 /* ========   rt_holder   ======== */
-void rt_holder_init(rt_params p, rt_uint num_channels, rt_uint frame_size,
-                    rt_uint buffer_size, rt_uint overlap_factor,
-                    rt_uint pad_factor, rt_real sample_rate);
+void rt_holder_init(rt_params p,
+                    rt_uint   num_channels,
+                    rt_uint   frame_size,
+                    rt_uint   buffer_size,
+                    rt_uint   overlap_factor,
+                    rt_uint   pad_factor,
+                    rt_real   sample_rate);
 void rt_holder_clean(rt_holder hold);
 void rt_update_params(rt_params p);
 void rt_update_manips(rt_params p);
@@ -38,14 +42,23 @@ void rt_manip_update(rt_params p, rt_chan c);
 void rt_manip_on_multichannel_change(rt_params p);
 void rt_manip_process(rt_params p, rt_chan c, rt_real *frame_ptr);
 void rt_manip_framesize_changed(rt_params p, rt_chan c);
-void rt_manip_set_bins(rt_params p, rt_chan c, rt_manip_flavor_t manip_flavor,
-                       rt_uint bin0, rt_uint binN, rt_real value);
-void rt_manip_set_bins_curved(rt_params p, rt_chan c,
-                              rt_manip_flavor_t manip_flavor, rt_uint bin0,
-                              rt_uint binN, rt_real value0, rt_real valueN,
-                              rt_real curve_pow);
-rt_uint rt_manip_index(rt_params p, rt_manip_flavor_t manip_flavor,
-                       rt_uint frame_index);
+void rt_manip_set_bins(rt_params         p,
+                       rt_chan           c,
+                       rt_manip_flavor_t manip_flavor,
+                       rt_uint           bin0,
+                       rt_uint           binN,
+                       rt_real           value);
+void rt_manip_set_bins_curved(rt_params         p,
+                              rt_chan           c,
+                              rt_manip_flavor_t manip_flavor,
+                              rt_uint           bin0,
+                              rt_uint           binN,
+                              rt_real           value0,
+                              rt_real           valueN,
+                              rt_real           curve_pow);
+rt_uint rt_manip_index(rt_params         p,
+                       rt_manip_flavor_t manip_flavor,
+                       rt_uint           frame_index);
 
 /* ========    rt_fifo    ======== */
 rt_fifo rt_fifo_init(rt_uint len);
@@ -65,9 +78,9 @@ rt_fifo rt_fifo_destroy(rt_fifo fifo);
 rt_framebuf rt_framebuf_init(rt_params p);
 void        rt_framebuf_flush(rt_params p, rt_framebuf framebuf);
 rt_framebuf rt_framebuf_destroy(rt_params p, rt_framebuf framebuf);
-rt_uint     rt_framebuf_relative_frame(rt_framebuf framebuf, rt_uint frame,
-                                       int offset);
-void        rt_framebuf_digest_frame(rt_params p, rt_chan c);
+rt_uint
+rt_framebuf_relative_frame(rt_framebuf framebuf, rt_uint frame, int offset);
+void rt_framebuf_digest_frame(rt_params p, rt_chan c);
 
 /* ======== MATH UTILS ======== */
 double fastPow(double a, double b);
